@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { addDays, dateKey, dayLabel } from '../lib/date'
 import { kcal } from '../lib/format'
 import { useDay, useStore, useTargets } from '../lib/store'
+import { mealTotals } from '../lib/plan'
 import { MEALS, type DiaryEntry, type Meal } from '../lib/types'
 import { Card, Icon, MacroBar } from './ui'
 import FoodDetail from './FoodDetail'
@@ -157,6 +158,9 @@ function MealCard({
 }) {
   const copyMeal = useStore((s) => s.copyMeal)
   const allEntries = useStore((s) => s.entries)
+  const mealPlan = useStore((s) => s.mealPlan)
+  const logPlanMeal = useStore((s) => s.logPlanMeal)
+  const planned = (mealPlan?.days.find((d) => d.date === date)?.meals ?? []).filter((m) => m.meal === meal && !m.logged)
   const yesterday = addDays(date, -1)
   const yesterdayCount = entries.length === 0 ? allEntries.filter((e) => e.date === yesterday && e.meal === meal).length : 0
   const total = entries.reduce((n, e) => n + e.nutrients.kcal, 0)
@@ -189,6 +193,18 @@ function MealCard({
           ))}
         </ul>
       )}
+      {planned.map((p) => (
+        <div key={p.id} className="mt-2 flex items-center gap-3 rounded-2xl border border-dashed border-line px-3 py-2.5">
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-medium text-accent">On your plan</div>
+            <div className="truncate font-medium">{p.name}</div>
+          </div>
+          <span className="num text-sm text-muted">{kcal(mealTotals(p).kcal)}</span>
+          <button onClick={() => logPlanMeal(date, p.id)} className="btn btn-primary px-3 py-1.5 text-sm">
+            I ate this
+          </button>
+        </div>
+      ))}
       <div className="mt-1 flex items-center gap-4">
         <button onClick={onAdd} className="flex items-center gap-1.5 py-1.5 font-medium text-accent">
           <Icon name="plus" className="h-4 w-4" /> Add food

@@ -91,6 +91,50 @@ export interface WeightLog {
   kg: number
 }
 
+/** One food in an AI estimate or meal plan, with totals for its weight. */
+export interface PlanItem {
+  name: string
+  portion: string
+  grams: number
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
+export interface PlanMeal {
+  id: string
+  meal: Meal
+  name: string
+  description: string
+  items: PlanItem[]
+  logged?: boolean
+}
+
+export interface PlanDay {
+  date: string
+  meals: PlanMeal[]
+}
+
+export interface MealPlan {
+  createdAt: number
+  targetKcal: number
+  days: PlanDay[]
+  tips?: string
+  shoppingChecked: string[]
+}
+
+export type DietStyle = 'any' | 'vegetarian' | 'pescatarian' | 'vegan'
+
+export interface PlanPrefs {
+  diet: DietStyle
+  snacks: 0 | 1 | 2
+  cooking: 'quick' | 'enjoy'
+  likes: string
+  avoid: string
+  days: 1 | 3 | 7
+}
+
 export interface ExerciseLog {
   id: string
   date: string

@@ -9,6 +9,7 @@ A free calorie and diet tracker that installs on an iPhone from Safari. No App S
 - About 270 built-in foods and dishes, including 36 Georgian dishes (khachapuri, khinkali, mtsvadi, lobio, pkhali…), with real portion sizes.
 - Barcode scanner for packaged food (Open Food Facts) and online search (USDA FoodData Central).
 - Free AI through Google Gemini: photograph a meal, describe it in words, read a nutrition label, or chat with a diet coach.
+- AI meal plans: a 1-, 3- or 7-day menu that fits your calorie target and preferences, with one-tap logging, meal swaps and a shopping list. Planned meals also show on the Today screen.
 - Your own foods and recipes (Plate works out the calories per portion).
 - Weight log with a chart, water tracking, exercise, a 7-day calorie view, and backup/restore.
 

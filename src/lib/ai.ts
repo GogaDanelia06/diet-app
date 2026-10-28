@@ -1,18 +1,11 @@
-import type { Food, Nutrients } from './types'
+import type { Food, Nutrients, PlanItem, PlanPrefs } from './types'
 import { uid } from './date'
+import type { RawPlanMeal } from './plan'
 
 // Google Gemini, called straight from the phone with the user's own free API key.
 const FALLBACK_MODEL = 'gemini-3.5-flash-lite'
 
-export interface AiItem {
-  name: string
-  grams: number
-  portion: string
-  kcal: number
-  protein: number
-  carbs: number
-  fat: number
-}
+export type AiItem = PlanItem
 
 export interface AiMeal {
   title: string
@@ -102,20 +95,18 @@ function parseJson<T>(text: string): T {
 const NUM = { type: 'NUMBER' }
 const STR = { type: 'STRING' }
 
+const ITEMS_SCHEMA = {
+  type: 'ARRAY',
+  items: {
+    type: 'OBJECT',
+    properties: { name: STR, portion: STR, grams: NUM, kcal: NUM, protein: NUM, carbs: NUM, fat: NUM },
+    required: ['name', 'portion', 'grams', 'kcal', 'protein', 'carbs', 'fat'],
+  },
+}
+
 const MEAL_SCHEMA = {
   type: 'OBJECT',
-  properties: {
-    title: STR,
-    items: {
-      type: 'ARRAY',
-      items: {
-        type: 'OBJECT',
-        properties: { name: STR, portion: STR, grams: NUM, kcal: NUM, protein: NUM, carbs: NUM, fat: NUM },
-        required: ['name', 'portion', 'grams', 'kcal', 'protein', 'carbs', 'fat'],
-      },
-    },
-    notes: STR,
-  },
+  properties: { title: STR, items: ITEMS_SCHEMA, notes: STR },
   required: ['title', 'items'],
 }
 
@@ -256,4 +247,107 @@ export function aiItemToFood(i: AiItem): Food {
 export async function testKey(cfg: Config): Promise<string> {
   const text = await callGemini(cfg, { contents: [{ role: 'user', parts: [{ text: 'Reply with just: OK' }] }] })
   return text.trim()
+}
+
+const PLAN_MEAL_SCHEMA = {
+  type: 'OBJECT',
+  properties: { meal: STR, name: STR, description: STR, items: ITEMS_SCHEMA },
+  required: ['meal', 'name', 'description', 'items'],
+}
+
+const PLAN_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    days: { type: 'ARRAY', items: { type: 'OBJECT', properties: { meals: { type: 'ARRAY', items: PLAN_MEAL_SCHEMA } }, required: ['meals'] } },
+    tips: STR,
+  },
+  required: ['days'],
+}
+
+const DIET_TEXT: Record<PlanPrefs['diet'], string> = {
+  any: 'No restrictions; include lean meat, fish, eggs, dairy, grains, legumes, vegetables and fruit.',
+  vegetarian: 'Vegetarian: no meat or fish; eggs and dairy are fine.',
+  pescatarian: 'Pescatarian: fish and seafood but no other meat; eggs and dairy are fine.',
+  vegan: 'Vegan: no animal products at all (no meat, fish, eggs, dairy or honey).',
+}
+
+const PLANNER_RULES = `You are a registered dietitian writing practical weight-loss meal plans for a calorie-tracking app.
+Every item has its weight in grams as eaten (cooked weight for cooked food) and its calories, protein, carbs and fat for that weight, from standard nutrition tables.
+List cooking oil, butter, sauces and dressings as their own items. Use everyday ingredients from a normal supermarket or market.
+For cooked dishes, list the main ingredients as separate items (for lobio: kidney beans, onion, walnuts, sunflower oil) so they can go on a shopping list; ready-made foods such as bread, cheese or yogurt stay as one item.
+Favour filling, high-protein, high-fibre meals. Regional dishes, including Georgian food, are welcome in sensible portions.
+Each meal has a short name, a one- or two-sentence description of how to prepare it, and its items.
+The "meal" field is exactly one of: breakfast, lunch, dinner, snack.`
+
+export interface PlanRequest {
+  days: number
+  targetKcal: number
+  protein: number
+  slots: { meal: string; kcal: number }[]
+  prefs: PlanPrefs
+  person: string
+}
+
+function planConstraints(r: Omit<PlanRequest, 'days' | 'slots'>) {
+  const p = r.prefs
+  return [
+    `About the person: ${r.person}`,
+    `Diet: ${DIET_TEXT[p.diet]}`,
+    p.likes.trim() && `Foods and cuisines they like: ${p.likes.trim()}.`,
+    p.avoid.trim() && `Never use these (dislikes or allergies): ${p.avoid.trim()}.`,
+    p.cooking === 'quick'
+      ? 'They want quick, simple meals: under 20 minutes of work, few ingredients; reusing leftovers is fine.'
+      : 'They enjoy cooking, so more involved recipes are fine.',
+  ]
+    .filter(Boolean)
+    .join('\n')
+}
+
+/** Asks the AI for a multi-day meal plan that fits the calorie target. */
+export async function generateMealPlan(cfg: Config, r: PlanRequest): Promise<{ days?: { meals?: RawPlanMeal[] }[]; tips?: string }> {
+  const slots = r.slots.map((s) => `${s.meal} about ${s.kcal} kcal`).join(', ')
+  const text = await callGemini(cfg, {
+    system_instruction: { parts: [{ text: PLANNER_RULES }] },
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: `Make a ${r.days}-day meal plan.
+Each day has these meals in this order: ${slots}.
+Each day must total ${r.targetKcal} kcal (within 5%) with at least ${r.protein} g protein.
+Give different meals on different days, though a dinner may come back as the next day's lunch to save cooking.
+${planConstraints(r)}
+Finish with "tips": two or three short, practical tips for sticking to this plan.`,
+          },
+        ],
+      },
+    ],
+    generation_config: { response_mime_type: 'application/json', response_schema: PLAN_SCHEMA },
+  })
+  return parseJson(text)
+}
+
+/** Asks the AI for one replacement meal with about the same calories. */
+export async function swapPlanMeal(
+  cfg: Config,
+  r: Omit<PlanRequest, 'days' | 'slots'> & { meal: string; kcal: number; avoidMeals: string[] },
+): Promise<RawPlanMeal> {
+  const text = await callGemini(cfg, {
+    system_instruction: { parts: [{ text: PLANNER_RULES }] },
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: `Suggest one different ${r.meal} of about ${r.kcal} kcal (within 5%).
+It must not be any of these: ${r.avoidMeals.join('; ')}.
+${planConstraints(r)}`,
+          },
+        ],
+      },
+    ],
+    generation_config: { response_mime_type: 'application/json', response_schema: PLAN_MEAL_SCHEMA },
+  })
+  return parseJson(text)
 }
