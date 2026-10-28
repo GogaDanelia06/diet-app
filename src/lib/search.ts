@@ -6,6 +6,7 @@ export function normalize(s: string) {
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9ა-ჿЀ-ӿ ]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
 }
 

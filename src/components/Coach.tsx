@@ -3,8 +3,9 @@ import { coachReply, type ChatTurn } from '../lib/ai'
 import { ACTIVITY } from '../lib/calc'
 import { kcal } from '../lib/format'
 import { currentWeight, useDay, useStore, useTargets } from '../lib/store'
-import { ErrorNote, Icon } from './ui'
+import { ErrorNote, Icon, Segmented } from './ui'
 import AiKeySetup from './AiKeySetup'
+import MealPlanView from './MealPlan'
 
 const STARTERS = [
   'What can I eat for dinner with my remaining calories?',
@@ -19,6 +20,9 @@ export default function Coach({ date }: { date: string }) {
   const weight = useStore((s) => currentWeight(s))
   const targets = useTargets()!
   const day = useDay(date)
+  const mealPlan = useStore((s) => s.mealPlan)
+  const planned = mealPlan?.days.find((d) => d.date === date)?.meals ?? []
+  const [view, setView] = useState<'plan' | 'chat'>('plan')
   const [history, setHistory] = useState<ChatTurn[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -31,7 +35,8 @@ export default function Coach({ date }: { date: string }) {
 Daily target: ${targets.kcal} kcal (protein ${targets.protein} g, carbs ${targets.carbs} g, fat ${targets.fat} g).
 Food logged for ${date}: ${day.entries.length ? day.entries.map((e) => `${e.name} (${e.amountLabel}, ${Math.round(e.nutrients.kcal)} kcal, ${e.meal})`).join('; ') : 'nothing yet'}.
 Eaten so far: ${Math.round(day.totals.kcal)} kcal, protein ${Math.round(day.totals.protein)} g. Exercise: ${day.burned} kcal.
-Remaining today: ${Math.round(targets.kcal + (settings.addExerciseCalories ? day.burned : 0) - day.totals.kcal)} kcal.`
+Remaining today: ${Math.round(targets.kcal + (settings.addExerciseCalories ? day.burned : 0) - day.totals.kcal)} kcal.
+Meal plan for ${date}: ${planned.length ? planned.map((m) => `${m.meal}: ${m.name}${m.logged ? ' (eaten)' : ''}`).join('; ') : 'none'}.`
 
   async function send(text: string) {
     const q = text.trim()
@@ -55,7 +60,7 @@ Remaining today: ${Math.round(targets.kcal + (settings.addExerciseCalories ? day
     <div className="space-y-3 pt-2">
       <div className="flex items-center justify-between py-2">
         <h1 className="font-display text-3xl font-bold tracking-tight">Coach</h1>
-        {history.length > 0 && (
+        {view === 'chat' && history.length > 0 && (
           <button className="text-sm font-medium text-accent" onClick={() => setHistory([])}>
             New chat
           </button>
@@ -64,10 +69,24 @@ Remaining today: ${Math.round(targets.kcal + (settings.addExerciseCalories ? day
 
       {!settings.geminiKey ? (
         <div className="rounded-[20px] bg-surface p-4">
-          <h2 className="mb-2 font-display text-lg font-semibold">Ask an AI diet coach</h2>
+          <h2 className="mb-2 font-display text-lg font-semibold">Your free AI diet coach</h2>
+          <p className="mb-3 text-muted">It plans your meals for the week and answers your food questions.</p>
           <AiKeySetup />
         </div>
       ) : (
+        <>
+          <Segmented
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'plan', label: 'Meal plan' },
+              { value: 'chat', label: 'Chat' },
+            ]}
+          />
+        </>
+      )}
+      {settings.geminiKey && view === 'plan' && <MealPlanView />}
+      {settings.geminiKey && view === 'chat' && (
         <>
           {history.length === 0 && (
             <div className="space-y-2">

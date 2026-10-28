@@ -3,7 +3,9 @@ import { createJSONStorage, persist, type StateStorage } from 'zustand/middlewar
 import { del, get, set } from 'idb-keyval'
 import { dateKey, uid } from './date'
 import { caloriePlan, macroTargets, scaleNutrients, sumNutrients, toPer100 } from './calc'
-import type { DiaryEntry, ExerciseLog, Food, Meal, Profile, Recipe, Settings, WeightLog } from './types'
+import { aiItemToFood } from './ai'
+import { DEFAULT_PLAN_PREFS } from './plan'
+import type { DiaryEntry, ExerciseLog, Food, Meal, MealPlan, PlanMeal, PlanPrefs, Profile, Recipe, Settings, WeightLog } from './types'
 
 const idbStorage: StateStorage = {
   getItem: async (name) => (await get<string>(name)) ?? null,
@@ -32,6 +34,8 @@ export interface AppData {
   weights: WeightLog[]
   water: Record<string, number>
   exercises: ExerciseLog[]
+  planPrefs: PlanPrefs
+  mealPlan: MealPlan | null
 }
 
 interface Actions {
@@ -51,6 +55,11 @@ interface Actions {
   addWater: (date: string, ml: number) => void
   addExercise: (e: Omit<ExerciseLog, 'id'>) => void
   removeExercise: (id: string) => void
+  setPlanPrefs: (p: Partial<PlanPrefs>) => void
+  setMealPlan: (plan: MealPlan | null) => void
+  replacePlanMeal: (date: string, mealId: string, meal: PlanMeal) => void
+  logPlanMeal: (date: string, mealId: string) => void
+  toggleShoppingItem: (key: string) => void
   importData: (data: Partial<AppData>) => void
   resetAll: () => void
 }
@@ -65,6 +74,15 @@ const EMPTY: AppData = {
   weights: [],
   water: {},
   exercises: [],
+  planPrefs: DEFAULT_PLAN_PREFS,
+  mealPlan: null,
+}
+
+function mapPlanMeal(plan: MealPlan, date: string, mealId: string, fn: (m: PlanMeal) => PlanMeal): MealPlan {
+  return {
+    ...plan,
+    days: plan.days.map((d) => (d.date !== date ? d : { ...d, meals: d.meals.map((m) => (m.id === mealId ? fn(m) : m)) })),
+  }
 }
 
 export const useStore = create<AppData & Actions>()(
@@ -107,6 +125,43 @@ export const useStore = create<AppData & Actions>()(
         setState((st) => ({ water: { ...st.water, [date]: Math.max(0, (st.water[date] ?? 0) + ml) } })),
       addExercise: (e) => setState((st) => ({ exercises: [...st.exercises, { ...e, id: uid() }] })),
       removeExercise: (id) => setState((st) => ({ exercises: st.exercises.filter((x) => x.id !== id) })),
+      setPlanPrefs: (p) => setState((st) => ({ planPrefs: { ...st.planPrefs, ...p } })),
+      setMealPlan: (mealPlan) => setState({ mealPlan }),
+      replacePlanMeal: (date, mealId, meal) =>
+        setState((st) => (st.mealPlan ? { mealPlan: mapPlanMeal(st.mealPlan, date, mealId, () => meal) } : {})),
+      logPlanMeal: (date, mealId) =>
+        setState((st) => {
+          const planMeal = st.mealPlan?.days.find((d) => d.date === date)?.meals.find((m) => m.id === mealId)
+          if (!st.mealPlan || !planMeal) return {}
+          const added: DiaryEntry[] = planMeal.items.map((item) => ({
+            id: uid(),
+            createdAt: Date.now(),
+            date,
+            meal: planMeal.meal,
+            name: item.name,
+            grams: item.grams,
+            amountLabel: item.portion ? `${item.portion} (${Math.round(item.grams)} g)` : `${Math.round(item.grams)} g`,
+            nutrients: { kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat },
+            food: aiItemToFood(item),
+          }))
+          return {
+            entries: [...st.entries, ...added],
+            mealPlan: mapPlanMeal(st.mealPlan, date, mealId, (m) => ({ ...m, logged: true })),
+          }
+        }),
+      toggleShoppingItem: (key) =>
+        setState((st) =>
+          st.mealPlan
+            ? {
+                mealPlan: {
+                  ...st.mealPlan,
+                  shoppingChecked: st.mealPlan.shoppingChecked.includes(key)
+                    ? st.mealPlan.shoppingChecked.filter((k) => k !== key)
+                    : [...st.mealPlan.shoppingChecked, key],
+                },
+              }
+            : {},
+        ),
       importData: (data) =>
         setState((st) => ({
           ...EMPTY,
@@ -118,6 +173,7 @@ export const useStore = create<AppData & Actions>()(
             geminiKey: data.settings?.geminiKey || st.settings.geminiKey,
             usdaKey: data.settings?.usdaKey || st.settings.usdaKey,
           },
+          planPrefs: { ...DEFAULT_PLAN_PREFS, ...data.planPrefs },
         })),
       resetAll: () => setState(EMPTY),
     }),
@@ -136,12 +192,19 @@ export const useStore = create<AppData & Actions>()(
           weights: st.weights,
           water: st.water,
           exercises: st.exercises,
+          planPrefs: st.planPrefs,
+          mealPlan: st.mealPlan,
         }
         return data
       },
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppData>
-        return { ...current, ...p, settings: { ...DEFAULT_SETTINGS, ...p.settings } }
+        return {
+          ...current,
+          ...p,
+          settings: { ...DEFAULT_SETTINGS, ...p.settings },
+          planPrefs: { ...DEFAULT_PLAN_PREFS, ...p.planPrefs },
+        }
       },
     },
   ),
@@ -220,6 +283,8 @@ export function exportData(): string {
     weights: st.weights,
     water: st.water,
     exercises: st.exercises,
+    planPrefs: st.planPrefs,
+    mealPlan: st.mealPlan,
   }
   return JSON.stringify(data)
 }
