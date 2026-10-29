@@ -5,7 +5,7 @@ import { dateKey } from '../lib/date'
 import { kcal, num } from '../lib/format'
 import { exportData, recipeToFood, useStore, useTargets, type AppData } from '../lib/store'
 import type { Food, MacroPreset, Recipe } from '../lib/types'
-import { Card, ErrorNote, Field, Icon, Segmented } from './ui'
+import { Card, ErrorNote, Field, Icon, Logo, Segmented } from './ui'
 import Onboarding, { LanguageSwitch } from './Onboarding'
 import AiKeySetup from './AiKeySetup'
 import FoodEditor from './FoodEditor'
@@ -259,6 +259,10 @@ export default function Me() {
         </button>
       </Card>
 
+      <div className="flex flex-col items-center gap-1 pt-4">
+        <Logo className="h-14 w-14 opacity-90" />
+        <span className="font-display text-lg font-bold">Plate</span>
+      </div>
       <p className="px-2 pb-4 text-center text-xs text-muted">
         {t('Plate · food data from standard nutrition tables, Open Food Facts and USDA. Calorie numbers are estimates, not medical advice.')}
       </p>

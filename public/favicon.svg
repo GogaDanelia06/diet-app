@@ -1,6 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#2E6B4E"/>
-  <circle cx="256" cy="256" r="150" fill="none" stroke="#EEF1EC" stroke-width="34"/>
-  <path d="M256 106 A150 150 0 0 1 393 317" fill="none" stroke="#E07A98" stroke-width="34" stroke-linecap="round"/>
-  <circle cx="256" cy="256" r="58" fill="#EEF1EC"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-30 -125 1060 1060">
+<defs>
+    <linearGradient id="heart" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="740"><stop offset="0" stop-color="#f4fff9"/><stop offset="1" stop-color="#bfeed6"/></linearGradient>
+    <linearGradient id="leaf" gradientUnits="userSpaceOnUse" x1="440" y1="180" x2="580" y2="-40"><stop offset="0" stop-color="#21c977"/><stop offset="1" stop-color="#7dffc0"/></linearGradient>
+    <radialGradient id="bg" cx="0.5" cy="0.42" r="0.75"><stop offset="0" stop-color="#123327"/><stop offset="0.6" stop-color="#08100d"/><stop offset="1" stop-color="#05080a"/></radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="14" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <mask id="cut"><rect x="-200" y="-200" width="1400" height="1400" fill="white"/><rect x="527" y="560" width="30" height="220" fill="black"/></mask>
+  </defs>
+<rect x="-30" y="-125" width="1060" height="1060" fill="url(#bg)"/>
+<g mask="url(#cut)" fill="none" stroke="url(#heart)" stroke-width="58" stroke-linejoin="miter" stroke-miterlimit="10">
+<path d="M 461.4 175.6 A 178 178 0 0 0 147.0 290.0 C 147 430 300 585 490 708"/>
+<path d="M 392 463 H 498 V 736"/>
+<path d="M 498 408 V 290 A 178 178 0 1 1 853.0 290.0 C 853 430 700 585 536 712"/>
+</g>
+<g filter="url(#glow)"><path d="M 447.4 189.6 C 546.0 179.0 587.6 46.1 577.2 -18.2 C 514.8 0.6 413.7 96.3 447.4 189.6 Z" fill="url(#leaf)"/><path d="M 447.4 189.6 Q 517.4 88.9 553.8 19.2" fill="none" stroke="#0b3d25" stroke-width="9" stroke-linecap="round"/></g>
 </svg>

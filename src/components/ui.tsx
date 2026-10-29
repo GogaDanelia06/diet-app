@@ -124,6 +124,11 @@ export function Segmented<T extends string>({
   )
 }
 
+/** The GD heart with a leaf, the app's logo. */
+export function Logo({ className = 'h-9 w-9' }: { className?: string }) {
+  return <img src={`${import.meta.env.BASE_URL}logo-mark.svg`} alt="" className={className} draggable={false} />
+}
+
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <label className="block">

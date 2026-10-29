@@ -43,3 +43,7 @@ npm run build    # production build in dist/
 ```
 
 Pushing to `main` on GitHub publishes the app to GitHub Pages through `.github/workflows/deploy.yml`.
+
+## Logo
+
+The logo is the GD heart with a leaf growing from the G. Files are in `brand/`: `gd-diet-logo-light.svg` for light backgrounds, `gd-diet-logo-dark.svg` for dark ones, and `gd-diet-app-icon.svg` (the app icon). `brand/build-logo.py` draws them from geometry; after changing `public/favicon.svg`, run `npm run icons` to regenerate the iPhone and web icons.

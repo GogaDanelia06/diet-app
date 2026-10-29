@@ -4,7 +4,7 @@ import { addDays, dateKey, parseKey } from '../lib/date'
 import { num } from '../lib/format'
 import { useStore } from '../lib/store'
 import type { Activity, Profile, Sex } from '../lib/types'
-import { Field, Segmented } from './ui'
+import { Field, Logo, Segmented } from './ui'
 import { PlateView } from './ThreeViews'
 import { locale, t } from '../lib/i18n'
 
@@ -154,7 +154,10 @@ function Welcome({ onNext }: { onNext: () => void }) {
   const updateSettings = useStore((s) => s.updateSettings)
   return (
     <div className="flex min-h-[88dvh] flex-col">
-      <div className="flex justify-end pt-1">
+      <div className="flex items-center justify-between pt-1">
+        <span className="flex items-center gap-2 font-display text-xl font-bold">
+          <Logo className="h-10 w-10" /> Plate
+        </span>
         <LanguageSwitch value={language} onChange={(language) => updateSettings({ language })} />
       </div>
       <div className="relative mx-auto mt-2 h-[300px] w-full max-w-[340px]">
