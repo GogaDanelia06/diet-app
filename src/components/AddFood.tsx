@@ -74,7 +74,7 @@ export default function AddFood({ date, meal: initialMeal, onClose }: { date: st
           <AiLog key={mode + seed} kind={mode} seed={seed} date={date} meal={meal} mealLabel={mealLabel} onAdded={added} />
         )}
         {mode === 'quick' && <QuickAdd date={date} meal={meal} mealLabel={mealLabel} onAdded={added} />}
-        {mode === 'mine' && <MyFoods onPick={setPicked} />}
+        {mode === 'mine' && <MyFoods onPick={setPicked} date={date} meal={meal} onAdded={added} />}
       </div>
 
       {picked && <FoodDetail food={picked} date={date} initialMeal={meal} onClose={() => setPicked(null)} onDone={() => added(picked.name)} />}
@@ -138,9 +138,11 @@ function QuickAdd({ date, meal, mealLabel, onAdded }: { date: string; meal: Meal
   )
 }
 
-function MyFoods({ onPick }: { onPick: (f: Food) => void }) {
+function MyFoods({ onPick, date, meal, onAdded }: { onPick: (f: Food) => void; date: string; meal: Meal; onAdded: (what: string) => void }) {
   const customFoods = useStore((s) => s.customFoods)
   const recipes = useStore((s) => s.recipes)
+  const savedMeals = useStore((s) => s.savedMeals)
+  const logSavedMeal = useStore((s) => s.logSavedMeal)
   const [editor, setEditor] = useState<'food' | 'recipe' | null>(null)
 
   return (
@@ -153,9 +155,36 @@ function MyFoods({ onPick }: { onPick: (f: Food) => void }) {
           <Icon name="plus" className="h-4 w-4" /> New recipe
         </button>
       </div>
+      {savedMeals.length > 0 && (
+        <div>
+          <h3 className="mb-1 text-sm font-medium text-muted">Saved meals</h3>
+          <ul className="divide-y divide-line rounded-[18px] bg-surface px-4">
+            {savedMeals.map((m) => (
+              <li key={m.id}>
+                <button
+                  className="flex w-full items-center gap-3 py-3 text-left"
+                  onClick={() => {
+                    logSavedMeal(m.id, date, meal)
+                    onAdded(m.name)
+                  }}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{m.name}</div>
+                    <div className="truncate text-sm text-muted">{m.items.map((i) => i.name).join(', ')}</div>
+                  </div>
+                  <span className="num shrink-0 text-sm">
+                    <span className="font-semibold">{kcal(m.items.reduce((n, i) => n + i.nutrients.kcal, 0))}</span> <span className="text-muted">kcal</span>
+                  </span>
+                  <Icon name="plus" className="h-5 w-5 shrink-0 text-accent" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {recipes.length > 0 && <FoodList title="Recipes" foods={recipes.map(recipeToFood)} onPick={onPick} />}
       {customFoods.length > 0 && <FoodList title="Foods" foods={customFoods} onPick={onPick} />}
-      {!recipes.length && !customFoods.length && (
+      {!recipes.length && !customFoods.length && !savedMeals.length && (
         <p className="text-muted">
           Save foods you eat often, or build a recipe from its ingredients (like your own lobio) and Plate works out the calories per portion.
         </p>

@@ -1,29 +1,39 @@
 import { useState } from 'react'
-import { addDays, dateKey, dayLabel } from '../lib/date'
+import { addDays, dateKey, dayLabel, shortDate } from '../lib/date'
 import { kcal } from '../lib/format'
 import { useDay, useStore, useTargets } from '../lib/store'
 import { mealTotals } from '../lib/plan'
+import { logStreak } from '../lib/insights'
 import { MEALS, type DiaryEntry, type Meal } from '../lib/types'
-import { Card, Icon, MacroBar } from './ui'
+import { Card, Field, Icon, MacroBar, Sheet } from './ui'
 import FoodDetail from './FoodDetail'
 import ExerciseSheet from './ExerciseSheet'
+import FastingCard from './Fasting'
 
 export default function Today({ date, setDate, onAdd }: { date: string; setDate: (d: string) => void; onAdd: (m: Meal) => void }) {
   const targets = useTargets()!
   const day = useDay(date)
   const settings = useStore((s) => s.settings)
+  const entries = useStore((s) => s.entries)
   const [editing, setEditing] = useState<DiaryEntry | null>(null)
   const [exerciseOpen, setExerciseOpen] = useState(false)
 
-  const exerciseBonus = settings.addExerciseCalories ? day.burned : 0
-  const budget = targets.kcal + exerciseBonus
+  const budget = targets.kcal + day.bonus
   const remaining = budget - day.totals.kcal
   const isToday = date === dateKey()
+  const streak = logStreak(entries, dateKey())
 
   return (
     <div className="space-y-3 pt-2">
       <header className="flex items-center justify-between py-2">
-        <h1 className="font-display text-3xl font-bold tracking-tight">{dayLabel(date)}</h1>
+        <div>
+          <h1 className="font-display text-3xl font-bold tracking-tight">{dayLabel(date)}</h1>
+          {isToday && streak >= 2 && (
+            <div className="flex items-center gap-1 text-sm font-medium text-carbs">
+              <Icon name="flame" className="h-4 w-4" /> {streak}-day logging streak
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           {!isToday && (
             <button onClick={() => setDate(dateKey())} className="mr-1 rounded-full px-3 py-1.5 text-sm font-medium text-accent">
@@ -45,7 +55,7 @@ export default function Today({ date, setDate, onAdd }: { date: string; setDate:
           <dl className="flex-1 space-y-2 text-sm">
             <Line label="Goal" value={targets.kcal} />
             <Line label="Food" value={day.totals.kcal} sign="−" />
-            {settings.addExerciseCalories && <Line label="Exercise" value={day.burned} sign="+" />}
+            {settings.exerciseEatBack > 0 && <Line label="Exercise" value={day.bonus} sign="+" />}
           </dl>
         </div>
         <div className="mt-5 flex gap-4">
@@ -54,6 +64,8 @@ export default function Today({ date, setDate, onAdd }: { date: string; setDate:
           <MacroBar label="Fat" value={day.totals.fat} target={targets.fat} color="var(--fat)" />
         </div>
       </Card>
+
+      {isToday && settings.showFasting && <FastingCard />}
 
       {MEALS.map((m) => (
         <MealCard
@@ -72,8 +84,9 @@ export default function Today({ date, setDate, onAdd }: { date: string; setDate:
       <Card>
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold">Exercise</h2>
-          <span className="num text-sm text-muted">{kcal(day.burned)} kcal</span>
+          <span className="num text-sm text-muted">{kcal(day.burned)} kcal burned</span>
         </div>
+        <StepsRow steps={day.steps} goal={settings.stepGoal} kcalFromSteps={day.fromSteps} onEdit={() => setExerciseOpen(true)} />
         <ExerciseList date={date} />
         <button onClick={() => setExerciseOpen(true)} className="mt-2 flex items-center gap-1.5 py-1 font-medium text-accent">
           <Icon name="plus" className="h-4 w-4" /> Add exercise
@@ -161,6 +174,7 @@ function MealCard({
   const mealPlan = useStore((s) => s.mealPlan)
   const logPlanMeal = useStore((s) => s.logPlanMeal)
   const planned = (mealPlan?.days.find((d) => d.date === date)?.meals ?? []).filter((m) => m.meal === meal && !m.logged)
+  const [saving, setSaving] = useState(false)
   const yesterday = addDays(date, -1)
   const yesterdayCount = entries.length === 0 ? allEntries.filter((e) => e.date === yesterday && e.meal === meal).length : 0
   const total = entries.reduce((n, e) => n + e.nutrients.kcal, 0)
@@ -214,8 +228,54 @@ function MealCard({
             <Icon name="copy" className="h-4 w-4" /> Same as yesterday
           </button>
         )}
+        {entries.length >= 2 && (
+          <button onClick={() => setSaving(true)} className="ml-auto flex items-center gap-1.5 py-1.5 text-sm text-muted">
+            <Icon name="bookmark" className="h-4 w-4" /> Save meal
+          </button>
+        )}
       </div>
+      {saving && <SaveMealSheet entries={entries} defaultName={`${label}, ${shortDate(date)}`} onClose={() => setSaving(false)} />}
     </Card>
+  )
+}
+
+function SaveMealSheet({ entries, defaultName, onClose }: { entries: DiaryEntry[]; defaultName: string; onClose: () => void }) {
+  const saveMeal = useStore((s) => s.saveMeal)
+  const [name, setName] = useState('')
+  const total = entries.reduce((n, e) => n + e.nutrients.kcal, 0)
+  return (
+    <Sheet
+      title="Save meal"
+      onClose={onClose}
+      footer={
+        <button
+          className="btn btn-primary w-full text-lg"
+          onClick={() => {
+            saveMeal(name.trim() || defaultName, entries)
+            onClose()
+          }}
+        >
+          Save meal
+        </button>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-muted">
+          Save these {entries.length} foods ({kcal(total)} kcal) together. Next time, add them all at once from Add food → My foods.
+        </p>
+        <Field label="Name">
+          <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder={defaultName} />
+        </Field>
+        <ul className="divide-y divide-line rounded-[18px] bg-surface px-4 text-sm">
+          {entries.map((e) => (
+            <li key={e.id} className="flex justify-between gap-3 py-2.5">
+              <span className="min-w-0 truncate">{e.name}</span>
+              <span className="num text-muted">{kcal(e.nutrients.kcal)}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Sheet>
   )
 }
 
@@ -252,6 +312,23 @@ function WaterCard({ date }: { date: string }) {
   )
 }
 
+function StepsRow({ steps, goal, kcalFromSteps, onEdit }: { steps: number; goal: number; kcalFromSteps: number; onEdit: () => void }) {
+  const pct = goal > 0 ? Math.min(100, (steps / goal) * 100) : 0
+  return (
+    <button onClick={onEdit} className="mt-3 block w-full text-left" aria-label={`Steps: ${steps} of ${goal}. Edit steps`}>
+      <div className="flex items-baseline justify-between text-sm">
+        <span>
+          <span className="num font-semibold">{steps.toLocaleString()}</span> <span className="text-muted">/ {goal.toLocaleString()} steps</span>
+        </span>
+        <span className="num text-muted">{kcalFromSteps > 0 ? `${kcal(kcalFromSteps)} kcal` : steps ? '' : 'Tap to add'}</span>
+      </div>
+      <div className="mt-1.5 h-2 rounded-full bg-surface-2">
+        <div className="h-2 rounded-full bg-accent" style={{ width: `${pct}%` }} />
+      </div>
+    </button>
+  )
+}
+
 function ExerciseList({ date }: { date: string }) {
   const exercises = useStore((s) => s.exercises).filter((e) => e.date === date)
   const remove = useStore((s) => s.removeExercise)
@@ -262,7 +339,9 @@ function ExerciseList({ date }: { date: string }) {
         <li key={e.id} className="flex items-center gap-3 py-2.5">
           <div className="min-w-0 flex-1">
             <div className="truncate font-medium">{e.name}</div>
-            <div className="text-sm text-muted">{e.minutes} min</div>
+            <div className="text-sm text-muted">
+              {e.minutes} min{e.distanceKm ? ` · ${e.distanceKm} km` : ''}
+            </div>
           </div>
           <span className="num font-semibold">{kcal(e.kcal)}</span>
           <button onClick={() => remove(e.id)} className="p-1 text-muted" aria-label={`Remove ${e.name}`}>

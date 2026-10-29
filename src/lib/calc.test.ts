@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { bmr, caloriePlan, exerciseKcal, macroTargets, scaleNutrients, sumNutrients, toPer100, weeksToGoal } from './calc'
+import { bmr, caloriePlan, macroTargets, scaleNutrients, sumNutrients, toPer100, weeksToGoal } from './calc'
+import { exerciseKcal, metForSpeed, stepsKcal } from './exercises'
 import { recipeToFood } from './store'
 import { BUILTIN_FOODS } from './foods'
 import { searchFoods } from './search'
@@ -51,8 +52,21 @@ describe('calorie math', () => {
     expect(weeksToGoal(80, 85, 0.5)).toBeNull()
   })
 
-  it('estimates exercise calories', () => {
-    expect(exerciseKcal(3.5, 80, 60)).toBe(280)
+  it('counts exercise calories above resting', () => {
+    expect(exerciseKcal(3.5, 80, 60)).toBe(200)
+    expect(exerciseKcal(0.9, 80, 60)).toBe(0)
+  })
+
+  it('works out effort from speed', () => {
+    expect(metForSpeed('run', 10)).toBeCloseTo(10.0, 0)
+    expect(metForSpeed('walk', 2)).toBe(2.8)
+    expect(metForSpeed('cycle', 40)).toBe(15.8)
+  })
+
+  it('only counts steps above a normal day for the activity level', () => {
+    expect(stepsKcal(3000, 80, 'sedentary')).toBe(0)
+    expect(stepsKcal(10000, 80, 'sedentary')).toBe(215)
+    expect(stepsKcal(10000, 80, 'active')).toBe(31)
   })
 })
 

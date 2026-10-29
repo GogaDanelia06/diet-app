@@ -174,4 +174,6 @@ const ICONS = {
   ),
   copy: <path d="M8 8h11v11H8zM5 16V5h11" />,
   check: <path d="M5 12l4 4 10-10" />,
+  flame: <path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5.5 1-8.5z" />,
+  bookmark: <path d="M7 4h10v16l-5-4-5 4z" />,
 } as const

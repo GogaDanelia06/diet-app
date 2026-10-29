@@ -35,7 +35,7 @@ export default function Coach({ date }: { date: string }) {
 Daily target: ${targets.kcal} kcal (protein ${targets.protein} g, carbs ${targets.carbs} g, fat ${targets.fat} g).
 Food logged for ${date}: ${day.entries.length ? day.entries.map((e) => `${e.name} (${e.amountLabel}, ${Math.round(e.nutrients.kcal)} kcal, ${e.meal})`).join('; ') : 'nothing yet'}.
 Eaten so far: ${Math.round(day.totals.kcal)} kcal, protein ${Math.round(day.totals.protein)} g. Exercise: ${day.burned} kcal.
-Remaining today: ${Math.round(targets.kcal + (settings.addExerciseCalories ? day.burned : 0) - day.totals.kcal)} kcal.
+Steps: ${day.steps}. Remaining today: ${Math.round(targets.kcal + day.bonus - day.totals.kcal)} kcal.
 Meal plan for ${date}: ${planned.length ? planned.map((m) => `${m.meal}: ${m.name}${m.logged ? ' (eaten)' : ''}`).join('; ') : 'none'}.`
 
   async function send(text: string) {
