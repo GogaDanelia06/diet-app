@@ -124,16 +124,17 @@ export function ForecastWidget() {
     {forecast.status !== 'reached' && <div className="what-if">
       <h4 className="widget-subhead">{t('What if…')}</h4>
       {maxLess > 0 && <label htmlFor={lessId}>
-        <span>{t('I eat less each day')}</span><output className="num">{less ? `−${less}` : 0} kcal</output>
+        <span className="what-if-row"><span>{t('I eat less each day')}</span><output className="num">{less ? `−${less}` : 0} kcal</output></span>
         <input id={lessId} type="range" min={0} max={maxLess} step={50} value={less} onChange={(e) => setLess(Number(e.target.value))} />
       </label>}
       <label htmlFor={walkId}>
-        <span>{t('I walk more each day')}</span><output className="num">{walk ? `+${walk.toLocaleString(locale())}` : 0} {t('steps')}</output>
+        <span className="what-if-row"><span>{t('I walk more each day')}</span><output className="num">{walk ? `+${walk.toLocaleString(locale())}` : 0} {t('steps')}</output></span>
         <input id={walkId} type="range" min={0} max={6000} step={500} value={walk} onChange={(e) => setWalk(Number(e.target.value))} />
       </label>
       {less + walk > 0 && <p className="what-if-result" role="status">
         {base.status !== 'onTrack' && forecast.status === 'onTrack' ? t('That would get the scale moving toward your goal.')
-          : sooner !== null && sooner > 0 ? t('{n} weeks sooner.', { n: sooner })
+          : sooner === 1 ? t('1 week sooner.')
+          : sooner !== null && sooner > 1 ? t('{n} weeks sooner.', { n: sooner })
           : sooner === 0 ? t('Less than a week sooner.') : ''}
       </p>}
       {maxLess === 0 && <p className="widget-note">{t('Your target is already at the safe minimum, so moving more is the way to speed up.')}</p>}

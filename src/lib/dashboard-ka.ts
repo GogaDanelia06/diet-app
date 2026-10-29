@@ -55,6 +55,7 @@ export const DASHBOARD_KA: Record<string, string> = {
   'I walk more each day': 'ყოველდღე მეტს ვივლი',
   'That would get the scale moving toward your goal.': 'ასე სასწორი მიზნისკენ დაიძვრება.',
   '{n} weeks sooner.': '{n} კვირით ადრე.',
+  '1 week sooner.': '1 კვირით ადრე.',
   'Less than a week sooner.': 'კვირაზე ნაკლებით ადრე.',
   'Your target is already at the safe minimum, so moving more is the way to speed up.': 'შენი ლიმიტი უკვე უსაფრთხო მინიმუმზეა, ამიტომ დასაჩქარებლად მეტი მოძრაობაა საჭირო.',
   'Based on your weigh-ins from the last 4 weeks.': 'ბოლო 4 კვირის აწონვების მიხედვით.',
