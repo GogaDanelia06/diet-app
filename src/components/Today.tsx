@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
-import { addDays, dateKey, dayLabel, shortDate } from '../lib/date'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { addDays, dateKey, dayLabel, parseKey, shortDate } from '../lib/date'
 import { kcal, num } from '../lib/format'
-import { t, tName } from '../lib/i18n'
+import { locale, t, tName } from '../lib/i18n'
 import { useDay, useStore, useTargets } from '../lib/store'
+import { toPer100 } from '../lib/calc'
 import { mealTotals } from '../lib/plan'
 import { logStreak } from '../lib/insights'
-import { MEALS, type DiaryEntry, type Meal } from '../lib/types'
-import { Card, Field, Icon, MacroBar, Sheet } from './ui'
+import { MEALS, type DiaryEntry, type Meal, type Nutrients } from '../lib/types'
+import { Card, Field, Icon, Sheet } from './ui'
+import type { AddFoodMode } from './AddFood'
 import FoodDetail from './FoodDetail'
 import ExerciseSheet from './ExerciseSheet'
 import WatchSheet from './Watch'
@@ -14,12 +16,17 @@ import FastingCard from './Fasting'
 import { OrbView } from './ThreeViews'
 import { CalendarMonth } from './Calendar'
 import { useReportDue } from './WeeklyReport'
+import { DashboardWidgets } from './DashboardWidgets'
 
-/** Animates a number toward its new value so changes are easy to notice. */
 function useCountUp(value: number, ms = 700) {
   const [shown, setShown] = useState(value)
   const from = useRef(value)
   useEffect(() => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setShown(value)
+      from.current = value
+      return
+    }
     const start = performance.now()
     const a = from.current
     let raf = 0
@@ -36,15 +43,10 @@ function useCountUp(value: number, ms = 700) {
   return shown
 }
 
-export default function Today({
-  date,
-  setDate,
-  onAdd,
-  onOpenCoach,
-}: {
+export default function Today({ date, setDate, onAdd, onOpenCoach }: {
   date: string
   setDate: (d: string) => void
-  onAdd: (m: Meal) => void
+  onAdd: (m: Meal, mode?: AddFoodMode) => void
   onOpenCoach: () => void
 }) {
   const targets = useTargets()!
@@ -56,174 +58,101 @@ export default function Today({
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [watchOpen, setWatchOpen] = useState(false)
   const reportDue = useReportDue()
-
   const budget = targets.kcal + day.bonus
   const remaining = budget - day.totals.kcal
   const over = remaining < 0
   const shownRemaining = useCountUp(Math.abs(remaining))
   const isToday = date === dateKey()
   const streak = logStreak(entries, dateKey())
+  const progress = budget > 0 ? day.totals.kcal / budget * 100 : 0
+  const hour = new Date().getHours()
+  const meal: Meal = hour < 11 ? 'breakfast' : hour < 16 ? 'lunch' : hour < 21 ? 'dinner' : 'snack'
+  const week = Array.from({ length: 7 }, (_, i) => addDays(date, i - 3))
 
   return (
-    <div className="space-y-3 pt-1">
-      <header className="flex items-center justify-between py-2">
-        <button onClick={() => setCalendarOpen(true)} className="text-left" aria-label={t('Open calendar')}>
-          <h1 className="flex items-center gap-2 font-display text-3xl font-bold tracking-tight">
-            {dayLabel(date)}
-            <Icon name="calendar" className="h-5 w-5 text-muted" />
-          </h1>
-          {isToday && streak >= 2 && (
-            <div className="flex items-center gap-1 text-sm font-semibold text-carbs">
-              <Icon name="flame" className="h-4 w-4 drop-shadow-[0_0_6px_rgb(255_197_71/0.8)]" /> {t('{n}-day logging streak', { n: streak })}
-            </div>
-          )}
-        </button>
-        <div className="flex items-center gap-1.5">
-          {!isToday && (
-            <button onClick={() => setDate(dateKey())} className="mr-1 rounded-full px-3 py-1.5 text-sm font-semibold text-accent">
-              {t('Today')}
-            </button>
-          )}
-          <button onClick={() => setDate(addDays(date, -1))} className="glass rounded-full p-2" aria-label={t('Previous day')}>
-            <Icon name="left" />
-          </button>
-          <button onClick={() => setDate(addDays(date, 1))} className="glass rounded-full p-2" aria-label={t('Next day')}>
-            <Icon name="right" />
-          </button>
-        </div>
+    <div className="today-dashboard">
+      <header className="dashboard-heading">
+        <div><p className="eyebrow">{t('MAKE ROOM FOR YOU')}</p><h1>{t('Your day, in balance.')}<span className="heading-dot"> </span></h1><p className="heading-subtitle">{t('Small steps. A healthier everyday.')}</p></div>
+        <button className="date-picker" onClick={() => setCalendarOpen(true)} aria-label={t('Open calendar')}><Icon name="calendar" /><span>{parseKey(date).toLocaleDateString(locale(), { month: 'short', day: 'numeric', year: 'numeric' })}</span><Icon name="down" className="h-3 w-3" /></button>
       </header>
 
-      <section aria-label={t('Calories today')}>
-        <div className="relative mx-auto -mt-2 h-[250px] w-[250px]">
-          <div
-            className="pointer-events-none absolute inset-6 rounded-full blur-2xl"
-            style={{ background: over ? 'rgb(255 90 74 / 0.28)' : 'rgb(69 240 160 / 0.22)' }}
-          />
-          <OrbView fill={budget > 0 ? day.totals.kcal / budget : 0} over={over} />
-        </div>
-        <div className="-mt-1 text-center">
-          <div className={`num text-[56px] font-bold leading-none tracking-tight ${over ? 'text-over' : 'glow-text'}`}>{kcal(shownRemaining)}</div>
-          <div className="mt-1 text-sm font-medium text-muted">{over ? t('kcal over budget') : t('kcal left today')}</div>
-        </div>
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <Stat label={t('Eaten')} value={day.totals.kcal} />
-          <Stat label={t('Budget')} value={budget} hint={day.bonus > 0 ? t('+{n} exercise', { n: kcal(day.bonus) }) : undefined} />
-          <Stat label={t('Burned')} value={day.burned} />
-        </div>
-        <Card className="mt-3">
-          <div className="flex gap-4">
-            <MacroBar label={t('Protein')} value={day.totals.protein} target={targets.protein} color="var(--protein)" />
-            <MacroBar label={t('Carbs')} value={day.totals.carbs} target={targets.carbs} color="var(--carbs)" />
-            <MacroBar label={t('Fat')} value={day.totals.fat} target={targets.fat} color="var(--fat)" />
+      <div className="day-toolbar">
+        <div className="day-navigation"><button className="icon-button" onClick={() => setDate(addDays(date, -1))} aria-label={t('Previous day')}><Icon name="left" className="h-4 w-4" /></button><button className="day-label" onClick={() => setDate(dateKey())}>{dayLabel(date)}</button><button className="icon-button" onClick={() => setDate(addDays(date, 1))} aria-label={t('Next day')}><Icon name="right" className="h-4 w-4" /></button></div>
+        <div className="week-strip" aria-label={t('Pick a day')}>{week.map((d) => <button key={d} onClick={() => setDate(d)} aria-current={d === date ? 'date' : undefined} aria-label={shortDate(d)}><span>{parseKey(d).toLocaleDateString(locale(), { weekday: 'short' })}</span><b>{parseKey(d).getDate()}</b><i className={entries.some((e) => e.date === d) ? 'has-log' : ''} /></button>)}</div>
+        <span className="streak-chip"><Icon name="flame" className="h-4 w-4" />{streak > 0 ? t('{n}-day streak', { n: streak }) : t('A fresh start')}</span>
+      </div>
+
+      <div className="overview-grid">
+        <section className={`energy-card ${over ? 'energy-over' : ''}`} aria-label={t('Calories today')}>
+          <div className="energy-topline"><span><Icon name="bolt" className="h-4 w-4" />{t('Daily energy')}</span><span className="live-label">{t('YOUR DAILY TARGET')}</span></div>
+          <div className="energy-content">
+            <div className="energy-numbers"><div className="energy-value num">{kcal(shownRemaining)}<span>kcal</span></div><div className="energy-caption">{over ? t('kcal over budget') : t('kcal left today')}</div><div className="energy-meter"><span style={{ width: `${Math.min(100, progress)}%` }} /></div><p className="energy-target">{t('{n}% of your daily budget', { n: Math.round(progress) })}</p></div>
+            <div className="energy-orb"><div className="orb-halo" /><OrbView fill={budget > 0 ? day.totals.kcal / budget : 0} over={over} /><span className="orb-caption">{t('A little perspective.')}</span></div>
           </div>
-        </Card>
-      </section>
+          <div className="energy-stats"><div><span><i className="stat-dot eaten-dot" />{t('Eaten')}</span><strong className="num">{kcal(day.totals.kcal)}<small>kcal</small></strong></div><div><span><i className="stat-dot budget-dot" />{t('Budget')}</span><strong className="num">{kcal(budget)}<small>kcal</small></strong></div><div><span><i className="stat-dot burned-dot" />{t('Burned')}</span><strong className="num">{kcal(day.burned)}<small>kcal</small></strong></div></div>
+          {day.bonus > 0 && <p className="energy-bonus">{t('+{n} exercise', { n: kcal(day.bonus) })}</p>}
+        </section>
+        <MacroSummary totals={day.totals} targets={targets} />
+      </div>
 
-      {isToday && reportDue && (
-        <button onClick={onOpenCoach} className="glass flex w-full items-center gap-3 rounded-[24px] p-4 text-left">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-violet/25 text-violet">
-            <Icon name="report" />
-          </span>
-          <span className="flex-1">
-            <span className="block font-semibold">{t('Your weekly report is ready')}</span>
-            <span className="block text-sm text-muted">{t('See how this week went and what to change')}</span>
-          </span>
-          <Icon name="right" className="h-5 w-5 text-muted" />
-        </button>
-      )}
+      <div className="quick-tools" aria-label={t('Quick tools')}>
+        <button onClick={() => onAdd(meal)}><span className="quick-tool-icon"><Icon name="search" /></span><span>{t('Log food')}<small>{t('Find your favorites')}</small></span><Icon name="right" className="tool-arrow h-4 w-4" /></button>
+        <button onClick={() => onAdd(meal, 'barcode')}><span className="quick-tool-icon"><Icon name="barcode" /></span><span>{t('Scan barcode')}<small>{t('Scan. Log. Done.')}</small></span><Icon name="right" className="tool-arrow h-4 w-4" /></button>
+        <button onClick={() => onAdd(meal, 'quick')}><span className="quick-tool-icon"><Icon name="bolt" /></span><span>{t('Quick add')}<small>{t('Calories in a tap')}</small></span><Icon name="right" className="tool-arrow h-4 w-4" /></button>
+        <button onClick={() => onAdd(meal, 'mine')}><span className="quick-tool-icon"><Icon name="book" /></span><span>{t('My foods')}<small>{t('Recipes & saved meals')}</small></span><Icon name="right" className="tool-arrow h-4 w-4" /></button>
+      </div>
 
-      {isToday && settings.showFasting && <FastingCard />}
-
-      {MEALS.map((m) => (
-        <MealCard
-          key={m.id}
-          date={date}
-          meal={m.id}
-          label={t(m.label)}
-          entries={day.entries.filter((e) => e.meal === m.id)}
-          onAdd={() => onAdd(m.id)}
-          onOpen={setEditing}
-        />
-      ))}
-
-      <WaterCard key={date} date={date} />
-
-      <Card>
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold">{t('Exercise')}</h2>
-          <span className="num text-sm text-muted">{t('{n} kcal burned', { n: kcal(day.burned) })}</span>
+      <div className="dashboard-columns">
+        <div className="diary-column">
+          <div className="section-heading"><div><span className="eyebrow">{t('ONE MEAL AT A TIME')}</span><h2>{t('Food diary')}</h2></div><button onClick={() => onAdd(meal)} className="text-action"><Icon name="plus" className="h-4 w-4" />{t('Add food')}</button></div>
+          <div className="diary-meals">{MEALS.map((m) => <MealCard key={m.id} date={date} meal={m.id} label={t(m.label)} entries={day.entries.filter((e) => e.meal === m.id)} onAdd={() => onAdd(m.id)} onOpen={setEditing} />)}</div>
+          <div className="section-heading habit-heading"><div><span className="eyebrow">{t('BEYOND THE PLATE')}</span><h2>{t('Your daily rhythm')}</h2></div><span className="subtle-label">{t('A little care goes a long way')}</span></div>
+          <WaterCard key={date} date={date} />
+          <Card className="activity-card">
+            <div className="flex items-center justify-between"><h2 className="flex items-center gap-2 font-display text-lg font-semibold"><Icon name="run" className="text-accent" />{t('Exercise')}</h2><span className="num text-sm text-muted">{t('{n} kcal burned', { n: kcal(day.burned) })}</span></div>
+            {day.device && <button onClick={() => setWatchOpen(true)} className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-accent/[0.07] px-3 py-2.5 text-left"><Icon name="watch" className="h-6 w-6 shrink-0 text-accent" /><span className="min-w-0 flex-1"><span className="block font-semibold">{t('Watch: {n} active kcal', { n: kcal(day.device.activeKcal) })}</span><span className="block text-xs text-muted">{t('{n} kcal above a normal day count toward your budget', { n: kcal(day.burned) })}</span></span><Icon name="right" className="h-5 w-5 text-muted" /></button>}
+            <StepsRow steps={day.steps} goal={settings.stepGoal} kcalFromSteps={day.fromSteps} onEdit={() => day.device ? setWatchOpen(true) : setExerciseOpen(true)} />
+            {day.device && day.exercises.length > 0 && <p className="mt-3 text-xs text-muted">{t('Workouts below are already part of your watch’s calories, so they aren’t counted twice.')}</p>}
+            <ExerciseList date={date} covered={!!day.device} />
+            <div className="mt-3 flex items-center gap-5"><button onClick={() => setExerciseOpen(true)} className="text-action"><Icon name="plus" className="h-4 w-4" />{t('Add exercise')}</button>{!day.device && <button onClick={() => setWatchOpen(true)} className="text-action"><Icon name="watch" className="h-4 w-4" />{t('Watch')}</button>}</div>
+          </Card>
+          {isToday && settings.showFasting && <FastingCard />}
         </div>
-        {day.device && (
-          <button onClick={() => setWatchOpen(true)} className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-accent/[0.07] px-3 py-2.5 text-left">
-            <Icon name="watch" className="h-6 w-6 shrink-0 text-accent drop-shadow-[0_0_6px_rgb(69_240_160/0.6)]" />
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold">{t('Watch: {n} active kcal', { n: kcal(day.device.activeKcal) })}</span>
-              <span className="block text-xs text-muted">{t('{n} kcal above a normal day count toward your budget', { n: kcal(day.burned) })}</span>
-            </span>
-            <Icon name="right" className="h-5 w-5 shrink-0 text-muted" />
-          </button>
-        )}
-        <StepsRow
-          steps={day.steps}
-          goal={settings.stepGoal}
-          kcalFromSteps={day.fromSteps}
-          onEdit={() => (day.device ? setWatchOpen(true) : setExerciseOpen(true))}
-        />
-        {day.device && day.exercises.length > 0 && (
-          <p className="mt-3 text-xs text-muted">{t('Workouts below are already part of your watch’s calories, so they aren’t counted twice.')}</p>
-        )}
-        <ExerciseList date={date} covered={!!day.device} />
-        <div className="mt-2 flex items-center gap-5">
-          <button onClick={() => setExerciseOpen(true)} className="flex items-center gap-1.5 py-1 font-semibold text-accent">
-            <Icon name="plus" className="h-4 w-4" /> {t('Add exercise')}
-          </button>
-          {!day.device && (
-            <button onClick={() => setWatchOpen(true)} className="flex items-center gap-1.5 py-1 font-semibold text-accent">
-              <Icon name="watch" className="h-4 w-4" /> {t('Watch')}
-            </button>
-          )}
-        </div>
-      </Card>
-
-      {editing && (
-        <FoodDetail
-          food={editing.food ?? { id: editing.id, name: editing.name, per100: perHundred(editing), servings: [], source: 'quick' }}
-          initialGrams={editing.grams}
-          initialMeal={editing.meal}
-          entry={editing}
-          onClose={() => setEditing(null)}
-        />
-      )}
+        <aside className="widgets-column" aria-label={t('Your widgets')}>
+          <DashboardWidgets date={date} />
+          {isToday && reportDue && <button onClick={onOpenCoach} className="report-link glass"><Icon name="report" className="text-violet" /><span><strong>{t('Your weekly report is ready')}</strong><small>{t('See how this week went and what to change')}</small></span><Icon name="right" /></button>}
+          <div className="dashboard-footnote"><LogoMark /><p>{t('Built around you.')}<span>{t('No ads. No premium tier. Just progress.')}</span></p></div>
+        </aside>
+      </div>
+      {editing && <FoodDetail food={editing.food ?? { id: editing.id, name: editing.name, per100: perHundred(editing), servings: [], source: 'quick' }} initialGrams={editing.grams} initialMeal={editing.meal} entry={editing} onClose={() => setEditing(null)} />}
       {exerciseOpen && <ExerciseSheet date={date} onClose={() => setExerciseOpen(false)} />}
       {watchOpen && <WatchSheet date={date} onClose={() => setWatchOpen(false)} />}
-      {calendarOpen && (
-        <Sheet title={t('Pick a day')} onClose={() => setCalendarOpen(false)}>
-          <CalendarMonth
-            selected={date}
-            onPick={(d) => {
-              setDate(d)
-              setCalendarOpen(false)
-            }}
-          />
-        </Sheet>
-      )}
+      {calendarOpen && <Sheet title={t('Pick a day')} onClose={() => setCalendarOpen(false)}><CalendarMonth selected={date} onPick={(d) => { setDate(d); setCalendarOpen(false) }} /></Sheet>}
     </div>
   )
 }
 
-function Stat({ label, value, hint }: { label: string; value: number; hint?: string }) {
-  return (
-    <div className="glass rounded-2xl px-2 py-2.5 text-center">
-      <div className="num text-xl font-semibold">{kcal(value)}</div>
-      <div className="text-[11px] font-medium text-muted">{label}</div>
-      {hint && <div className="text-[10px] font-semibold text-accent">{hint}</div>}
-    </div>
-  )
+function LogoMark() { return <Icon name="sparkle" className="h-7 w-7 text-accent" /> }
+
+function MacroSummary({ totals, targets }: { totals: Nutrients; targets: { protein: number; carbs: number; fat: number } }) {
+  const [mode, setMode] = useState<'eaten' | 'left' | 'energy'>('eaten')
+  const macros = [{ id: 'protein' as const, label: 'Protein', color: 'var(--protein)', energy: 4 }, { id: 'carbs' as const, label: 'Carbs', color: 'var(--carbs)', energy: 4 }, { id: 'fat' as const, label: 'Fat', color: 'var(--fat)', energy: 9 }]
+  const totalEnergy = totals.protein * 4 + totals.carbs * 4 + totals.fat * 9
+  return <section className="macro-card glass" aria-label={t('Macronutrients')}>
+    <div className="macro-heading"><h2>{t('Macronutrients')}</h2><span className="tiny-pill">{t('Daily')}</span></div>
+    <div className="macro-tabs" role="group" aria-label={t('Macro display')}>{([{ value: 'eaten', label: 'Eaten' }, { value: 'left', label: 'Remaining' }, { value: 'energy', label: 'Energy %' }] as const).map((m) => <button key={m.value} aria-pressed={mode === m.value} onClick={() => setMode(m.value)}>{t(m.label)}</button>)}</div>
+    <div className="macro-columns">{macros.map((m) => {
+      const pct = targets[m.id] > 0 ? Math.min(100, totals[m.id] / targets[m.id] * 100) : 0
+      const energyPct = totalEnergy > 0 ? Math.round(totals[m.id] * m.energy / totalEnergy * 100) : 0
+      const value = mode === 'left' ? Math.max(0, targets[m.id] - totals[m.id]) : mode === 'energy' ? energyPct : totals[m.id]
+      return <div className="macro-column" key={m.id}><div className="macro-track" aria-hidden="true" style={{ '--macro-fill': `${pct}%` } as CSSProperties}><div style={{ height: `${pct}%`, background: m.color }} /><span style={{ background: m.color }} /></div><span className="macro-label"><i style={{ background: m.color }} />{t(m.label)}</span><strong className="num">{Math.round(value)}<small>{mode === 'energy' ? '%' : t('g')}</small></strong><span className="macro-target">{mode === 'energy' ? t('of macro energy') : t('Goal {n} g', { n: targets[m.id] })}</span></div>
+    })}</div>
+    <p className="macro-note"><Icon name="chart" className="h-4 w-4" />{t('A balanced view of what fuels you.')}</p>
+  </section>
 }
 
 function perHundred(e: DiaryEntry) {
-  const f = e.grams > 0 ? 100 / e.grams : 1
-  return { kcal: e.nutrients.kcal * f, protein: e.nutrients.protein * f, carbs: e.nutrients.carbs * f, fat: e.nutrients.fat * f }
+  return toPer100(e.nutrients, e.grams > 0 ? e.grams : 100)
 }
 
 const MEAL_ICON: Record<Meal, string> = { breakfast: '🍳', lunch: '🥗', dinner: '🍲', snack: '🍎' }
@@ -256,7 +185,7 @@ function MealCard({
   return (
     <Card>
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.06] text-xl" aria-hidden="true">
+        <span className={`meal-symbol meal-symbol-${meal}`} aria-hidden="true">
           {MEAL_ICON[meal]}
         </span>
         <h2 className="flex-1 font-display text-lg font-semibold">{label}</h2>
@@ -267,6 +196,7 @@ function MealCard({
           <Icon name="plus" className="h-5 w-5" />
         </button>
       </div>
+      {entries.length === 0 && planned.length === 0 && <p className="meal-empty">{t('No foods logged yet')}</p>}
       {entries.length > 0 && (
         <ul className="mt-2 divide-y divide-line">
           {entries.map((e) => (
@@ -289,6 +219,7 @@ function MealCard({
           ))}
         </ul>
       )}
+      {entries.length > 0 && <div className="meal-macros">{(['protein', 'carbs', 'fat'] as const).map((key) => <span key={key}><i style={{ background: `var(--${key})` }} />{t(key === 'protein' ? 'Protein' : key === 'carbs' ? 'Carbs' : 'Fat')} {Math.round(entries.reduce((n, e) => n + e.nutrients[key], 0))} {t('g')}</span>)}</div>}
       {planned.map((p) => (
         <div key={p.id} className="mt-2 flex items-center gap-3 rounded-2xl border border-dashed border-accent/30 bg-accent/[0.04] px-3 py-2.5">
           <div className="min-w-0 flex-1">
@@ -414,7 +345,7 @@ function WaterCard({ date }: { date: string }) {
   }
 
   return (
-    <Card>
+    <Card className="water-card">
       <div className="flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold">{t('Water')}</h2>
         <span className="num text-sm">

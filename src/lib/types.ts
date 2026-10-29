@@ -96,6 +96,14 @@ export interface WeightLog {
   kg: number
 }
 
+export type DashboardWidget = 'week' | 'nutrients' | 'weight' | 'habits'
+export type DashboardHabit = 'color' | 'movement' | 'unwind'
+
+export interface DashboardState {
+  visible: Record<DashboardWidget, boolean>
+  habits: Record<string, DashboardHabit[]>
+}
+
 /** One food in an AI estimate or meal plan, with totals for its weight. */
 export interface PlanItem {
   name: string

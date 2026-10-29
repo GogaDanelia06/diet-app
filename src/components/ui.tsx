@@ -1,5 +1,9 @@
-import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type PointerEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { t } from '../lib/i18n'
+
+let openSheets = 0
+let bodyOverflow = ''
 
 export function Sheet({
   title,
@@ -16,26 +20,49 @@ export function Sheet({
   footer?: ReactNode
   action?: ReactNode
 }) {
+  const titleId = useId()
+  const panel = useRef<HTMLDivElement>(null)
+  const close = useRef(onClose)
+  close.current = onClose
   useEffect(() => {
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    if (openSheets++ === 0) {
+      bodyOverflow = document.body.style.overflow
+      document.body.style.overflow = 'hidden'
+    }
+    const isTop = () => Array.from(document.querySelectorAll('[data-sheet-panel]')).at(-1) === panel.current
+    const focusable = () => Array.from(panel.current?.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex="0"]') ?? []).filter((el) => el.getClientRects().length > 0)
+    const frame = requestAnimationFrame(() => { if (isTop()) (focusable()[0] ?? panel.current)?.focus({ preventScroll: true }) })
+    const onKey = (e: KeyboardEvent) => {
+      if (!isTop()) return
+      if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close.current(); return }
+      if (e.key !== 'Tab') return
+      const nodes = focusable()
+      const first = nodes[0]
+      const last = nodes.at(-1)
+      if (!first) { e.preventDefault(); panel.current?.focus(); return }
+      if (e.shiftKey && (document.activeElement === first || !panel.current?.contains(document.activeElement))) { e.preventDefault(); last?.focus() }
+      else if (!e.shiftKey && (document.activeElement === last || !panel.current?.contains(document.activeElement))) { e.preventDefault(); first.focus() }
+    }
     window.addEventListener('keydown', onKey)
     return () => {
-      document.body.style.overflow = prev
+      cancelAnimationFrame(frame)
       window.removeEventListener('keydown', onKey)
+      if (--openSheets === 0) document.body.style.overflow = bodyOverflow
+      if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true })
     }
-  }, [onClose])
+  }, [])
 
-  return (
-    <div className="fixed inset-0 z-40 flex flex-col bg-bg sheet-in" role="dialog" aria-modal="true" aria-label={title}>
+  return createPortal(
+    <div className="sheet-overlay fixed inset-0 z-40 flex">
+    <div ref={panel} data-sheet-panel className="sheet-panel sheet-in" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(60%_100%_at_50%_0%,rgb(69_240_160/0.12),transparent)]" />
       <div className="safe-top relative border-b border-line bg-bg/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center gap-2 px-4 pb-3">
           <button onClick={onClose} className="-ml-2 rounded-full px-2 py-1 font-semibold text-accent">
             {closeLabel ?? t('Close')}
           </button>
-          <h2 className="flex-1 truncate text-center font-display text-lg font-semibold">{title}</h2>
+          <h2 id={titleId} className="flex-1 truncate text-center font-display text-lg font-semibold">{title}</h2>
           <div className="min-w-[52px] text-right">{action}</div>
         </div>
       </div>
@@ -48,6 +75,8 @@ export function Sheet({
         </div>
       )}
     </div>
+    </div>,
+    document.body,
   )
 }
 

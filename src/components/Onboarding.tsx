@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ACTIVITY, bmi, caloriePlan, macroTargets, weeksToGoal } from '../lib/calc'
 import { addDays, dateKey, parseKey } from '../lib/date'
 import { num } from '../lib/format'
 import { useStore } from '../lib/store'
 import type { Activity, Profile, Sex } from '../lib/types'
-import { Field, Logo, Segmented } from './ui'
+import { Field, Icon, Logo, Segmented } from './ui'
 import { PlateView } from './ThreeViews'
 import { locale, t } from '../lib/i18n'
+import './onboarding.css'
 
 const PACES = [
   { value: 0.25, label: '0.25 kg', detail: 'Gentle' },
@@ -24,6 +25,10 @@ export default function Onboarding({ onDone, editing = false }: { onDone: () => 
   const latest = weights.at(-1)?.kg ?? existing?.startWeightKg
 
   const [step, setStep] = useState(editing ? 1 : 0)
+  const panel = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (step > 0) panel.current?.querySelector('h1')?.focus({ preventScroll: true })
+  }, [step])
   const [sex, setSex] = useState<Sex>(existing?.sex ?? 'female')
   const [age, setAge] = useState(String(existing?.age ?? ''))
   const [height, setHeight] = useState(String(existing?.heightCm ?? ''))
@@ -130,51 +135,70 @@ export default function Onboarding({ onDone, editing = false }: { onDone: () => 
     <Result key="4" profile={profile} weight={weightN} macroPreset={macroPreset} onFinish={finish} editing={editing} />,
   ]
 
+  if (step === 0) return steps[0]
+
   return (
-    <div className="safe-top safe-bottom mx-auto min-h-dvh max-w-lg px-5">
-      {step > (editing ? 1 : 0) && (
-        <button onClick={() => setStep(step - 1)} className="mb-2 mt-1 text-accent font-medium">
-          {t('Back')}
-        </button>
-      )}
-      {step > 0 && (
-        <div className="mb-6 mt-2 flex gap-1.5" aria-hidden="true">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className={`h-1 flex-1 rounded-full ${i <= step ? 'bg-accent' : 'bg-line'}`} />
-          ))}
+    <div className={`onboarding-flow safe-top safe-bottom ${editing ? 'onboarding-editing' : ''}`}>
+      <aside className="onboarding-aside">
+        <Brand />
+        <div>
+          <span className="onboarding-eyebrow">{t('Made for your everyday')}</span>
+          <h2>{t('Small steps.')}<br /><span>{t('A healthier you.')}</span></h2>
+          <p>{t('A plan that starts with you. Adjust it any time as your life changes.')}</p>
         </div>
-      )}
-      {steps[step]}
+        <div className="onboarding-private"><Icon name="check" /> {t('Free. Private. Yours.')}</div>
+      </aside>
+      <div className="onboarding-panel" ref={panel}>
+        <div className="onboarding-mobile-brand"><Brand /></div>
+        <div className="onboarding-step-header">
+          {step > (editing ? 1 : 0) ? (
+            <button onClick={() => setStep(step - 1)} className="onboarding-back"><Icon name="left" className="h-4 w-4" /> {t('Back')}</button>
+          ) : <span />}
+          <span>{t('Step {current} of {total}', { current: step, total: 4 })}</span>
+        </div>
+        <div className="onboarding-progress" aria-hidden="true">
+          {[1, 2, 3, 4].map((i) => <div key={i} className={i <= step ? 'is-complete' : ''} />)}
+        </div>
+        <div className="onboarding-step-content" key={step}>{steps[step]}</div>
+      </div>
     </div>
   )
+}
+
+function Brand() {
+  return <span className="onboarding-brand"><Logo className="h-10 w-10" /> Plate<span className="onboarding-brand-dot">.</span></span>
 }
 
 function Welcome({ onNext }: { onNext: () => void }) {
   const language = useStore((s) => s.settings.language)
   const updateSettings = useStore((s) => s.updateSettings)
   return (
-    <div className="flex min-h-[88dvh] flex-col">
-      <div className="flex items-center justify-between pt-1">
-        <span className="flex items-center gap-2 font-display text-xl font-bold">
-          <Logo className="h-10 w-10" /> Plate
-        </span>
+    <div className="onboarding-welcome safe-top safe-bottom">
+      <header className="onboarding-welcome-header">
+        <Brand />
         <LanguageSwitch value={language} onChange={(language) => updateSettings({ language })} />
+      </header>
+      <div className="onboarding-hero">
+        <div className="onboarding-hero-copy">
+          <div className="onboarding-eyebrow"><span /> {t('Made for your everyday')}</div>
+          <h1>{t('Eat well,')}<br /><span>{t('feel good.')}</span></h1>
+          <p>{t('Your food, your progress, your pace. A little clarity for a healthier everyday.')}</p>
+          <button className="btn btn-primary onboarding-start" onClick={onNext}>{t('Set up my plan')}<Icon name="right" /></button>
+          <div className="onboarding-reassurance"><Icon name="check" className="h-4 w-4" /> {t('Free. Private. Yours.')}</div>
+        </div>
+        <div className="onboarding-visual" aria-hidden="true">
+          <div className="onboarding-orbit onboarding-orbit-one" />
+          <div className="onboarding-orbit onboarding-orbit-two" />
+          <div className="onboarding-plate"><PlateView /></div>
+          <div className="onboarding-float onboarding-float-top"><span className="onboarding-float-icon"><Icon name="book" /></span><div><strong>{t('Food you love')}</strong><span>{t('A little more balance')}</span></div><span className="onboarding-check"><Icon name="check" className="h-3 w-3" /></span></div>
+          <div className="onboarding-float onboarding-float-bottom"><span className="onboarding-float-icon water"><Icon name="drop" /></span><div><strong>{t('Small steps.')}</strong><span>{t('A healthier you.')}</span></div><div className="onboarding-mini-bars"><i /><i /><i /><i /><i /></div></div>
+          <span className="onboarding-visual-caption">{t('Good food. More possibilities.')}</span>
+        </div>
       </div>
-      <div className="relative mx-auto mt-2 h-[300px] w-full max-w-[340px]">
-        <div className="pointer-events-none absolute inset-x-8 bottom-8 top-16 rounded-full bg-[radial-gradient(circle,rgb(69_240_160/0.28),transparent_70%)] blur-2xl" />
-        <PlateView />
-      </div>
-      <div className="mt-auto pb-6">
-        <h1 className="font-display text-5xl font-bold leading-[1.02] tracking-tight">
-          {t('Eat well,')}
-          <br />
-          <span className="glow-text text-accent">{t('weigh less.')}</span>
-        </h1>
-        <p className="mt-4 max-w-sm text-lg text-muted">{t('Log meals by search, barcode or photo. Plate counts the calories and keeps you on pace for your goal.')}</p>
-        <button className="btn btn-primary mt-10 w-full text-lg" onClick={onNext}>
-          {t('Set up my plan')}
-        </button>
-        <p className="mt-3 text-center text-xs text-muted">{t('Free. Your data stays on this phone.')}</p>
+      <div className="onboarding-features">
+        <div><Icon name="barcode" /><span>{t('Simple food logging')}</span></div>
+        <div><Icon name="chart" /><span>{t('Progress you can see')}</span></div>
+        <div><Icon name="globe" /><span>{t('Works offline')}</span></div>
       </div>
     </div>
   )
@@ -280,7 +304,7 @@ function Stat({ label, value }: { label: string; value: number }) {
 function Title({ text, sub }: { text: string; sub?: string }) {
   return (
     <div>
-      <h1 className="font-display text-3xl font-bold tracking-tight">{t(text)}</h1>
+      <h1 tabIndex={-1} className="font-display text-3xl font-bold tracking-tight outline-none">{t(text)}</h1>
       {sub && <p className="mt-1 text-muted">{t(sub)}</p>}
     </div>
   )

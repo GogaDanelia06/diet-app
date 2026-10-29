@@ -7,8 +7,12 @@ import { aiItemToFood } from './ai'
 import { DEFAULT_PLAN_PREFS } from './plan'
 import { stepsKcal } from './exercises'
 import { baselineActiveKcal } from './health'
+import { defaultDashboard, discardLegacyDashboardStorage, normalizeDashboard } from './dashboard'
 import type {
   BodyLog,
+  DashboardHabit,
+  DashboardState,
+  DashboardWidget,
   DeviceDay,
   DiaryEntry,
   ExerciseLog,
@@ -70,11 +74,13 @@ export interface AppData {
   reports: WeeklyReport[]
   /** Watch data per date (Apple Watch / WHOOP through Apple Health). */
   deviceActivity: Record<string, DeviceDay>
+  /** Dashboard layout and optional daily check-ins, included in backups and reset. */
+  dashboard: DashboardState
 }
 
 const DATA_KEYS = [
   'profile', 'settings', 'entries', 'customFoods', 'recipes', 'favorites', 'weights', 'water', 'exercises',
-  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports', 'deviceActivity',
+  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports', 'deviceActivity', 'dashboard',
 ] as const satisfies readonly (keyof AppData)[]
 
 function pickData(st: AppData): AppData {
@@ -118,6 +124,8 @@ interface Actions {
   unlockAchievements: (ids: string[]) => void
   addReport: (r: WeeklyReport) => void
   setDeviceDay: (date: string, day: DeviceDay | null) => void
+  toggleDashboardWidget: (widget: DashboardWidget) => void
+  toggleDashboardHabit: (date: string, habit: DashboardHabit) => void
   importData: (data: Partial<AppData>) => void
   resetAll: () => void
 }
@@ -142,7 +150,10 @@ const EMPTY: AppData = {
   achievements: {},
   reports: [],
   deviceActivity: {},
+  dashboard: defaultDashboard(),
 }
+
+discardLegacyDashboardStorage()
 
 /** Progress photos are kept as separate records so the main data stays small. */
 export const photoKey = (id: string) => `plate-photo-${id}`
@@ -287,6 +298,19 @@ export const useStore = create<AppData & Actions>()(
           else delete next[date]
           return { deviceActivity: next }
         }),
+      toggleDashboardWidget: (widget) =>
+        setState((st) => ({ dashboard: {
+          ...st.dashboard,
+          visible: { ...st.dashboard.visible, [widget]: !st.dashboard.visible[widget] },
+        } })),
+      toggleDashboardHabit: (date, habit) =>
+        setState((st) => {
+          const checked = st.dashboard.habits[date] ?? []
+          return { dashboard: {
+            ...st.dashboard,
+            habits: { ...st.dashboard.habits, [date]: checked.includes(habit) ? checked.filter((item) => item !== habit) : [...checked, habit] },
+          } }
+        }),
       importData: (data) =>
         setState((st) => ({
           ...EMPTY,
@@ -299,10 +323,14 @@ export const useStore = create<AppData & Actions>()(
             usdaKey: data.settings?.usdaKey || st.settings.usdaKey,
           },
           planPrefs: { ...DEFAULT_PLAN_PREFS, ...data.planPrefs },
+          dashboard: normalizeDashboard(data.dashboard),
           // Photos aren't in backups; keep the ones on this phone.
           photos: st.photos,
         })),
-      resetAll: () => setState(EMPTY),
+      resetAll: () => {
+        discardLegacyDashboardStorage()
+        setState({ ...EMPTY, dashboard: defaultDashboard() })
+      },
     }),
     {
       name: 'plate-data',
@@ -319,6 +347,7 @@ export const useStore = create<AppData & Actions>()(
           // Version 1 had an on/off switch for adding exercise calories back.
           settings: { ...DEFAULT_SETTINGS, ...(addExerciseCalories === false ? { exerciseEatBack: 0 as const } : {}), ...settings },
           planPrefs: { ...DEFAULT_PLAN_PREFS, ...p.planPrefs },
+          dashboard: normalizeDashboard(p.dashboard),
         }
       },
     },

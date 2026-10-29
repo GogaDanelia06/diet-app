@@ -84,6 +84,53 @@ describe('nutrients', () => {
     expect(sumNutrients([{ kcal: 100, protein: 1, carbs: 2, fat: 3 }, { kcal: 50, protein: 1, carbs: 1, fat: 1 }]).kcal).toBe(150)
   })
 
+  it('preserves reported optional nutrient totals, including a real zero', () => {
+    const totals = sumNutrients([
+      { kcal: 100, protein: 1, carbs: 2, fat: 3, fiber: 0, sugar: 2.5 },
+      { kcal: 50, protein: 1, carbs: 1, fat: 1, fiber: 0, sugar: 0 },
+    ])
+    expect(totals).toEqual({ kcal: 150, protein: 2, carbs: 3, fat: 4, fiber: 0, sugar: 2.5 })
+  })
+
+  it('omits an incomplete nutrient independently of other complete nutrients', () => {
+    const base = { kcal: 100, protein: 1, carbs: 2, fat: 3 }
+    const incompleteFiber = sumNutrients([{ ...base, fiber: 2, sugar: 3 }, { ...base, sugar: 4 }])
+    expect(incompleteFiber).not.toHaveProperty('fiber')
+    expect(incompleteFiber.sugar).toBe(7)
+    const incompleteSugar = sumNutrients([{ ...base, fiber: 2, sugar: 3 }, { ...base, fiber: 4 }])
+    expect(incompleteSugar).not.toHaveProperty('sugar')
+    expect(incompleteSugar.fiber).toBe(6)
+  })
+
+  it('does not invent optional nutrients for empty or unreported inputs', () => {
+    expect(sumNutrients([])).toEqual({ kcal: 0, protein: 0, carbs: 0, fat: 0 })
+    expect(sumNutrients([{ kcal: 100, protein: 1, carbs: 2, fat: 3 }])).toEqual({ kcal: 100, protein: 1, carbs: 2, fat: 3 })
+  })
+
+  it.each([NaN, Infinity, -Infinity])('omits non-finite optional nutrient data (%s)', (invalid) => {
+    const totals = sumNutrients([{ kcal: 100, protein: 1, carbs: 2, fat: 3, fiber: invalid, sugar: invalid }])
+    expect(totals).not.toHaveProperty('fiber')
+    expect(totals).not.toHaveProperty('sugar')
+    expect(totals.kcal).toBe(100)
+  })
+
+  it('keeps incomplete recipe nutrients unknown through per-100 g and portion scaling', () => {
+    const base = { kcal: 100, protein: 1, carbs: 2, fat: 3 }
+    const food = recipeToFood({
+      id: 'r-unknown', name: 'Mixed data', portions: 2,
+      ingredients: [
+        { food: { id: 'known', name: 'Known', per100: { ...base, fiber: 2, sugar: 3 }, servings: [], source: 'custom' }, grams: 100, amountLabel: '100 g' },
+        { food: { id: 'partial', name: 'Partial', per100: { ...base, sugar: 1 }, servings: [], source: 'custom' }, grams: 100, amountLabel: '100 g' },
+      ],
+    })
+    expect(food.per100).not.toHaveProperty('fiber')
+    expect(food.per100.sugar).toBe(2)
+    const portion = scaleNutrients(food.per100, food.servings[0].grams)
+    expect(portion).not.toHaveProperty('fiber')
+    expect(portion.sugar).toBe(2)
+    expect(portion.kcal).toBe(100)
+  })
+
   it('works out recipe portions', () => {
     const beans = BUILTIN_FOODS.find((f) => f.name === 'Kidney beans, cooked')!
     const oil = BUILTIN_FOODS.find((f) => f.name === 'Sunflower oil')!

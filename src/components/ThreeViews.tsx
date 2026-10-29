@@ -24,7 +24,7 @@ function Safe({ fallback, children }: { fallback: ReactNode; children: ReactNode
 }
 
 function FlatOrb({ fill, over }: { fill: number; over: boolean }) {
-  const color = over ? '#ff5a4a' : '#45f0a0'
+  const color = over ? '#ff5a4a' : '#d4f57a'
   return (
     <div className="flex h-full w-full items-center justify-center">
       <div

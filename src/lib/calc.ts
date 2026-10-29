@@ -90,14 +90,19 @@ export function scaleNutrients(per100: Nutrients, grams: number): Nutrients {
 }
 
 export function sumNutrients(list: Nutrients[]): Nutrients {
-  const total: Nutrients = { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0 }
+  const total: Nutrients = { kcal: 0, protein: 0, carbs: 0, fat: 0 }
   for (const n of list) {
     total.kcal += n.kcal
     total.protein += n.protein
     total.carbs += n.carbs
     total.fat += n.fat
-    total.fiber! += n.fiber ?? 0
-    total.sugar! += n.sugar ?? 0
+  }
+  // A recipe total is only known when every ingredient reports that nutrient.
+  // In particular, missing data must not become a measured zero after re-scaling.
+  for (const nutrient of ['fiber', 'sugar'] as const) {
+    if (list.length > 0 && list.every((n) => typeof n[nutrient] === 'number' && Number.isFinite(n[nutrient]))) {
+      total[nutrient] = list.reduce((sum, n) => sum + n[nutrient]!, 0)
+    }
   }
   return total
 }

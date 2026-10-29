@@ -13,7 +13,8 @@ import AiLog from './AiLog'
 import FoodEditor from './FoodEditor'
 import RecipeEditor from './RecipeEditor'
 
-type Mode = 'search' | 'barcode' | 'photo' | 'describe' | 'quick' | 'mine'
+export type AddFoodMode = 'search' | 'barcode' | 'photo' | 'describe' | 'quick' | 'mine'
+type Mode = AddFoodMode
 
 const MODES: { id: Mode; label: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
   { id: 'search', label: 'Search', icon: 'search' },
@@ -24,9 +25,9 @@ const MODES: { id: Mode; label: string; icon: Parameters<typeof Icon>[0]['name']
   { id: 'mine', label: 'My foods', icon: 'book' },
 ]
 
-export default function AddFood({ date, meal: initialMeal, onClose }: { date: string; meal: Meal; onClose: () => void }) {
+export default function AddFood({ date, meal: initialMeal, initialMode = 'search', onClose }: { date: string; meal: Meal; initialMode?: AddFoodMode; onClose: () => void }) {
   const [meal, setMeal] = useState(initialMeal)
-  const [mode, setMode] = useState<Mode>('search')
+  const [mode, setMode] = useState<Mode>(initialMode)
   const [picked, setPicked] = useState<Food | null>(null)
   const [seed, setSeed] = useState('')
   const [toast, setToast] = useState('')

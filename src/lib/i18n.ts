@@ -1,4 +1,5 @@
 import { KA } from './i18n-ka'
+import { DESIGN_KA } from './design-ka'
 import { KA_NAMES } from './i18n-ka-names'
 
 export type Lang = 'en' | 'ka'
@@ -19,7 +20,7 @@ export function getLang() {
  * falls back to English. `{name}` placeholders are filled from vars.
  */
 export function t(text: string, vars?: Record<string, string | number>): string {
-  let out = current === 'ka' ? (KA[text] ?? text) : text
+  let out = current === 'ka' ? (KA[text] ?? DESIGN_KA[text] ?? text) : text
   if (vars) out = out.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ''))
   return out
 }
