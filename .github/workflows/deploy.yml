@@ -29,6 +29,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+        env:
+          # Plate's shared USDA key lives in the repository's secrets, never in the code.
+          VITE_USDA_KEY: ${{ secrets.USDA_API_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

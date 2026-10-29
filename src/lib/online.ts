@@ -45,15 +45,40 @@ interface UsdaNutrient {
   value: number
 }
 
+// Kept out of the code (USDA deactivates keys found in public repositories); the deploy adds it from a secret.
+const SHARED_USDA_KEY = import.meta.env.VITE_USDA_KEY ?? ''
+
+export const hasSharedUsdaKey = () => !!SHARED_USDA_KEY
+
+/** Keys to try, in order: the person's own key, Plate's shared key, then USDA's demo key. */
+export function usdaKeys(own: string, shared = SHARED_USDA_KEY) {
+  return [...new Set([own.trim(), shared.trim(), 'DEMO_KEY'].filter(Boolean))]
+}
+
+const usdaSearchUrl = (params: Record<string, string>) => `https://api.nal.usda.gov/fdc/v1/foods/search?${new URLSearchParams(params)}`
+
+/** Tries a USDA key with a one-result search; returns null when it works, otherwise what went wrong. */
+export async function checkUsdaKey(key: string): Promise<string | null> {
+  try {
+    const res = await fetch(usdaSearchUrl({ query: 'apple', pageSize: '1', api_key: key }))
+    if (res.ok) return null
+    if (res.status === 403) return t('That USDA key was rejected. Copy it again from the email.')
+    if (res.status === 429) return t('That key reached its hourly limit. Try again in an hour.')
+    return t('USDA search answered {s}.', { s: res.status })
+  } catch {
+    return t('Online search failed. Check your internet connection.')
+  }
+}
+
 /** Searches USDA FoodData Central. Values in search results are per 100 g. */
 export async function searchUsda(query: string, apiKey: string): Promise<Food[]> {
-  const params = new URLSearchParams({
-    query,
-    pageSize: '25',
-    dataType: 'Foundation,SR Legacy,Branded',
-    api_key: apiKey || 'DEMO_KEY',
-  })
-  const res = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?${params}`)
+  let res: Response | undefined
+  for (const key of usdaKeys(apiKey)) {
+    res = await fetch(usdaSearchUrl({ query, pageSize: '25', dataType: 'Foundation,SR Legacy,Branded', api_key: key }))
+    // A rejected or rate-limited key falls through to the next one.
+    if (res.status !== 403 && res.status !== 429) break
+  }
+  if (!res) throw new Error(t('Online search failed. Check your internet connection.'))
   if (res.status === 429)
     throw new Error(t('The free shared USDA key hit its hourly limit. Add your own free key in Me → Online food search.'))
   if (!res.ok) throw new Error(t('USDA search answered {s}.', { s: res.status }))

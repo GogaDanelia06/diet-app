@@ -5,7 +5,8 @@ import { dateKey } from '../lib/date'
 import { kcal, num } from '../lib/format'
 import { exportData, recipeToFood, useStore, useTargets, type AppData } from '../lib/store'
 import type { Food, MacroPreset, Recipe } from '../lib/types'
-import { Card, ErrorNote, Field, Icon, Logo, Segmented } from './ui'
+import { checkUsdaKey, hasSharedUsdaKey } from '../lib/online'
+import { Card, ErrorNote, Field, Icon, Logo, Segmented, Spinner } from './ui'
 import Onboarding, { LanguageSwitch } from './Onboarding'
 import AiKeySetup from './AiKeySetup'
 import FoodEditor from './FoodEditor'
@@ -199,24 +200,7 @@ export default function Me() {
         </details>
       </Card>
 
-      <Card className="space-y-3">
-        <h2 className="font-display text-lg font-semibold">{t('Online food search')}</h2>
-        <p className="text-sm text-muted">
-          {t('Online search uses the free USDA database with a shared key that allows a few searches an hour. For more, get your own free key at')}{' '}
-          <a className="text-accent underline" href="https://fdc.nal.usda.gov/api-key-signup" target="_blank" rel="noreferrer">
-            fdc.nal.usda.gov
-          </a>
-          .
-        </p>
-        <input
-          className="field font-mono"
-          placeholder={t('USDA API key (optional)')}
-          defaultValue={settings.usdaKey}
-          onBlur={(e) => updateSettings({ usdaKey: e.target.value.trim() })}
-          autoCapitalize="off"
-          spellCheck={false}
-        />
-      </Card>
+      <UsdaKeyCard />
 
       <Card className="space-y-3">
         <h2 className="font-display text-lg font-semibold">{t('My foods and recipes')}</h2>
@@ -283,5 +267,71 @@ export default function Me() {
       {editRecipe && <RecipeEditor recipe={editRecipe} onClose={() => setEditRecipe(null)} />}
       {watchOpen && <WatchSheet date={dateKey()} onClose={() => setWatchOpen(false)} />}
     </div>
+  )
+}
+
+/** The USDA key for online food search: Plate's shared key works for everyone; a personal key is optional. */
+function UsdaKeyCard() {
+  const saved = useStore((s) => s.settings.usdaKey)
+  const updateSettings = useStore((s) => s.updateSettings)
+  const [key, setKey] = useState(saved)
+  const [status, setStatus] = useState<{ kind: 'checking' | 'ok' | 'error'; text?: string } | null>(null)
+  const shared = hasSharedUsdaKey()
+
+  async function save() {
+    const trimmed = key.trim()
+    if (!trimmed) {
+      updateSettings({ usdaKey: '' })
+      setStatus({ kind: 'ok', text: t(shared ? 'Your key is removed. Plate’s shared key is used.' : 'Your key is removed. USDA’s demo key is used.') })
+      return
+    }
+    setStatus({ kind: 'checking' })
+    const problem = await checkUsdaKey(trimmed)
+    if (problem) {
+      setStatus({ kind: 'error', text: problem })
+      return
+    }
+    updateSettings({ usdaKey: trimmed })
+    setKey(trimmed)
+    setStatus({ kind: 'ok', text: t('USDA key saved and working.') })
+  }
+
+  return (
+    <Card className="space-y-3">
+      <h2 className="font-display text-lg font-semibold">{t('Online food search')}</h2>
+      <p className="text-sm text-muted">
+        {shared ? (
+          t('Online search uses the free USDA database with Plate’s shared key, so it works for everyone. Add your own key only if searches stop working.')
+        ) : (
+          <>
+            {t('Online search uses the free USDA database with a shared key that allows a few searches an hour. For more, get your own free key at')}{' '}
+            <a className="text-accent underline" href="https://fdc.nal.usda.gov/api-key-signup" target="_blank" rel="noreferrer">
+              fdc.nal.usda.gov
+            </a>
+            .
+          </>
+        )}
+      </p>
+      <div className="flex gap-2">
+        <input
+          className="field font-mono"
+          placeholder={t('USDA API key (optional)')}
+          value={key}
+          onChange={(e) => {
+            setKey(e.target.value)
+            setStatus(null)
+          }}
+          autoComplete="off"
+          autoCapitalize="off"
+          spellCheck={false}
+        />
+        <button className="btn btn-primary shrink-0" disabled={status?.kind === 'checking' || key.trim() === saved} onClick={save}>
+          {t('Save')}
+        </button>
+      </div>
+      {status?.kind === 'checking' && <Spinner label={t('Checking the key…')} />}
+      {status?.kind === 'ok' && <p className="text-sm font-medium text-accent" role="status">{status.text}</p>}
+      {status?.kind === 'error' && <ErrorNote>{status.text}</ErrorNote>}
+    </Card>
   )
 }

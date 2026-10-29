@@ -653,4 +653,10 @@ export const KA: Record<string, string> = {
   "All of it": "მთლიანად",
   "The AI took too long to answer. Google’s free servers may be busy; try again in a minute.": "AI-მ დიდხანს არ უპასუხა. Google-ის უფასო სერვერები შეიძლება გადატვირთული იყოს; სცადე ერთ წუთში.",
   "Google didn’t answer in time. Check your internet and try again.": "Google-მა დროულად არ უპასუხა. შეამოწმე ინტერნეტი და სცადე თავიდან.",
+  "Online search uses the free USDA database with Plate’s shared key, so it works for everyone. Add your own key only if searches stop working.": "ონლაინ ძიება USDA-ის უფასო ბაზას Plate-ის საერთო გასაღებით იყენებს, ამიტომ ყველასთვის მუშაობს. საკუთარი გასაღები მხოლოდ მაშინ დაამატე, თუ ძიება აღარ იმუშავებს.",
+  "USDA key saved and working.": "USDA-ის გასაღები შენახულია და მუშაობს.",
+  "Your key is removed. Plate’s shared key is used.": "შენი გასაღები წაიშალა. გამოიყენება Plate-ის საერთო გასაღები.",
+  "Your key is removed. USDA’s demo key is used.": "შენი გასაღები წაიშალა. გამოიყენება USDA-ის სადემონსტრაციო გასაღები.",
+  "That USDA key was rejected. Copy it again from the email.": "USDA-მ ეს გასაღები არ მიიღო. ხელახლა დააკოპირე ელფოსტიდან.",
+  "That key reached its hourly limit. Try again in an hour.": "ამ გასაღებმა საათის ლიმიტს მიაღწია. სცადე ერთ საათში.",
 }
