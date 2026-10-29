@@ -3,7 +3,9 @@ import { kcal, num } from '../lib/format'
 import { recipeToFood, useStore } from '../lib/store'
 import { MEALS, type Food, type Meal } from '../lib/types'
 import { uid } from '../lib/date'
-import { Field, Icon, Segmented, Sheet } from './ui'
+import { t, tName } from '../lib/i18n'
+import { Field, Icon, Segmented, Sheet, Toast } from './ui'
+import { PlateView } from './ThreeViews'
 import FoodSearch, { FoodList } from './FoodSearch'
 import FoodDetail from './FoodDetail'
 import Scanner from './Scanner'
@@ -28,22 +30,26 @@ export default function AddFood({ date, meal: initialMeal, onClose }: { date: st
   const [picked, setPicked] = useState<Food | null>(null)
   const [seed, setSeed] = useState('')
   const [toast, setToast] = useState('')
-  const mealLabel = MEALS.find((m) => m.id === meal)!.label
+  const [toastId, setToastId] = useState(0)
+  const mealLabel = t(MEALS.find((m) => m.id === meal)!.label)
 
   useEffect(() => {
     if (!toast) return
-    const t = setTimeout(() => setToast(''), 2200)
-    return () => clearTimeout(t)
-  }, [toast])
+    const timer = setTimeout(() => setToast(''), 2400)
+    return () => clearTimeout(timer)
+  }, [toast, toastId])
 
-  const added = (what: string) => setToast(`Added ${what} to ${mealLabel}`)
+  const added = (what: string) => {
+    setToast(t('Added {what} to {meal}', { what: tName(what), meal: mealLabel }))
+    setToastId((n) => n + 1)
+  }
 
   return (
-    <Sheet title="Add food" onClose={onClose} closeLabel="Done">
+    <Sheet title={t('Add food')} onClose={onClose} closeLabel={t('Done')}>
       <div className="space-y-4">
-        <Segmented value={meal} onChange={setMeal} options={MEALS.map((m) => ({ value: m.id, label: m.label }))} />
+        <Segmented value={meal} onChange={setMeal} options={MEALS.map((m) => ({ value: m.id, label: t(m.label) }))} />
 
-        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label="How to add">
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1" role="tablist" aria-label={t('How to add')}>
           {MODES.map((m) => (
             <button
               key={m.id}
@@ -55,7 +61,7 @@ export default function AddFood({ date, meal: initialMeal, onClose }: { date: st
               }`}
             >
               <Icon name={m.icon} className="h-5 w-5" />
-              {m.label}
+              {t(m.label)}
             </button>
           ))}
         </div>
@@ -80,11 +86,16 @@ export default function AddFood({ date, meal: initialMeal, onClose }: { date: st
       {picked && <FoodDetail food={picked} date={date} initialMeal={meal} onClose={() => setPicked(null)} onDone={() => added(picked.name)} />}
 
       {toast && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-8 z-50 flex justify-center px-4" role="status">
-          <div className="flex items-center gap-2 rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-bg shadow-lg">
-            <Icon name="check" className="h-4 w-4" /> {toast}
-          </div>
-        </div>
+        <Toast
+          key={toast + toastId}
+          art={
+            <span className="block h-12 w-12 scale-125">
+              <PlateView mini />
+            </span>
+          }
+        >
+          {toast}
+        </Toast>
       )}
     </Sheet>
   )
@@ -100,9 +111,9 @@ function QuickAdd({ date, meal, mealLabel, onAdded }: { date: string; meal: Meal
 
   function add() {
     const nutrients = { kcal: num(cal), protein: num(p), carbs: num(c), fat: num(f) }
-    const label = name.trim() || 'Quick add'
+    const label = name.trim() || t('Quick add')
     const food: Food = { id: `q-${uid()}`, name: label, per100: nutrients, servings: [{ label: 'serving', grams: 100 }], source: 'quick' }
-    addEntry({ date, meal, name: label, grams: 100, amountLabel: '1 serving', nutrients, food })
+    addEntry({ date, meal, name: label, grams: 100, amountLabel: t('1 serving'), nutrients, food })
     onAdded(`${kcal(nutrients.kcal)} kcal`)
     setName('')
     setCal('')
@@ -113,26 +124,26 @@ function QuickAdd({ date, meal, mealLabel, onAdded }: { date: string; meal: Meal
 
   return (
     <div className="space-y-4">
-      <p className="text-muted">Know the calories already? Type them in.</p>
-      <Field label="Name (optional)">
-        <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Lunch at work" />
+      <p className="text-muted">{t('Know the calories already? Type them in.')}</p>
+      <Field label={t('Name (optional)')}>
+        <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Lunch at work')} />
       </Field>
-      <Field label="Calories">
+      <Field label={t('Calories')}>
         <input className="field num text-2xl" inputMode="decimal" value={cal} onChange={(e) => setCal(e.target.value)} placeholder="0" />
       </Field>
       <div className="grid grid-cols-3 gap-3">
-        <Field label="Protein, g">
+        <Field label={t('Protein, g')}>
           <input className="field num" inputMode="decimal" value={p} onChange={(e) => setP(e.target.value)} />
         </Field>
-        <Field label="Carbs, g">
+        <Field label={t('Carbs, g')}>
           <input className="field num" inputMode="decimal" value={c} onChange={(e) => setC(e.target.value)} />
         </Field>
-        <Field label="Fat, g">
+        <Field label={t('Fat, g')}>
           <input className="field num" inputMode="decimal" value={f} onChange={(e) => setF(e.target.value)} />
         </Field>
       </div>
       <button className="btn btn-primary w-full text-lg" disabled={num(cal) <= 0} onClick={add}>
-        Add to {mealLabel}
+        {t('Add to {meal}', { meal: mealLabel })}
       </button>
     </div>
   )
@@ -149,15 +160,15 @@ function MyFoods({ onPick, date, meal, onAdded }: { onPick: (f: Food) => void; d
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-2">
         <button className="btn btn-quiet" onClick={() => setEditor('food')}>
-          <Icon name="plus" className="h-4 w-4" /> New food
+          <Icon name="plus" className="h-4 w-4" /> {t('New food')}
         </button>
         <button className="btn btn-quiet" onClick={() => setEditor('recipe')}>
-          <Icon name="plus" className="h-4 w-4" /> New recipe
+          <Icon name="plus" className="h-4 w-4" /> {t('New recipe')}
         </button>
       </div>
       {savedMeals.length > 0 && (
         <div>
-          <h3 className="mb-1 text-sm font-medium text-muted">Saved meals</h3>
+          <h3 className="mb-1 text-sm font-medium text-muted">{t('Saved meals')}</h3>
           <ul className="divide-y divide-line rounded-[18px] bg-surface px-4">
             {savedMeals.map((m) => (
               <li key={m.id}>
@@ -173,7 +184,7 @@ function MyFoods({ onPick, date, meal, onAdded }: { onPick: (f: Food) => void; d
                     <div className="truncate text-sm text-muted">{m.items.map((i) => i.name).join(', ')}</div>
                   </div>
                   <span className="num shrink-0 text-sm">
-                    <span className="font-semibold">{kcal(m.items.reduce((n, i) => n + i.nutrients.kcal, 0))}</span> <span className="text-muted">kcal</span>
+                    <span className="font-semibold">{kcal(m.items.reduce((n, i) => n + i.nutrients.kcal, 0))}</span> <span className="text-muted">{t('kcal')}</span>
                   </span>
                   <Icon name="plus" className="h-5 w-5 shrink-0 text-accent" />
                 </button>
@@ -182,11 +193,11 @@ function MyFoods({ onPick, date, meal, onAdded }: { onPick: (f: Food) => void; d
           </ul>
         </div>
       )}
-      {recipes.length > 0 && <FoodList title="Recipes" foods={recipes.map(recipeToFood)} onPick={onPick} />}
-      {customFoods.length > 0 && <FoodList title="Foods" foods={customFoods} onPick={onPick} />}
+      {recipes.length > 0 && <FoodList title={t('Recipes')} foods={recipes.map(recipeToFood)} onPick={onPick} />}
+      {customFoods.length > 0 && <FoodList title={t('Foods')} foods={customFoods} onPick={onPick} />}
       {!recipes.length && !customFoods.length && !savedMeals.length && (
         <p className="text-muted">
-          Save foods you eat often, or build a recipe from its ingredients (like your own lobio) and Plate works out the calories per portion.
+          {t('Save foods you eat often, or build a recipe from its ingredients (like your own lobio) and Plate works out the calories per portion.')}
         </p>
       )}
       {editor === 'food' && <FoodEditor onClose={() => setEditor(null)} />}

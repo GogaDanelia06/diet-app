@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { coachReply, type ChatTurn } from '../lib/ai'
 import { ACTIVITY } from '../lib/calc'
+import { t } from '../lib/i18n'
 import { kcal } from '../lib/format'
 import { currentWeight, useDay, useStore, useTargets } from '../lib/store'
 import { ErrorNote, Icon, Segmented } from './ui'
 import AiKeySetup from './AiKeySetup'
 import MealPlanView from './MealPlan'
+import WeeklyReportView from './WeeklyReport'
 
 const STARTERS = [
   'What can I eat for dinner with my remaining calories?',
@@ -22,7 +24,7 @@ export default function Coach({ date }: { date: string }) {
   const day = useDay(date)
   const mealPlan = useStore((s) => s.mealPlan)
   const planned = mealPlan?.days.find((d) => d.date === date)?.meals ?? []
-  const [view, setView] = useState<'plan' | 'chat'>('plan')
+  const [view, setView] = useState<'plan' | 'report' | 'chat'>('plan')
   const [history, setHistory] = useState<ChatTurn[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -50,7 +52,7 @@ Meal plan for ${date}: ${planned.length ? planned.map((m) => `${m.meal}: ${m.nam
       const reply = await coachReply({ key: settings.geminiKey, model: settings.geminiModel }, context, next)
       setHistory([...next, { role: 'model', text: reply.trim() }])
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'The coach could not answer. Try again.')
+      setError(e instanceof Error ? e.message : t('The coach could not answer. Try again.'))
     } finally {
       setLoading(false)
     }
@@ -59,18 +61,18 @@ Meal plan for ${date}: ${planned.length ? planned.map((m) => `${m.meal}: ${m.nam
   return (
     <div className="space-y-3 pt-2">
       <div className="flex items-center justify-between py-2">
-        <h1 className="font-display text-3xl font-bold tracking-tight">Coach</h1>
+        <h1 className="font-display text-3xl font-bold tracking-tight">{t('Coach')}</h1>
         {view === 'chat' && history.length > 0 && (
           <button className="text-sm font-medium text-accent" onClick={() => setHistory([])}>
-            New chat
+            {t('New chat')}
           </button>
         )}
       </div>
 
       {!settings.geminiKey ? (
         <div className="rounded-[20px] bg-surface p-4">
-          <h2 className="mb-2 font-display text-lg font-semibold">Your free AI diet coach</h2>
-          <p className="mb-3 text-muted">It plans your meals for the week and answers your food questions.</p>
+          <h2 className="mb-2 font-display text-lg font-semibold">{t('Your free AI diet coach')}</h2>
+          <p className="mb-3 text-muted">{t('It plans your meals for the week and answers your food questions.')}</p>
           <AiKeySetup />
         </div>
       ) : (
@@ -79,23 +81,25 @@ Meal plan for ${date}: ${planned.length ? planned.map((m) => `${m.meal}: ${m.nam
             value={view}
             onChange={setView}
             options={[
-              { value: 'plan', label: 'Meal plan' },
-              { value: 'chat', label: 'Chat' },
+              { value: 'plan', label: t('Meal plan') },
+              { value: 'report', label: t('Weekly report') },
+              { value: 'chat', label: t('Chat') },
             ]}
           />
         </>
       )}
       {settings.geminiKey && view === 'plan' && <MealPlanView />}
+      {settings.geminiKey && view === 'report' && <WeeklyReportView />}
       {settings.geminiKey && view === 'chat' && (
         <>
           {history.length === 0 && (
             <div className="space-y-2">
               <p className="text-muted">
-                Ask anything about food and losing weight. The coach knows your goal and today’s log ({kcal(day.totals.kcal)} kcal so far).
+                {t('Ask anything about food and losing weight. The coach knows your goal and today’s log ({n} kcal so far).', { n: kcal(day.totals.kcal) })}
               </p>
               {STARTERS.map((s) => (
-                <button key={s} onClick={() => send(s)} className="block w-full rounded-2xl border border-line bg-surface px-4 py-3 text-left">
-                  {s}
+                <button key={s} onClick={() => send(t(s))} className="block w-full rounded-2xl border border-line bg-surface px-4 py-3 text-left">
+                  {t(s)}
                 </button>
               ))}
             </div>
@@ -114,7 +118,7 @@ Meal plan for ${date}: ${planned.length ? planned.map((m) => `${m.meal}: ${m.nam
             ))}
             {loading && (
               <div className="flex">
-                <div className="flex gap-1 rounded-[20px] rounded-bl-md bg-surface px-4 py-3.5" aria-label="Coach is typing">
+                <div className="flex gap-1 rounded-[20px] rounded-bl-md bg-surface px-4 py-3.5" aria-label={t('Coach is typing')}>
                   {[0, 1, 2].map((i) => (
                     <span key={i} className="h-2 w-2 animate-bounce rounded-full bg-muted" style={{ animationDelay: `${i * 120}ms` }} />
                   ))}
@@ -131,8 +135,8 @@ Meal plan for ${date}: ${planned.length ? planned.map((m) => `${m.meal}: ${m.nam
               send(input)
             }}
           >
-            <input className="field" placeholder="Ask the coach" value={input} onChange={(e) => setInput(e.target.value)} enterKeyHint="send" />
-            <button className="btn btn-primary shrink-0 px-4" disabled={!input.trim() || loading} aria-label="Send">
+            <input className="field" placeholder={t('Ask the coach')} value={input} onChange={(e) => setInput(e.target.value)} enterKeyHint="send" />
+            <button className="btn btn-primary shrink-0 px-4" disabled={!input.trim() || loading} aria-label={t('Send')}>
               <Icon name="right" />
             </button>
           </form>

@@ -1,3 +1,5 @@
+import { locale, t } from './i18n'
+
 const pad = (n: number) => String(n).padStart(2, '0')
 
 export function dateKey(d: Date = new Date()) {
@@ -17,14 +19,14 @@ export function addDays(key: string, days: number) {
 
 export function dayLabel(key: string) {
   const today = dateKey()
-  if (key === today) return 'Today'
-  if (key === addDays(today, -1)) return 'Yesterday'
-  if (key === addDays(today, 1)) return 'Tomorrow'
-  return parseKey(key).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })
+  if (key === today) return t('Today')
+  if (key === addDays(today, -1)) return t('Yesterday')
+  if (key === addDays(today, 1)) return t('Tomorrow')
+  return parseKey(key).toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'short' })
 }
 
 export function shortDate(key: string) {
-  return parseKey(key).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+  return parseKey(key).toLocaleDateString(locale(), { day: 'numeric', month: 'short' })
 }
 
 export function uid() {

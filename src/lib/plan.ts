@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import { addDays, uid } from './date'
 import { normalize } from './search'
 import type { Meal, MealPlan, PlanDay, PlanItem, PlanMeal, PlanPrefs } from './types'
@@ -80,7 +81,7 @@ export function buildPlan(
   const days = (raw.days ?? [])
     .map((d, i) => ({ date: addDays(startDate, i), meals: (d.meals ?? []).map((m) => cleanPlanMeal(m)) }))
     .filter((d) => d.meals.length > 0)
-  if (!days.length) throw new Error('The AI returned an empty plan. Try again.')
+  if (!days.length) throw new Error(t('The AI returned an empty plan. Try again.'))
   return { createdAt: Date.now(), targetKcal, days, tips: raw.tips, shoppingChecked: [] }
 }
 

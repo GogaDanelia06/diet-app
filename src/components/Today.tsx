@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { addDays, dateKey, dayLabel, shortDate } from '../lib/date'
-import { kcal } from '../lib/format'
+import { kcal, num } from '../lib/format'
+import { t, tName } from '../lib/i18n'
 import { useDay, useStore, useTargets } from '../lib/store'
 import { mealTotals } from '../lib/plan'
 import { logStreak } from '../lib/insights'
@@ -9,61 +10,125 @@ import { Card, Field, Icon, MacroBar, Sheet } from './ui'
 import FoodDetail from './FoodDetail'
 import ExerciseSheet from './ExerciseSheet'
 import FastingCard from './Fasting'
+import { OrbView } from './ThreeViews'
+import { CalendarMonth } from './Calendar'
+import { useReportDue } from './WeeklyReport'
 
-export default function Today({ date, setDate, onAdd }: { date: string; setDate: (d: string) => void; onAdd: (m: Meal) => void }) {
+/** Animates a number toward its new value so changes are easy to notice. */
+function useCountUp(value: number, ms = 700) {
+  const [shown, setShown] = useState(value)
+  const from = useRef(value)
+  useEffect(() => {
+    const start = performance.now()
+    const a = from.current
+    let raf = 0
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / ms)
+      const v = a + (value - a) * (1 - Math.pow(1 - p, 3))
+      setShown(v)
+      from.current = v
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [value, ms])
+  return shown
+}
+
+export default function Today({
+  date,
+  setDate,
+  onAdd,
+  onOpenCoach,
+}: {
+  date: string
+  setDate: (d: string) => void
+  onAdd: (m: Meal) => void
+  onOpenCoach: () => void
+}) {
   const targets = useTargets()!
   const day = useDay(date)
   const settings = useStore((s) => s.settings)
   const entries = useStore((s) => s.entries)
   const [editing, setEditing] = useState<DiaryEntry | null>(null)
   const [exerciseOpen, setExerciseOpen] = useState(false)
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const reportDue = useReportDue()
 
   const budget = targets.kcal + day.bonus
   const remaining = budget - day.totals.kcal
+  const over = remaining < 0
+  const shownRemaining = useCountUp(Math.abs(remaining))
   const isToday = date === dateKey()
   const streak = logStreak(entries, dateKey())
 
   return (
-    <div className="space-y-3 pt-2">
+    <div className="space-y-3 pt-1">
       <header className="flex items-center justify-between py-2">
-        <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">{dayLabel(date)}</h1>
+        <button onClick={() => setCalendarOpen(true)} className="text-left" aria-label={t('Open calendar')}>
+          <h1 className="flex items-center gap-2 font-display text-3xl font-bold tracking-tight">
+            {dayLabel(date)}
+            <Icon name="calendar" className="h-5 w-5 text-muted" />
+          </h1>
           {isToday && streak >= 2 && (
-            <div className="flex items-center gap-1 text-sm font-medium text-carbs">
-              <Icon name="flame" className="h-4 w-4" /> {streak}-day logging streak
+            <div className="flex items-center gap-1 text-sm font-semibold text-carbs">
+              <Icon name="flame" className="h-4 w-4 drop-shadow-[0_0_6px_rgb(255_197_71/0.8)]" /> {t('{n}-day logging streak', { n: streak })}
             </div>
           )}
-        </div>
-        <div className="flex items-center gap-1">
+        </button>
+        <div className="flex items-center gap-1.5">
           {!isToday && (
-            <button onClick={() => setDate(dateKey())} className="mr-1 rounded-full px-3 py-1.5 text-sm font-medium text-accent">
-              Today
+            <button onClick={() => setDate(dateKey())} className="mr-1 rounded-full px-3 py-1.5 text-sm font-semibold text-accent">
+              {t('Today')}
             </button>
           )}
-          <button onClick={() => setDate(addDays(date, -1))} className="rounded-full bg-surface p-2" aria-label="Previous day">
+          <button onClick={() => setDate(addDays(date, -1))} className="glass rounded-full p-2" aria-label={t('Previous day')}>
             <Icon name="left" />
           </button>
-          <button onClick={() => setDate(addDays(date, 1))} className="rounded-full bg-surface p-2" aria-label="Next day">
+          <button onClick={() => setDate(addDays(date, 1))} className="glass rounded-full p-2" aria-label={t('Next day')}>
             <Icon name="right" />
           </button>
         </div>
       </header>
 
-      <Card className="p-5">
-        <div className="flex items-center gap-5">
-          <Ring eaten={day.totals.kcal} budget={budget} remaining={remaining} />
-          <dl className="flex-1 space-y-2 text-sm">
-            <Line label="Goal" value={targets.kcal} />
-            <Line label="Food" value={day.totals.kcal} sign="−" />
-            {settings.exerciseEatBack > 0 && <Line label="Exercise" value={day.bonus} sign="+" />}
-          </dl>
+      <section aria-label={t('Calories today')}>
+        <div className="relative mx-auto -mt-2 h-[250px] w-[250px]">
+          <div
+            className="pointer-events-none absolute inset-6 rounded-full blur-2xl"
+            style={{ background: over ? 'rgb(255 90 74 / 0.28)' : 'rgb(69 240 160 / 0.22)' }}
+          />
+          <OrbView fill={budget > 0 ? day.totals.kcal / budget : 0} over={over} />
         </div>
-        <div className="mt-5 flex gap-4">
-          <MacroBar label="Protein" value={day.totals.protein} target={targets.protein} color="var(--protein)" />
-          <MacroBar label="Carbs" value={day.totals.carbs} target={targets.carbs} color="var(--carbs)" />
-          <MacroBar label="Fat" value={day.totals.fat} target={targets.fat} color="var(--fat)" />
+        <div className="-mt-1 text-center">
+          <div className={`num text-[56px] font-bold leading-none tracking-tight ${over ? 'text-over' : 'glow-text'}`}>{kcal(shownRemaining)}</div>
+          <div className="mt-1 text-sm font-medium text-muted">{over ? t('kcal over budget') : t('kcal left today')}</div>
         </div>
-      </Card>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <Stat label={t('Eaten')} value={day.totals.kcal} />
+          <Stat label={t('Budget')} value={budget} hint={day.bonus > 0 ? t('+{n} exercise', { n: kcal(day.bonus) }) : undefined} />
+          <Stat label={t('Burned')} value={day.burned} />
+        </div>
+        <Card className="mt-3">
+          <div className="flex gap-4">
+            <MacroBar label={t('Protein')} value={day.totals.protein} target={targets.protein} color="var(--protein)" />
+            <MacroBar label={t('Carbs')} value={day.totals.carbs} target={targets.carbs} color="var(--carbs)" />
+            <MacroBar label={t('Fat')} value={day.totals.fat} target={targets.fat} color="var(--fat)" />
+          </div>
+        </Card>
+      </section>
+
+      {isToday && reportDue && (
+        <button onClick={onOpenCoach} className="glass flex w-full items-center gap-3 rounded-[24px] p-4 text-left">
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-violet/25 text-violet">
+            <Icon name="report" />
+          </span>
+          <span className="flex-1">
+            <span className="block font-semibold">{t('Your weekly report is ready')}</span>
+            <span className="block text-sm text-muted">{t('See how this week went and what to change')}</span>
+          </span>
+          <Icon name="right" className="h-5 w-5 text-muted" />
+        </button>
+      )}
 
       {isToday && settings.showFasting && <FastingCard />}
 
@@ -72,24 +137,24 @@ export default function Today({ date, setDate, onAdd }: { date: string; setDate:
           key={m.id}
           date={date}
           meal={m.id}
-          label={m.label}
+          label={t(m.label)}
           entries={day.entries.filter((e) => e.meal === m.id)}
           onAdd={() => onAdd(m.id)}
           onOpen={setEditing}
         />
       ))}
 
-      <WaterCard date={date} />
+      <WaterCard key={date} date={date} />
 
       <Card>
         <div className="flex items-center justify-between">
-          <h2 className="font-display text-lg font-semibold">Exercise</h2>
-          <span className="num text-sm text-muted">{kcal(day.burned)} kcal burned</span>
+          <h2 className="font-display text-lg font-semibold">{t('Exercise')}</h2>
+          <span className="num text-sm text-muted">{t('{n} kcal burned', { n: kcal(day.burned) })}</span>
         </div>
         <StepsRow steps={day.steps} goal={settings.stepGoal} kcalFromSteps={day.fromSteps} onEdit={() => setExerciseOpen(true)} />
         <ExerciseList date={date} />
-        <button onClick={() => setExerciseOpen(true)} className="mt-2 flex items-center gap-1.5 py-1 font-medium text-accent">
-          <Icon name="plus" className="h-4 w-4" /> Add exercise
+        <button onClick={() => setExerciseOpen(true)} className="mt-2 flex items-center gap-1.5 py-1 font-semibold text-accent">
+          <Icon name="plus" className="h-4 w-4" /> {t('Add exercise')}
         </button>
       </Card>
 
@@ -103,6 +168,27 @@ export default function Today({ date, setDate, onAdd }: { date: string; setDate:
         />
       )}
       {exerciseOpen && <ExerciseSheet date={date} onClose={() => setExerciseOpen(false)} />}
+      {calendarOpen && (
+        <Sheet title={t('Pick a day')} onClose={() => setCalendarOpen(false)}>
+          <CalendarMonth
+            selected={date}
+            onPick={(d) => {
+              setDate(d)
+              setCalendarOpen(false)
+            }}
+          />
+        </Sheet>
+      )}
+    </div>
+  )
+}
+
+function Stat({ label, value, hint }: { label: string; value: number; hint?: string }) {
+  return (
+    <div className="glass rounded-2xl px-2 py-2.5 text-center">
+      <div className="num text-xl font-semibold">{kcal(value)}</div>
+      <div className="text-[11px] font-medium text-muted">{label}</div>
+      {hint && <div className="text-[10px] font-semibold text-accent">{hint}</div>}
     </div>
   )
 }
@@ -112,47 +198,7 @@ function perHundred(e: DiaryEntry) {
   return { kcal: e.nutrients.kcal * f, protein: e.nutrients.protein * f, carbs: e.nutrients.carbs * f, fat: e.nutrients.fat * f }
 }
 
-function Ring({ eaten, budget, remaining }: { eaten: number; budget: number; remaining: number }) {
-  const r = 52
-  const c = 2 * Math.PI * r
-  const pct = budget > 0 ? Math.min(1, eaten / budget) : 0
-  const over = remaining < 0
-  return (
-    <div className="relative h-36 w-36 shrink-0">
-      <svg viewBox="0 0 128 128" className="h-full w-full -rotate-90" aria-hidden="true">
-        <circle cx="64" cy="64" r={r} fill="none" stroke="var(--surface-2)" strokeWidth="12" />
-        <circle
-          cx="64"
-          cy="64"
-          r={r}
-          fill="none"
-          stroke={over ? 'var(--over)' : 'var(--accent)'}
-          strokeWidth="12"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - pct)}
-          style={{ transition: 'stroke-dashoffset 500ms cubic-bezier(.2,.8,.2,1)' }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className={`num text-[34px] font-bold leading-none tracking-tight ${over ? 'text-over' : ''}`}>{kcal(Math.abs(remaining))}</span>
-        <span className="mt-1 text-xs text-muted">{over ? 'kcal over' : 'kcal left'}</span>
-      </div>
-    </div>
-  )
-}
-
-function Line({ label, value, sign }: { label: string; value: number; sign?: string }) {
-  return (
-    <div className="flex justify-between border-b border-line pb-2 last:border-0 last:pb-0">
-      <dt className="text-muted">{label}</dt>
-      <dd className="num font-semibold">
-        {sign && Math.round(value) > 0 ? sign : ''}
-        {kcal(value)}
-      </dd>
-    </div>
-  )
-}
+const MEAL_ICON: Record<Meal, string> = { breakfast: '🍳', lunch: '🥗', dinner: '🍲', snack: '🍎' }
 
 function MealCard({
   date,
@@ -181,9 +227,17 @@ function MealCard({
 
   return (
     <Card>
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold">{label}</h2>
-        <span className="num text-sm text-muted">{kcal(total)} kcal</span>
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.06] text-xl" aria-hidden="true">
+          {MEAL_ICON[meal]}
+        </span>
+        <h2 className="flex-1 font-display text-lg font-semibold">{label}</h2>
+        <span className="num text-sm">
+          <span className="font-semibold">{kcal(total)}</span> <span className="text-muted">kcal</span>
+        </span>
+        <button onClick={onAdd} className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-accent" aria-label={t('Add food to {meal}', { meal: label })}>
+          <Icon name="plus" className="h-5 w-5" />
+        </button>
       </div>
       {entries.length > 0 && (
         <ul className="mt-2 divide-y divide-line">
@@ -191,11 +245,11 @@ function MealCard({
             <li key={e.id}>
               <button
                 onClick={() => onOpen(e)}
-                aria-label={`${e.name}, ${e.amountLabel}, ${kcal(e.nutrients.kcal)} kcal`}
+                aria-label={`${tName(e.name)}, ${e.amountLabel}, ${kcal(e.nutrients.kcal)} kcal`}
                 className="flex w-full items-center gap-3 py-2.5 text-left"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{e.name}</div>
+                  <div className="truncate font-medium">{tName(e.name)}</div>
                   <div className="truncate text-sm text-muted">
                     {e.brand ? `${e.brand}, ` : ''}
                     {e.amountLabel}
@@ -208,32 +262,31 @@ function MealCard({
         </ul>
       )}
       {planned.map((p) => (
-        <div key={p.id} className="mt-2 flex items-center gap-3 rounded-2xl border border-dashed border-line px-3 py-2.5">
+        <div key={p.id} className="mt-2 flex items-center gap-3 rounded-2xl border border-dashed border-accent/30 bg-accent/[0.04] px-3 py-2.5">
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-medium text-accent">On your plan</div>
+            <div className="text-xs font-semibold text-accent">{t('On your plan')}</div>
             <div className="truncate font-medium">{p.name}</div>
           </div>
           <span className="num text-sm text-muted">{kcal(mealTotals(p).kcal)}</span>
           <button onClick={() => logPlanMeal(date, p.id)} className="btn btn-primary px-3 py-1.5 text-sm">
-            I ate this
+            {t('I ate this')}
           </button>
         </div>
       ))}
-      <div className="mt-1 flex items-center gap-4">
-        <button onClick={onAdd} className="flex items-center gap-1.5 py-1.5 font-medium text-accent">
-          <Icon name="plus" className="h-4 w-4" /> Add food
-        </button>
-        {yesterdayCount > 0 && (
-          <button onClick={() => copyMeal(yesterday, meal, date)} className="flex items-center gap-1.5 py-1.5 text-sm text-muted">
-            <Icon name="copy" className="h-4 w-4" /> Same as yesterday
-          </button>
-        )}
-        {entries.length >= 2 && (
-          <button onClick={() => setSaving(true)} className="ml-auto flex items-center gap-1.5 py-1.5 text-sm text-muted">
-            <Icon name="bookmark" className="h-4 w-4" /> Save meal
-          </button>
-        )}
-      </div>
+      {(yesterdayCount > 0 || entries.length >= 2) && (
+        <div className="mt-1 flex items-center gap-4">
+          {yesterdayCount > 0 && (
+            <button onClick={() => copyMeal(yesterday, meal, date)} className="flex items-center gap-1.5 py-1.5 text-sm text-muted">
+              <Icon name="copy" className="h-4 w-4" /> {t('Same as yesterday')}
+            </button>
+          )}
+          {entries.length >= 2 && (
+            <button onClick={() => setSaving(true)} className="ml-auto flex items-center gap-1.5 py-1.5 text-sm text-muted">
+              <Icon name="bookmark" className="h-4 w-4" /> {t('Save meal')}
+            </button>
+          )}
+        </div>
+      )}
       {saving && <SaveMealSheet entries={entries} defaultName={`${label}, ${shortDate(date)}`} onClose={() => setSaving(false)} />}
     </Card>
   )
@@ -245,7 +298,7 @@ function SaveMealSheet({ entries, defaultName, onClose }: { entries: DiaryEntry[
   const total = entries.reduce((n, e) => n + e.nutrients.kcal, 0)
   return (
     <Sheet
-      title="Save meal"
+      title={t('Save meal')}
       onClose={onClose}
       footer={
         <button
@@ -255,21 +308,19 @@ function SaveMealSheet({ entries, defaultName, onClose }: { entries: DiaryEntry[
             onClose()
           }}
         >
-          Save meal
+          {t('Save meal')}
         </button>
       }
     >
       <div className="space-y-4">
-        <p className="text-muted">
-          Save these {entries.length} foods ({kcal(total)} kcal) together. Next time, add them all at once from Add food → My foods.
-        </p>
-        <Field label="Name">
+        <p className="text-muted">{t('Save these {n} foods ({kcal} kcal) together. Next time, add them all at once from Add food → My foods.', { n: entries.length, kcal: kcal(total) })}</p>
+        <Field label={t('Name')}>
           <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder={defaultName} />
         </Field>
         <ul className="divide-y divide-line rounded-[18px] bg-surface px-4 text-sm">
           {entries.map((e) => (
             <li key={e.id} className="flex justify-between gap-3 py-2.5">
-              <span className="min-w-0 truncate">{e.name}</span>
+              <span className="min-w-0 truncate">{tName(e.name)}</span>
               <span className="num text-muted">{kcal(e.nutrients.kcal)}</span>
             </li>
           ))}
@@ -279,35 +330,146 @@ function SaveMealSheet({ entries, defaultName, onClose }: { entries: DiaryEntry[
   )
 }
 
+const CUPS = [
+  { ml: 150, label: 'Small glass' },
+  { ml: 250, label: 'Glass' },
+  { ml: 330, label: 'Can' },
+  { ml: 500, label: 'Bottle' },
+  { ml: 750, label: 'Large bottle' },
+  { ml: 1000, label: 'Litre' },
+]
+
+const litres = (ml: number) => String(Math.round(ml / 10) / 100)
+
+/** Outline of a cup or bottle, taller for bigger amounts. */
+function CupIcon({ ml }: { ml: number }) {
+  const h = 12 + Math.min(ml, 1000) / 1000 * 14
+  const top = 30 - h
+  const bottle = ml >= 500
+  return (
+    <svg viewBox="0 0 24 32" className="h-8 w-6" aria-hidden="true">
+      {bottle ? (
+        <path
+          d={`M9 ${top} h6 v3 l2 3 v${h - 6} a2 2 0 0 1 -2 2 h-6 a2 2 0 0 1 -2 -2 v${h - 6} l2 -3 z`}
+          fill="rgb(79 216 255 / 0.25)"
+          stroke="var(--water)"
+          strokeWidth="1.5"
+          strokeLinejoin="round"
+        />
+      ) : (
+        <path d={`M5 ${top} h14 l-2 ${h} h-10 z`} fill="rgb(79 216 255 / 0.25)" stroke="var(--water)" strokeWidth="1.5" strokeLinejoin="round" />
+      )}
+    </svg>
+  )
+}
+
 function WaterCard({ date }: { date: string }) {
   const ml = useStore((s) => s.water[date] ?? 0)
-  const { waterGoalMl, glassMl } = useStore((s) => s.settings)
+  const goal = useStore((s) => s.settings.waterGoalMl)
   const addWater = useStore((s) => s.addWater)
-  const glasses = Math.max(1, Math.round(waterGoalMl / glassMl))
-  const filled = Math.floor(ml / glassMl)
+  // Drinks added since this card opened, so − takes off exactly the last one.
+  const [added, setAdded] = useState<number[]>([])
+  const [custom, setCustom] = useState<string | null>(null)
+  const pct = goal > 0 ? ml / goal : 0
+  const extra = ml - goal
+
+  function add(amount: number) {
+    if (amount <= 0) return
+    addWater(date, amount)
+    setAdded((a) => [...a, amount])
+  }
+
+  function undo() {
+    const last = added.at(-1) ?? 250
+    addWater(date, -Math.min(last, ml))
+    setAdded((a) => a.slice(0, -1))
+  }
 
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold">Water</h2>
-        <span className="num text-sm text-muted">
-          {(ml / 1000).toFixed(2).replace(/0$/, '')} / {waterGoalMl / 1000} L
+        <h2 className="font-display text-lg font-semibold">{t('Water')}</h2>
+        <span className="num text-sm">
+          <span className="text-lg font-semibold text-water">{litres(ml)}</span>
+          <span className="text-muted"> / {litres(goal)} {t('L')}</span>
         </span>
       </div>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        {Array.from({ length: Math.max(glasses, filled) }, (_, i) => (
-          <button
-            key={i}
-            onClick={() => addWater(date, i < filled ? -glassMl : glassMl)}
-            aria-label={i < filled ? 'Remove a glass' : 'Add a glass'}
-            className={`flex h-10 w-8 items-end justify-center rounded-b-lg rounded-t-sm border-2 ${
-              i < filled ? 'border-water bg-water/80' : 'border-line'
-            }`}
-          >
-            {i === filled && <Icon name="plus" className="mb-2 h-3.5 w-3.5 text-muted" />}
-          </button>
+
+      <div className="relative mt-3 h-3 overflow-hidden rounded-full bg-white/[0.07]">
+        <div
+          className="h-3 rounded-full bg-gradient-to-r from-water/60 to-water transition-[width] duration-500"
+          style={{ width: `${Math.min(100, pct * 100)}%`, boxShadow: pct >= 1 ? '0 0 16px var(--water)' : undefined }}
+        />
+        {/* A tick every half litre up to the goal. */}
+        {Array.from({ length: Math.max(0, Math.floor(goal / 500) - 1) }, (_, i) => (
+          <span key={i} className="absolute top-0 h-3 w-px bg-bg/60" style={{ left: `${(((i + 1) * 500) / goal) * 100}%` }} />
         ))}
       </div>
+      <p className="mt-2 text-sm text-muted">
+        {ml === 0
+          ? t('Recommended {goal} L a day. Tap a cup to add it.', { goal: litres(goal) })
+          : extra >= 0
+            ? extra > 0
+              ? t('Goal reached! +{extra} ml more, nice.', { extra: Math.round(extra) })
+              : t('Goal reached!')
+            : t('Recommended {goal} L · {left} ml to go', { goal: litres(goal), left: Math.round(-extra) })}
+      </p>
+
+      <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
+        <button
+          onClick={undo}
+          disabled={ml === 0}
+          className="glass flex w-12 shrink-0 flex-col items-center justify-center rounded-2xl text-xl font-semibold text-muted transition-transform active:scale-90 disabled:opacity-30"
+          aria-label={t('Remove {ml} ml', { ml: added.at(-1) ?? 250 })}
+        >
+          −
+        </button>
+        {CUPS.map((c) => (
+          <button
+            key={c.ml}
+            onClick={() => add(c.ml)}
+            className="glass flex w-[68px] shrink-0 flex-col items-center rounded-2xl px-1 pb-2 pt-1.5 transition-transform active:scale-90"
+            aria-label={`${t(c.label)}, ${t('Add {ml} ml', { ml: c.ml })}`}
+          >
+            <CupIcon ml={c.ml} />
+            <span className="num text-sm font-semibold">{c.ml >= 1000 ? `1 ${t('L')}` : c.ml}</span>
+            <span className="w-full truncate text-center text-[10px] text-muted">{t(c.label)}</span>
+          </button>
+        ))}
+        <button
+          onClick={() => setCustom('')}
+          className="glass flex w-[68px] shrink-0 flex-col items-center justify-center rounded-2xl px-1 text-sm font-semibold text-water transition-transform active:scale-90"
+        >
+          <Icon name="plus" className="h-5 w-5" />
+          {t('Other')}
+        </button>
+      </div>
+
+      {custom !== null && (
+        <form
+          className="mt-3 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault()
+            add(Math.round(num(custom)))
+            setCustom(null)
+          }}
+        >
+          <input
+            className="field num"
+            inputMode="numeric"
+            autoFocus
+            placeholder={t('Amount, ml')}
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+          />
+          <button className="btn btn-primary shrink-0" disabled={num(custom) <= 0}>
+            {t('Add')}
+          </button>
+          <button type="button" className="btn btn-quiet shrink-0" onClick={() => setCustom(null)}>
+            {t('Cancel')}
+          </button>
+        </form>
+      )}
     </Card>
   )
 }
@@ -315,15 +477,15 @@ function WaterCard({ date }: { date: string }) {
 function StepsRow({ steps, goal, kcalFromSteps, onEdit }: { steps: number; goal: number; kcalFromSteps: number; onEdit: () => void }) {
   const pct = goal > 0 ? Math.min(100, (steps / goal) * 100) : 0
   return (
-    <button onClick={onEdit} className="mt-3 block w-full text-left" aria-label={`Steps: ${steps} of ${goal}. Edit steps`}>
+    <button onClick={onEdit} className="mt-3 block w-full text-left" aria-label={t('Steps: {n} of {goal}. Edit steps', { n: steps, goal })}>
       <div className="flex items-baseline justify-between text-sm">
         <span>
-          <span className="num font-semibold">{steps.toLocaleString()}</span> <span className="text-muted">/ {goal.toLocaleString()} steps</span>
+          <span className="num font-semibold">{steps.toLocaleString()}</span> <span className="text-muted">/ {goal.toLocaleString()} {t('steps')}</span>
         </span>
-        <span className="num text-muted">{kcalFromSteps > 0 ? `${kcal(kcalFromSteps)} kcal` : steps ? '' : 'Tap to add'}</span>
+        <span className="num text-muted">{kcalFromSteps > 0 ? `${kcal(kcalFromSteps)} kcal` : steps ? '' : t('Tap to add')}</span>
       </div>
-      <div className="mt-1.5 h-2 rounded-full bg-surface-2">
-        <div className="h-2 rounded-full bg-accent" style={{ width: `${pct}%` }} />
+      <div className="mt-1.5 h-1.5 rounded-full bg-white/[0.07]">
+        <div className="h-1.5 rounded-full bg-accent shadow-[0_0_10px_var(--accent)]" style={{ width: `${pct}%` }} />
       </div>
     </button>
   )
@@ -338,13 +500,14 @@ function ExerciseList({ date }: { date: string }) {
       {exercises.map((e) => (
         <li key={e.id} className="flex items-center gap-3 py-2.5">
           <div className="min-w-0 flex-1">
-            <div className="truncate font-medium">{e.name}</div>
+            <div className="truncate font-medium">{tName(e.name)}</div>
             <div className="text-sm text-muted">
-              {e.minutes} min{e.distanceKm ? ` · ${e.distanceKm} km` : ''}
+              {t('{n} min', { n: e.minutes })}
+              {e.distanceKm ? ` · ${e.distanceKm} km` : ''}
             </div>
           </div>
           <span className="num font-semibold">{kcal(e.kcal)}</span>
-          <button onClick={() => remove(e.id)} className="p-1 text-muted" aria-label={`Remove ${e.name}`}>
+          <button onClick={() => remove(e.id)} className="p-1 text-muted" aria-label={t('Remove {name}', { name: tName(e.name) })}>
             <Icon name="trash" className="h-4 w-4" />
           </button>
         </li>

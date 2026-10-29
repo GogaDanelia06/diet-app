@@ -1,3 +1,4 @@
+import { t } from './i18n'
 import type { Food, Nutrients, Serving } from './types'
 
 const round1 = (n: number) => Math.round(n * 10) / 10
@@ -7,7 +8,7 @@ export async function lookupBarcode(code: string): Promise<Food | null> {
   const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,product_name_en,brands,nutriments,serving_quantity,serving_size,quantity`
   const res = await fetch(url)
   if (res.status === 404) return null
-  if (!res.ok) throw new Error(`Open Food Facts answered ${res.status}. Try again in a minute.`)
+  if (!res.ok) throw new Error(t('Open Food Facts answered {s}. Try again in a minute.', { s: res.status }))
   const data = await res.json()
   if (data.status !== 1 || !data.product) return null
   const p = data.product
@@ -30,7 +31,7 @@ export async function lookupBarcode(code: string): Promise<Food | null> {
   if (pack > 0 && /\b(g|ml)\b/i.test(p.quantity ?? '') && pack !== sq) servings.push({ label: `whole pack (${p.quantity})`, grams: pack })
   return {
     id: `bc-${code}`,
-    name: p.product_name || p.product_name_en || 'Unnamed product',
+    name: p.product_name || p.product_name_en || t('Unnamed product'),
     brand: p.brands?.split(',')[0]?.trim() || undefined,
     per100,
     servings,
@@ -54,8 +55,8 @@ export async function searchUsda(query: string, apiKey: string): Promise<Food[]>
   })
   const res = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?${params}`)
   if (res.status === 429)
-    throw new Error('The free shared USDA key hit its hourly limit. Add your own free key in Me → Online food search.')
-  if (!res.ok) throw new Error(`USDA search answered ${res.status}.`)
+    throw new Error(t('The free shared USDA key hit its hourly limit. Add your own free key in Me → Online food search.'))
+  if (!res.ok) throw new Error(t('USDA search answered {s}.', { s: res.status }))
   const data = await res.json()
   const foods: Food[] = []
   for (const f of data.foods ?? []) {

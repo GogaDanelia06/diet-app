@@ -5,6 +5,8 @@ import { num } from '../lib/format'
 import { useStore } from '../lib/store'
 import type { Activity, Profile, Sex } from '../lib/types'
 import { Field, Segmented } from './ui'
+import { PlateView } from './ThreeViews'
+import { locale, t } from '../lib/i18n'
 
 const PACES = [
   { value: 0.25, label: '0.25 kg', detail: 'Gentle' },
@@ -58,24 +60,24 @@ export default function Onboarding({ onDone, editing = false }: { onDone: () => 
     <Welcome key="w" onNext={() => setStep(1)} />,
     <div key="1" className="space-y-5">
       <Title text="About you" sub="Used to work out how many calories your body burns." />
-      <Field label="Sex">
+      <Field label={t('Sex')}>
         <Segmented
           value={sex}
           onChange={setSex}
           options={[
-            { value: 'female', label: 'Female' },
-            { value: 'male', label: 'Male' },
+            { value: 'female', label: t('Female') },
+            { value: 'male', label: t('Male') },
           ]}
         />
       </Field>
       <div className="grid grid-cols-3 gap-3">
-        <Field label="Age">
+        <Field label={t('Age')}>
           <input className="field num" inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} placeholder="30" />
         </Field>
-        <Field label="Height, cm">
+        <Field label={t('Height, cm')}>
           <input className="field num" inputMode="decimal" value={height} onChange={(e) => setHeight(e.target.value)} placeholder="170" />
         </Field>
-        <Field label="Weight, kg">
+        <Field label={t('Weight, kg')}>
           <input className="field num" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="80" />
         </Field>
       </div>
@@ -93,8 +95,8 @@ export default function Onboarding({ onDone, editing = false }: { onDone: () => 
               activity === a ? 'border-accent bg-accent-soft' : 'border-line bg-surface'
             }`}
           >
-            <div className="font-semibold">{ACTIVITY[a].label}</div>
-            <div className="text-sm text-muted">{ACTIVITY[a].detail}</div>
+            <div className="font-semibold">{t(ACTIVITY[a].label)}</div>
+            <div className="text-sm text-muted">{t(ACTIVITY[a].detail)}</div>
           </button>
         ))}
       </div>
@@ -102,11 +104,11 @@ export default function Onboarding({ onDone, editing = false }: { onDone: () => 
     </div>,
     <div key="3" className="space-y-5">
       <Title text="Your goal" sub="Pick a weight you'd be happy with. You can change it any time." />
-      <Field label="Goal weight, kg">
+      <Field label={t('Goal weight, kg')}>
         <input className="field num text-2xl" inputMode="decimal" value={goal} onChange={(e) => setGoal(e.target.value)} placeholder={weightN ? String(Math.round(weightN * 0.9)) : '70'} />
       </Field>
       {goalN > 0 && goalN < weightN && (
-        <Field label="Lose per week">
+        <Field label={t('Lose per week')}>
           <div className="grid grid-cols-2 gap-2">
             {PACES.map((p) => (
               <button
@@ -116,14 +118,14 @@ export default function Onboarding({ onDone, editing = false }: { onDone: () => 
                 className={`rounded-2xl border p-3 text-left ${pace === p.value ? 'border-accent bg-accent-soft' : 'border-line bg-surface'}`}
               >
                 <div className="num text-lg font-semibold">{p.label}</div>
-                <div className="text-xs text-muted">{p.detail}</div>
+                <div className="text-xs text-muted">{t(p.detail)}</div>
               </button>
             ))}
           </div>
         </Field>
       )}
-      {goalN > 0 && goalN >= weightN && <p className="text-sm text-muted">Your goal isn't below your current weight, so Plate will aim to keep your weight steady.</p>}
-      <NextButton disabled={!step3Ok} onClick={() => setStep(4)} label="See my plan" />
+      {goalN > 0 && goalN >= weightN && <p className="text-sm text-muted">{t('Your goal isn\'t below your current weight, so Plate will aim to keep your weight steady.')}</p>}
+      <NextButton disabled={!step3Ok} onClick={() => setStep(4)} label={t('See my plan')} />
     </div>,
     <Result key="4" profile={profile} weight={weightN} macroPreset={macroPreset} onFinish={finish} editing={editing} />,
   ]
@@ -132,7 +134,7 @@ export default function Onboarding({ onDone, editing = false }: { onDone: () => 
     <div className="safe-top safe-bottom mx-auto min-h-dvh max-w-lg px-5">
       {step > (editing ? 1 : 0) && (
         <button onClick={() => setStep(step - 1)} className="mb-2 mt-1 text-accent font-medium">
-          Back
+          {t('Back')}
         </button>
       )}
       {step > 0 && (
@@ -148,25 +150,52 @@ export default function Onboarding({ onDone, editing = false }: { onDone: () => 
 }
 
 function Welcome({ onNext }: { onNext: () => void }) {
+  const language = useStore((s) => s.settings.language)
+  const updateSettings = useStore((s) => s.updateSettings)
   return (
-    <div className="flex min-h-[85dvh] flex-col justify-end pb-6">
-      <svg viewBox="0 0 120 120" className="mb-8 h-28 w-28" aria-hidden="true">
-        <circle cx="60" cy="60" r="46" fill="none" stroke="var(--line)" strokeWidth="12" />
-        <path d="M60 14 A46 46 0 1 1 18 79" fill="none" stroke="var(--accent)" strokeWidth="12" strokeLinecap="round" />
-        <path d="M18 79 A46 46 0 0 1 14 60" fill="none" stroke="var(--protein)" strokeWidth="12" strokeLinecap="round" />
-      </svg>
-      <h1 className="font-display text-5xl font-bold leading-[1.02] tracking-tight">
-        Eat well,
-        <br />
-        weigh less.
-      </h1>
-      <p className="mt-4 max-w-sm text-lg text-muted">
-        Log meals by search, barcode or photo. Plate counts the calories and keeps you on pace for your goal.
-      </p>
-      <button className="btn btn-primary mt-10 w-full text-lg" onClick={onNext}>
-        Set up my plan
-      </button>
-      <p className="mt-3 text-center text-xs text-muted">Free. Your data stays on this phone.</p>
+    <div className="flex min-h-[88dvh] flex-col">
+      <div className="flex justify-end pt-1">
+        <LanguageSwitch value={language} onChange={(language) => updateSettings({ language })} />
+      </div>
+      <div className="relative mx-auto mt-2 h-[300px] w-full max-w-[340px]">
+        <div className="pointer-events-none absolute inset-x-8 bottom-8 top-16 rounded-full bg-[radial-gradient(circle,rgb(69_240_160/0.28),transparent_70%)] blur-2xl" />
+        <PlateView />
+      </div>
+      <div className="mt-auto pb-6">
+        <h1 className="font-display text-5xl font-bold leading-[1.02] tracking-tight">
+          {t('Eat well,')}
+          <br />
+          <span className="glow-text text-accent">{t('weigh less.')}</span>
+        </h1>
+        <p className="mt-4 max-w-sm text-lg text-muted">{t('Log meals by search, barcode or photo. Plate counts the calories and keeps you on pace for your goal.')}</p>
+        <button className="btn btn-primary mt-10 w-full text-lg" onClick={onNext}>
+          {t('Set up my plan')}
+        </button>
+        <p className="mt-3 text-center text-xs text-muted">{t('Free. Your data stays on this phone.')}</p>
+      </div>
+    </div>
+  )
+}
+
+export function LanguageSwitch({ value, onChange }: { value: 'en' | 'ka'; onChange: (v: 'en' | 'ka') => void }) {
+  return (
+    <div className="glass flex rounded-full p-1 text-sm font-semibold" role="radiogroup" aria-label={t('Language / ენა')}>
+      {(
+        [
+          ['en', 'English'],
+          ['ka', 'ქართული'],
+        ] as const
+      ).map(([code, label]) => (
+        <button
+          key={code}
+          role="radio"
+          aria-checked={value === code}
+          onClick={() => onChange(code)}
+          className={`rounded-full px-3 py-1.5 ${value === code ? 'bg-accent text-accent-ink' : 'text-muted'}`}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   )
 }
@@ -187,7 +216,7 @@ function Result({
   const plan = caloriePlan(profile, weight)
   const macros = macroTargets(plan.target, macroPreset)
   const weeks = weeksToGoal(weight, profile.goalWeightKg, profile.ratePerWeekKg)
-  const goalDate = weeks ? parseKey(addDays(dateKey(), weeks * 7)).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : null
+  const goalDate = weeks ? parseKey(addDays(dateKey(), weeks * 7)).toLocaleDateString(locale(), { month: 'long', year: 'numeric' }) : null
   const b = bmi(weight, profile.heightCm)
 
   return (
@@ -195,42 +224,42 @@ function Result({
       <Title text="Your daily target" />
       <div className="rounded-[24px] bg-accent p-6 text-accent-ink">
         <div className="num text-7xl font-bold leading-none tracking-tight">{plan.target.toLocaleString()}</div>
-        <div className="mt-2 text-lg opacity-90">calories a day</div>
+        <div className="mt-2 text-lg opacity-90">{t('calories a day')}</div>
         {goalDate && (
           <p className="mt-5 border-t border-current/20 pt-4 opacity-95">
-            At {profile.ratePerWeekKg} kg a week you'd reach {profile.goalWeightKg} kg around <strong>{goalDate}</strong>.
+            {t('At {rate} kg a week you’d reach {goal} kg around', { rate: profile.ratePerWeekKg, goal: profile.goalWeightKg })} <strong>{goalDate}</strong>.
           </p>
         )}
       </div>
       <dl className="grid grid-cols-3 gap-2 text-center">
-        <Stat label="Burn at rest" value={plan.bmr} />
-        <Stat label="Burn per day" value={plan.maintenance} />
-        <Stat label="Daily deficit" value={plan.deficit} />
+        <Stat label={t('Burn at rest')} value={plan.bmr} />
+        <Stat label={t('Burn per day')} value={plan.maintenance} />
+        <Stat label={t('Daily deficit')} value={plan.deficit} />
       </dl>
       <div className="rounded-2xl bg-surface p-4 text-sm">
-        <div className="mb-2 font-semibold">Daily nutrients</div>
+        <div className="mb-2 font-semibold">{t('Daily nutrients')}</div>
         <div className="flex justify-between">
           <span>
-            <span className="num font-semibold text-protein">{macros.protein} g</span> protein
+            <span className="num font-semibold text-protein">{macros.protein} g</span> {t('protein')}
           </span>
           <span>
-            <span className="num font-semibold text-carbs">{macros.carbs} g</span> carbs
+            <span className="num font-semibold text-carbs">{macros.carbs} g</span> {t('carbs')}
           </span>
           <span>
-            <span className="num font-semibold text-fat">{macros.fat} g</span> fat
+            <span className="num font-semibold text-fat">{macros.fat} g</span> {t('fat')}
           </span>
         </div>
       </div>
       {plan.floored && (
         <p className="text-sm text-muted">
-          That pace would put you below {plan.target.toLocaleString()} calories, the lowest safe target without medical supervision, so Plate held it there. Progress will be a little slower.
+          {t('That pace would put you below {n} calories, the lowest safe target without medical supervision, so Plate held it there. Progress will be a little slower.', { n: plan.target.toLocaleString() })}
         </p>
       )}
       <p className="text-sm text-muted">
-        BMI {b.toFixed(1)}. These numbers are estimates; check with a doctor before big diet changes.
+        {t('BMI {bmi}. These numbers are estimates; check with a doctor before big diet changes.', { bmi: b.toFixed(1) })}
       </p>
       <button className="btn btn-primary w-full text-lg" onClick={onFinish}>
-        {editing ? 'Save plan' : 'Start tracking'}
+        {editing ? t('Save plan') : t('Start tracking')}
       </button>
     </div>
   )
@@ -248,16 +277,16 @@ function Stat({ label, value }: { label: string; value: number }) {
 function Title({ text, sub }: { text: string; sub?: string }) {
   return (
     <div>
-      <h1 className="font-display text-3xl font-bold tracking-tight">{text}</h1>
-      {sub && <p className="mt-1 text-muted">{sub}</p>}
+      <h1 className="font-display text-3xl font-bold tracking-tight">{t(text)}</h1>
+      {sub && <p className="mt-1 text-muted">{t(sub)}</p>}
     </div>
   )
 }
 
-function NextButton({ onClick, disabled, label = 'Continue' }: { onClick: () => void; disabled?: boolean; label?: string }) {
+function NextButton({ onClick, disabled, label }: { onClick: () => void; disabled?: boolean; label?: string }) {
   return (
     <button className="btn btn-primary mt-4 w-full text-lg" disabled={disabled} onClick={onClick}>
-      {label}
+      {label ?? t('Continue')}
     </button>
   )
 }

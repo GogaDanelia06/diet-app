@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { t, tName, tServing } from '../lib/i18n'
 import { scaleNutrients } from '../lib/calc'
 import { grams as fmtGrams, kcal, macro, num } from '../lib/format'
 import { useStore } from '../lib/store'
@@ -73,7 +74,7 @@ export default function FoodDetail({
   const isFav = favorites.some((f) => f.id === food.id)
   // Quick-add entries have no real weight; their single "serving" holds the typed numbers.
   const isQuick = food.source === 'quick'
-  const label = isQuick ? (q === 1 ? '1 serving' : `${q} servings`) : amountLabel(food, unit, q, totalGrams)
+  const label = isQuick ? (q === 1 ? t('1 serving') : t('{n} servings', { n: q })) : amountLabel(food, unit, q, totalGrams)
 
   function step(delta: number) {
     const stepSize = unit === GRAMS ? 10 : 0.5
@@ -101,11 +102,11 @@ export default function FoodDetail({
 
   return (
     <Sheet
-      title={entry ? 'Edit entry' : food.name}
+      title={entry ? t('Edit entry') : tName(food.name)}
       onClose={onClose}
       action={
         food.source !== 'quick' && (
-          <button onClick={() => toggleFavorite(food)} aria-pressed={isFav} aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'} className={`p-1 ${isFav ? 'text-carbs' : 'text-muted'}`}>
+          <button onClick={() => toggleFavorite(food)} aria-pressed={isFav} aria-label={isFav ? t('Remove from favorites') : t('Add to favorites')} className={`p-1 ${isFav ? 'text-carbs' : 'text-muted'}`}>
             <Icon name="star" className={`h-6 w-6 ${isFav ? 'fill-current' : ''}`} />
           </button>
         )
@@ -120,40 +121,40 @@ export default function FoodDetail({
                 onClose()
               }}
             >
-              Delete
+              {t('Delete')}
             </button>
           )}
           <button className="btn btn-primary flex-1 text-lg" disabled={totalGrams <= 0} onClick={submit}>
-            {onPick ? 'Add to recipe' : entry ? 'Save changes' : `Add to ${MEALS.find((m) => m.id === meal)!.label}`}
+            {onPick ? t('Add to recipe') : entry ? t('Save changes') : t('Add to {meal}', { meal: t(MEALS.find((m) => m.id === meal)!.label) })}
           </button>
         </div>
       }
     >
       <div className="space-y-5">
         <div>
-          {entry && <h3 className="font-display text-2xl font-semibold">{food.name}</h3>}
+          {entry && <h3 className="font-display text-2xl font-semibold">{tName(food.name)}</h3>}
           <p className="text-sm text-muted">
             {food.brand ? `${food.brand} · ` : ''}
-            {SOURCE_NOTE[food.source]}
+            {t(SOURCE_NOTE[food.source])}
           </p>
         </div>
 
         <div className="rounded-[20px] bg-surface p-5">
           <div className="flex items-baseline gap-2">
             <span className="num text-6xl font-bold tracking-tight">{kcal(n.kcal)}</span>
-            <span className="text-muted">kcal</span>
+            <span className="text-muted">{t('kcal')}</span>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-            <Macro label="Protein" value={n.protein} color="text-protein" />
-            <Macro label="Carbs" value={n.carbs} color="text-carbs" />
-            <Macro label="Fat" value={n.fat} color="text-fat" />
+            <Macro label={t('Protein')} value={n.protein} color="text-protein" />
+            <Macro label={t('Carbs')} value={n.carbs} color="text-carbs" />
+            <Macro label={t('Fat')} value={n.fat} color="text-fat" />
           </div>
         </div>
 
         <div>
-          <div className="mb-2 text-sm font-medium text-muted">Amount</div>
+          <div className="mb-2 text-sm font-medium text-muted">{t('Amount')}</div>
           <div className="flex items-center gap-2">
-            <button className="btn btn-quiet h-12 w-12 p-0 text-xl" onClick={() => step(-1)} aria-label="Less">
+            <button className="btn btn-quiet h-12 w-12 p-0 text-xl" onClick={() => step(-1)} aria-label={t('Less')}>
               −
             </button>
             <input
@@ -162,9 +163,9 @@ export default function FoodDetail({
               value={qty}
               onChange={(e) => setQty(e.target.value)}
               onFocus={(e) => e.target.select()}
-              aria-label="Quantity"
+              aria-label={t('Quantity')}
             />
-            <button className="btn btn-quiet h-12 w-12 p-0 text-xl" onClick={() => step(1)} aria-label="More">
+            <button className="btn btn-quiet h-12 w-12 p-0 text-xl" onClick={() => step(1)} aria-label={t('More')}>
               +
             </button>
           </div>
@@ -172,22 +173,22 @@ export default function FoodDetail({
             {!isQuick &&
               food.servings.map((s, i) => (
                 <Chip key={s.label + i} active={unit === i} onClick={() => changeUnit(i)}>
-                  {s.label} <span className="opacity-60">· {fmtGrams(s.grams)}</span>
+                  {tServing(s.label)} <span className="opacity-60">· {fmtGrams(s.grams)}</span>
                 </Chip>
               ))}
             {!isQuick && (
               <Chip active={unit === GRAMS} onClick={() => changeUnit(GRAMS)}>
-                grams
+                {t('grams')}
               </Chip>
             )}
           </div>
-          {!isQuick && <p className="mt-2 text-sm text-muted">Total: {fmtGrams(totalGrams)}</p>}
+          {!isQuick && <p className="mt-2 text-sm text-muted">{t('Total: {g}', { g: fmtGrams(totalGrams) })}</p>}
         </div>
 
         {!onPick && (
           <div>
-            <div className="mb-2 text-sm font-medium text-muted">Meal</div>
-            <Segmented value={meal} onChange={setMeal} options={MEALS.map((m) => ({ value: m.id, label: m.label }))} />
+            <div className="mb-2 text-sm font-medium text-muted">{t('Meal')}</div>
+            <Segmented value={meal} onChange={setMeal} options={MEALS.map((m) => ({ value: m.id, label: t(m.label) }))} />
           </div>
         )}
 

@@ -1,6 +1,7 @@
 import type { Food, Nutrients, PlanItem, PlanPrefs } from './types'
 import { uid } from './date'
 import type { RawPlanMeal } from './plan'
+import { aiLanguageNote, t } from './i18n'
 
 // Google Gemini, called straight from the phone with the user's own free API key.
 const FALLBACK_MODEL = 'gemini-3.5-flash-lite'
@@ -45,7 +46,7 @@ async function callGemini(
   body: Record<string, unknown>,
   model = cfg.model || FALLBACK_MODEL,
 ): Promise<string> {
-  if (!cfg.key) throw new AiError('Add your free Gemini key in Me → AI assistant first.', 0)
+  if (!cfg.key) throw new AiError(t('Add your free Gemini key in Me → AI assistant first.'), 0)
   let res: Response
   try {
     res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
@@ -54,7 +55,7 @@ async function callGemini(
       body: JSON.stringify(body),
     })
   } catch {
-    throw new AiError('No internet connection. AI features need to be online.', 0)
+    throw new AiError(t('No internet connection. AI features need to be online.'), 0)
   }
   if (!res.ok) {
     // Busy or unknown model: retry once on the lighter free model.
@@ -67,16 +68,16 @@ async function callGemini(
     } catch {
       // Keep the status-only message.
     }
-    if (res.status === 400 && /api key/i.test(detail)) throw new AiError('That Gemini key was rejected. Check it in Me → AI assistant.', 400)
-    if (res.status === 429) throw new AiError('The free AI limit is used up for now. Wait a minute (or until tomorrow) and try again.', 429)
-    throw new AiError(`AI request failed (${res.status}). ${detail}`.trim(), res.status)
+    if (res.status === 400 && /api key/i.test(detail)) throw new AiError(t('That Gemini key was rejected. Check it in Me → AI assistant.'), 400)
+    if (res.status === 429) throw new AiError(t('The free AI limit is used up for now. Wait a minute (or until tomorrow) and try again.'), 429)
+    throw new AiError(`${t('AI request failed ({s}).', { s: res.status })} ${detail}`.trim(), res.status)
   }
   const data = await res.json()
   const parts: { text?: string; thought?: boolean }[] = data?.candidates?.[0]?.content?.parts ?? []
   const text = parts.filter((p) => !p.thought && p.text).map((p) => p.text).join('')
   if (!text) {
     const reason = data?.candidates?.[0]?.finishReason ?? data?.promptFeedback?.blockReason
-    throw new AiError(reason ? `The AI returned no answer (${reason}).` : 'The AI returned no answer.', 200)
+    throw new AiError(reason ? t('The AI returned no answer ({r}).', { r: reason }) : t('The AI returned no answer.'), 200)
   }
   return text
 }
@@ -88,7 +89,7 @@ function parseJson<T>(text: string): T {
     const start = text.indexOf('{')
     const end = text.lastIndexOf('}')
     if (start >= 0 && end > start) return JSON.parse(text.slice(start, end + 1)) as T
-    throw new Error('The AI answer could not be read. Try again.')
+    throw new Error(t('The AI answer could not be read. Try again.'))
   }
 }
 
@@ -141,7 +142,7 @@ export async function analyzeMealPhoto(cfg: Config, base64Jpeg: string, hint: st
     { text: `Identify everything to be eaten in this photo and estimate its nutrition.${hint ? ` Extra details from the user: ${hint}` : ''}` },
   ]
   const text = await callGemini(cfg, {
-    system_instruction: { parts: [{ text: MEAL_RULES }] },
+    system_instruction: { parts: [{ text: MEAL_RULES + aiLanguageNote() }] },
     contents: [{ role: 'user', parts }],
     generation_config: { response_mime_type: 'application/json', response_schema: MEAL_SCHEMA },
   })
@@ -150,7 +151,7 @@ export async function analyzeMealPhoto(cfg: Config, base64Jpeg: string, hint: st
 
 export async function analyzeMealText(cfg: Config, description: string): Promise<AiMeal> {
   const text = await callGemini(cfg, {
-    system_instruction: { parts: [{ text: MEAL_RULES }] },
+    system_instruction: { parts: [{ text: MEAL_RULES + aiLanguageNote() }] },
     contents: [{ role: 'user', parts: [{ text: `Estimate the nutrition of what I ate: ${description}` }] }],
     generation_config: { response_mime_type: 'application/json', response_schema: MEAL_SCHEMA },
   })
@@ -184,7 +185,7 @@ export async function readNutritionLabel(cfg: Config, base64Jpeg: string): Promi
             text: `This is a food package or nutrition facts label. Read it and return values PER 100 g (or 100 ml).
 If the label only shows values per serving, convert them to per 100 g using the serving size.
 Convert kJ to kcal if needed (divide by 4.184). Give the serving size in grams if printed.
-Use the product name and brand if visible, otherwise a short descriptive name.`,
+Use the product name and brand if visible, otherwise a short descriptive name.${aiLanguageNote()}`,
           },
         ],
       },
@@ -216,7 +217,7 @@ export async function coachReply(cfg: Config, context: string, history: ChatTurn
           text: `You are a friendly, practical diet coach inside a calorie-tracking app. The user wants to lose weight safely.
 Give short, concrete answers (under 150 words) using plain text and simple "- " bullet lists; no tables.
 Base advice on the user's numbers below. Suggest real foods and portions with calories.
-Never recommend eating below 1200 kcal (women) or 1500 kcal (men) without a doctor, and suggest seeing a doctor for medical conditions.
+Never recommend eating below 1200 kcal (women) or 1500 kcal (men) without a doctor, and suggest seeing a doctor for medical conditions.${aiLanguageNote()}
 
 ${context}`,
         },
@@ -307,7 +308,7 @@ function planConstraints(r: Omit<PlanRequest, 'days' | 'slots'>) {
 export async function generateMealPlan(cfg: Config, r: PlanRequest): Promise<{ days?: { meals?: RawPlanMeal[] }[]; tips?: string }> {
   const slots = r.slots.map((s) => `${s.meal} about ${s.kcal} kcal`).join(', ')
   const text = await callGemini(cfg, {
-    system_instruction: { parts: [{ text: PLANNER_RULES }] },
+    system_instruction: { parts: [{ text: PLANNER_RULES + aiLanguageNote() }] },
     contents: [
       {
         role: 'user',
@@ -334,7 +335,7 @@ export async function swapPlanMeal(
   r: Omit<PlanRequest, 'days' | 'slots'> & { meal: string; kcal: number; avoidMeals: string[] },
 ): Promise<RawPlanMeal> {
   const text = await callGemini(cfg, {
-    system_instruction: { parts: [{ text: PLANNER_RULES }] },
+    system_instruction: { parts: [{ text: PLANNER_RULES + aiLanguageNote() }] },
     contents: [
       {
         role: 'user',
@@ -379,7 +380,7 @@ export async function estimateWorkout(cfg: Config, description: string): Promise
           {
             text: `Split this workout into separate activities. For each give a short English name, its minutes, and its MET value from the Compendium of Physical Activities (gross MET, matching the described intensity).
 If the total time isn't given, estimate a realistic duration. Count rest between sets as part of a strength session, not separately.
-Workout: ${description}`,
+Workout: ${description}${aiLanguageNote()}`,
           },
         ],
       },
@@ -395,4 +396,56 @@ Workout: ${description}`,
       met: Math.min(20, Math.max(1, Number(a.met) || 3)),
     }))
     .filter((a) => a.minutes > 0)
+}
+
+export interface AiWeeklyReport {
+  score: number
+  headline: string
+  summary: string
+  wins: string[]
+  tips: string[]
+  focus: string
+}
+
+const REPORT_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    score: NUM,
+    headline: STR,
+    summary: STR,
+    wins: { type: 'ARRAY', items: STR },
+    tips: { type: 'ARRAY', items: STR },
+    focus: STR,
+  },
+  required: ['score', 'headline', 'summary', 'wins', 'tips', 'focus'],
+}
+
+/** Reviews a week of logs and returns a score, wins and three concrete tips. */
+export async function weeklyReport(cfg: Config, week: string): Promise<AiWeeklyReport> {
+  const text = await callGemini(cfg, {
+    system_instruction: {
+      parts: [
+        {
+          text: `You are an encouraging but honest diet coach reviewing one week of a weight-loss diary.
+Score the week from 0 to 100 for how well it supports safe, steady weight loss (calories near target, enough protein and fibre, consistency of logging, activity, weight trend).
+"headline": one short upbeat line (under 8 words). "summary": 2 sentences on what happened, using the real numbers.
+"wins": 2 or 3 specific things that went well. "tips": exactly 3 concrete, practical changes for next week, naming real foods, amounts or times.
+"focus": the single most important thing to work on next week, under 10 words.
+If few days were logged, say so kindly and make logging every day one of the tips. Never suggest eating below the person's target.${aiLanguageNote()}`,
+        },
+      ],
+    },
+    contents: [{ role: 'user', parts: [{ text: week }] }],
+    generation_config: { response_mime_type: 'application/json', response_schema: REPORT_SCHEMA },
+  })
+  const r = parseJson<Partial<AiWeeklyReport>>(text)
+  const list = (v: unknown) => (Array.isArray(v) ? v.map(String).filter(Boolean) : [])
+  return {
+    score: Math.max(0, Math.min(100, Math.round(Number(r.score) || 0))),
+    headline: String(r.headline || ''),
+    summary: String(r.summary || ''),
+    wins: list(r.wins).slice(0, 3),
+    tips: list(r.tips).slice(0, 3),
+    focus: String(r.focus || ''),
+  }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { locale, t } from '../lib/i18n'
 import { fastStreak, formatDuration, hoursBetween } from '../lib/insights'
 import { shortDate, dateKey } from '../lib/date'
 import { useStore } from '../lib/store'
@@ -17,18 +18,18 @@ export const FAST_PLANS = [
 function useNow(intervalMs: number) {
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), intervalMs)
+    const timer = setInterval(() => setNow(Date.now()), intervalMs)
     const onVisible = () => setNow(Date.now())
     document.addEventListener('visibilitychange', onVisible)
     return () => {
-      clearInterval(t)
+      clearInterval(timer)
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [intervalMs])
   return now
 }
 
-const clock = (ms: number) => new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+const clock = (ms: number) => new Date(ms).toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit' })
 
 export default function FastingCard() {
   const fasting = useStore((s) => s.fasting)
@@ -48,9 +49,9 @@ export default function FastingCard() {
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold">Fasting</h2>
+        <h2 className="font-display text-lg font-semibold">{t('Fasting')}</h2>
         <button className="text-sm font-medium text-accent" onClick={() => setHistory(true)}>
-          History{streak > 1 ? ` · ${streak} in a row` : ''}
+          {t('History')}{streak > 1 ? ` · ${t('{n} in a row', { n: streak })}` : ''}
         </button>
       </div>
 
@@ -61,11 +62,11 @@ export default function FastingCard() {
             <div className="num text-3xl font-bold leading-none">{formatDuration(elapsed)}</div>
             <div className="mt-1 text-sm text-muted">
               {done
-                ? `You reached your ${active.hours}-hour goal`
-                : `${formatDuration(active.hours - elapsed)} to go · ends ${clock(active.start + active.hours * 3_600_000)}`}
+                ? t('You reached your {h}-hour goal', { h: active.hours })
+                : t('{left} to go · ends {time}', { left: formatDuration(active.hours - elapsed), time: clock(active.start + active.hours * 3_600_000) })}
             </div>
             <button className="btn btn-quiet mt-3 px-3 py-2 text-sm" onClick={endFast}>
-              End fast
+              {t('End fast')}
             </button>
           </div>
         </div>
@@ -74,13 +75,13 @@ export default function FastingCard() {
           <div className="flex flex-wrap gap-2">
             {FAST_PLANS.map((p) => (
               <Chip key={p.hours} active={goal === p.hours} onClick={() => updateSettings({ fastingHours: p.hours })}>
-                {p.label}
+                {t(p.label)}
               </Chip>
             ))}
           </div>
           <div className="flex gap-2">
             <button className="btn btn-primary flex-1 py-2.5" onClick={() => startFast(goal)}>
-              Start {goal}-hour fast now
+              {t('Start {h}-hour fast now', { h: goal })}
             </button>
             <StartEarlier onStart={(start) => startFast(goal, start)} />
           </div>
@@ -95,11 +96,11 @@ export default function FastingCard() {
 function StartEarlier({ onStart }: { onStart: (start: number) => void }) {
   return (
     <label className="btn btn-quiet relative cursor-pointer py-2.5">
-      Earlier…
+      {t('Earlier…')}
       <input
         type="time"
         className="absolute inset-0 opacity-0"
-        aria-label="Start time of your fast"
+        aria-label={t('Start time of your fast')}
         onChange={(e) => {
           const [h, m] = e.target.value.split(':').map(Number)
           if (Number.isNaN(h)) return
@@ -144,22 +145,22 @@ function FastHistory({ onClose }: { onClose: () => void }) {
   const avg = history.length ? history.reduce((n, f) => n + hoursBetween(f.start, f.end), 0) / history.length : 0
 
   return (
-    <Sheet title="Fasting history" onClose={onClose}>
+    <Sheet title={t('Fasting history')} onClose={onClose}>
       <div className="space-y-4">
         {history.length > 0 && (
           <div className="grid grid-cols-3 gap-2 text-center">
-            <Stat label="Fasts" value={String(history.length)} />
-            <Stat label="Reached goal" value={String(reached)} />
-            <Stat label="Average" value={`${formatDuration(avg)} h`} />
+            <Stat label={t('Fasts')} value={String(history.length)} />
+            <Stat label={t('Reached goal')} value={String(reached)} />
+            <Stat label={t('Average')} value={`${formatDuration(avg)} h`} />
           </div>
         )}
         {active && (
           <button className="btn btn-quiet w-full text-over" onClick={cancelFast}>
-            Cancel the current fast without saving
+            {t('Cancel the current fast without saving')}
           </button>
         )}
         {history.length === 0 ? (
-          <p className="text-muted">Finished fasts show up here.</p>
+          <p className="text-muted">{t('Finished fasts show up here.')}</p>
         ) : (
           <ul className="divide-y divide-line rounded-[18px] bg-surface px-4">
             {history.map((f) => {
@@ -169,11 +170,11 @@ function FastHistory({ onClose }: { onClose: () => void }) {
                   <div className="flex-1">
                     <div className="font-medium">{shortDate(dateKey(new Date(f.start)))}</div>
                     <div className="text-sm text-muted">
-                      {clock(f.start)} – {clock(f.end)} · goal {f.hours} h
+                      {clock(f.start)} – {clock(f.end)} · {t('goal {h} h', { h: f.hours })}
                     </div>
                   </div>
                   <span className={`num font-semibold ${h >= f.hours ? 'text-accent' : ''}`}>{formatDuration(h)}</span>
-                  <button className="p-1 text-muted" onClick={() => removeFast(f.start)} aria-label="Delete this fast">
+                  <button className="p-1 text-muted" onClick={() => removeFast(f.start)} aria-label={t('Delete this fast')}>
                     <Icon name="trash" className="h-4 w-4" />
                   </button>
                 </li>
@@ -182,7 +183,7 @@ function FastHistory({ onClose }: { onClose: () => void }) {
           </ul>
         )}
         <p className="text-xs text-muted">
-          Fasting isn’t right for everyone. Skip it if you’re pregnant, have diabetes or a history of eating disorders, and ask a doctor if unsure.
+          {t('Fasting isn’t right for everyone. Skip it if you’re pregnant, have diabetes or a history of eating disorders, and ask a doctor if unsure.')}
         </p>
       </div>
     </Sheet>

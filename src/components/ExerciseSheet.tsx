@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { t, tName } from '../lib/i18n'
 import { estimateWorkout } from '../lib/ai'
 import { BASELINE_STEPS, EXERCISES, EXERCISE_CATEGORIES, exerciseKcal, metForSpeed, stepsKcal, type ExerciseType } from '../lib/exercises'
 import { kcal, num } from '../lib/format'
@@ -14,15 +15,15 @@ type Tab = 'activity' | 'steps' | 'describe'
 export default function ExerciseSheet({ date, onClose }: { date: string; onClose: () => void }) {
   const [tab, setTab] = useState<Tab>('activity')
   return (
-    <Sheet title="Add exercise" onClose={onClose}>
+    <Sheet title={t('Add exercise')} onClose={onClose}>
       <div className="space-y-4">
         <Segmented
           value={tab}
           onChange={setTab}
           options={[
-            { value: 'activity', label: 'Activity' },
-            { value: 'steps', label: 'Steps' },
-            { value: 'describe', label: 'Describe (AI)' },
+            { value: 'activity', label: t('Activity') },
+            { value: 'steps', label: t('Steps') },
+            { value: 'describe', label: t('Describe (AI)') },
           ]}
         />
         {tab === 'activity' && <ActivityTab date={date} onDone={onClose} />}
@@ -64,7 +65,7 @@ function ActivityTab({ date, onDone }: { date: string; onDone: () => void }) {
     <div className="space-y-4">
       {recent.length > 0 && !q && (
         <div>
-          <h3 className="mb-1 text-sm font-medium text-muted">Repeat a recent workout</h3>
+          <h3 className="mb-1 text-sm font-medium text-muted">{t('Repeat a recent workout')}</h3>
           <ul className="divide-y divide-line rounded-[18px] bg-surface px-4">
             {recent.map((e) => {
               const burned = exerciseKcal(e.met!, weight, e.minutes)
@@ -78,13 +79,13 @@ function ActivityTab({ date, onDone }: { date: string; onDone: () => void }) {
                     }}
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium">{e.name}</div>
+                      <div className="truncate font-medium">{tName(e.name)}</div>
                       <div className="text-sm text-muted">
-                        {e.minutes} min{e.distanceKm ? ` · ${e.distanceKm} km` : ''}
+                        {t('{n} min', { n: e.minutes })}{e.distanceKm ? ` · ${e.distanceKm} km` : ''}
                       </div>
                     </div>
                     <span className="num text-sm">
-                      <span className="font-semibold">{kcal(burned)}</span> <span className="text-muted">kcal</span>
+                      <span className="font-semibold">{kcal(burned)}</span> <span className="text-muted">{t('kcal')}</span>
                     </span>
                     <Icon name="plus" className="h-5 w-5 text-accent" />
                   </button>
@@ -97,13 +98,13 @@ function ActivityTab({ date, onDone }: { date: string; onDone: () => void }) {
 
       <div className="relative">
         <Icon name="search" className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
-        <input type="search" className="field pl-10" placeholder="Search activities" value={query} onChange={(e) => setQuery(e.target.value)} />
+        <input type="search" className="field pl-10" placeholder={t('Search activities')} value={query} onChange={(e) => setQuery(e.target.value)} />
       </div>
       {!q && (
         <div className="flex flex-wrap gap-2">
           {EXERCISE_CATEGORIES.map((c) => (
             <Chip key={c} active={c === category} onClick={() => setCategory(c)}>
-              {c}
+              {tName(c)}
             </Chip>
           ))}
         </div>
@@ -112,12 +113,12 @@ function ActivityTab({ date, onDone }: { date: string; onDone: () => void }) {
         {list.map((e) => (
           <li key={e.name}>
             <button className="flex w-full items-center gap-3 py-3 text-left" onClick={() => setPicked(e)}>
-              <span className="flex-1 font-medium">{e.name}</span>
-              <span className="num text-sm text-muted">{kcal(exerciseKcal(e.met, weight, 30))} kcal / 30 min</span>
+              <span className="flex-1 font-medium">{tName(e.name)}</span>
+              <span className="num text-sm text-muted">{t('{n} kcal / 30 min', { n: kcal(exerciseKcal(e.met, weight, 30)) })}</span>
             </button>
           </li>
         ))}
-        {list.length === 0 && <li className="py-3 text-muted">No match. Try the Describe (AI) tab.</li>}
+        {list.length === 0 && <li className="py-3 text-muted">{t('No match. Try the Describe (AI) tab.')}</li>}
       </ul>
     </div>
   )
@@ -138,23 +139,23 @@ function ActivityDetail({ type, date, onBack, onDone }: { type: ExerciseType; da
   return (
     <div className="space-y-5">
       <button onClick={onBack} className="flex items-center gap-1 text-sm font-medium text-accent">
-        <Icon name="left" className="h-4 w-4" /> All activities
+        <Icon name="left" className="h-4 w-4" /> {t('All activities')}
       </button>
-      <h3 className="font-display text-2xl font-semibold">{type.name}</h3>
+      <h3 className="font-display text-2xl font-semibold">{tName(type.name)}</h3>
 
-      <Field label="Minutes">
+      <Field label={t('Minutes')}>
         <input className="field num text-2xl" inputMode="numeric" value={minutes} onChange={(e) => setMinutes(e.target.value)} />
         <div className="mt-2 flex flex-wrap gap-2">
           {[15, 30, 45, 60, 90].map((m) => (
             <Chip key={m} active={mins === m} onClick={() => setMinutes(String(m))}>
-              {m} min
+              {t('{n} min', { n: m })}
             </Chip>
           ))}
         </div>
       </Field>
 
       {type.distance && (
-        <Field label="Distance, km (optional)" hint={speed ? `${speed.toFixed(1)} km/h, so the effort is set from your speed` : 'Add it for a more exact number'}>
+        <Field label={t('Distance, km (optional)')} hint={speed ? t('{speed} km/h, so the effort is set from your speed', { speed: speed.toFixed(1) }) : t('Add it for a more exact number')}>
           <input className="field num" inputMode="decimal" value={distance} onChange={(e) => setDistance(e.target.value)} placeholder="5" />
         </Field>
       )}
@@ -162,10 +163,10 @@ function ActivityDetail({ type, date, onBack, onDone }: { type: ExerciseType; da
       <div className="rounded-[20px] bg-surface p-5">
         <div className="flex items-baseline gap-2">
           <span className="num text-5xl font-bold tracking-tight">{kcal(burned)}</span>
-          <span className="text-muted">kcal burned</span>
+          <span className="text-muted">{t('kcal burned')}</span>
         </div>
         <p className="mt-2 text-sm text-muted">
-          Extra calories above resting, for your weight of {weight} kg. Your daily target already covers what you burn sitting still.
+          {t('Extra calories above resting, for your weight of {kg} kg. Your daily target already covers what you burn sitting still.', { kg: weight })}
         </p>
       </div>
 
@@ -177,7 +178,7 @@ function ActivityDetail({ type, date, onBack, onDone }: { type: ExerciseType; da
           onDone()
         }}
       >
-        Add {kcal(burned)} kcal
+        {t('Add {n} kcal', { n: kcal(burned) })}
       </button>
     </div>
   )
@@ -196,22 +197,22 @@ function StepsTab({ date, onDone }: { date: string; onDone: () => void }) {
   return (
     <div className="space-y-4">
       <p className="text-muted">
-        Copy today’s steps from the Health app or your watch. Plate can’t read Apple Health directly, so update the number whenever you like.
+        {t('Copy today’s steps from the Health app or your watch. Plate can’t read Apple Health directly, so update the number whenever you like.')}
       </p>
-      <Field label="Steps today">
+      <Field label={t('Steps today')}>
         <input className="field num text-3xl" inputMode="numeric" value={value} onChange={(e) => setValue(e.target.value)} placeholder="0" />
       </Field>
       <div className="rounded-[20px] bg-surface p-4 text-sm">
         <div className="flex justify-between">
-          <span className="text-muted">Daily goal</span>
+          <span className="text-muted">{t('Daily goal')}</span>
           <span className="num font-semibold">{goal.toLocaleString()}</span>
         </div>
         <div className="mt-2 flex justify-between">
-          <span className="text-muted">Calories counted</span>
-          <span className="num font-semibold">{kcal(stepsKcal(steps, weight, profile.activity))} kcal</span>
+          <span className="text-muted">{t('Calories counted')}</span>
+          <span className="num font-semibold">{kcal(stepsKcal(steps, weight, profile.activity))} {t('kcal')}</span>
         </div>
         <p className="mt-3 text-muted">
-          Your activity level already includes about {baseline.toLocaleString()} steps a day, so only steps above that add calories. If your watch already counted a walk, don’t add it again as an activity.
+          {t('Your activity level already includes about {n} steps a day, so only steps above that add calories. If your watch already counted a walk, don’t add it again as an activity.', { n: baseline.toLocaleString() })}
         </p>
       </div>
       <button
@@ -221,7 +222,7 @@ function StepsTab({ date, onDone }: { date: string; onDone: () => void }) {
           onDone()
         }}
       >
-        Save steps
+        {t('Save steps')}
       </button>
     </div>
   )
@@ -253,7 +254,7 @@ function DescribeTab({ date, onDone }: { date: string; onDone: () => void }) {
       const result = await estimateWorkout({ key: settings.geminiKey, model: settings.geminiModel }, text.trim())
       setParts(result.map((p) => ({ name: p.name, met: p.met, minutes: String(p.minutes), include: true })))
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not estimate that workout.')
+      setError(e instanceof Error ? e.message : t('Could not estimate that workout.'))
     } finally {
       setLoading(false)
     }
@@ -268,16 +269,16 @@ function DescribeTab({ date, onDone }: { date: string; onDone: () => void }) {
         className="field min-h-28"
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="e.g. 45 min at the gym: squats, bench press and rows, then 15 min on the treadmill"
+        placeholder={t('e.g. 45 min at the gym: squats, bench press and rows, then 15 min on the treadmill')}
       />
       <button className="btn btn-primary w-full" disabled={!text.trim() || loading} onClick={run}>
-        <Icon name="sparkle" className="h-5 w-5" /> Work out calories
+        <Icon name="sparkle" className="h-5 w-5" /> {t('Work out calories')}
       </button>
-      {loading && <Spinner label="Working it out…" />}
+      {loading && <Spinner label={t('Working it out…')} />}
       {error && <ErrorNote>{error}</ErrorNote>}
       {parts && (
         <div className="space-y-3">
-          {parts.length === 0 && <p className="text-muted">No activity found. Add more detail, like what you did and for how long.</p>}
+          {parts.length === 0 && <p className="text-muted">{t('No activity found. Add more detail, like what you did and for how long.')}</p>}
           <ul className="divide-y divide-line rounded-[18px] bg-surface px-4">
             {parts.map((p, i) => (
               <li key={i} className={`flex items-center gap-3 py-3 ${p.include ? '' : 'opacity-45'}`}>
@@ -286,7 +287,7 @@ function DescribeTab({ date, onDone }: { date: string; onDone: () => void }) {
                   className="h-5 w-5 accent-[var(--accent)]"
                   checked={p.include}
                   onChange={(e) => setParts(parts.map((x, j) => (j === i ? { ...x, include: e.target.checked } : x)))}
-                  aria-label={`Include ${p.name}`}
+                  aria-label={t('Include {name}', { name: p.name })}
                 />
                 <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
                 <label className="flex items-center gap-1 text-sm text-muted">
@@ -295,9 +296,9 @@ function DescribeTab({ date, onDone }: { date: string; onDone: () => void }) {
                     inputMode="numeric"
                     value={p.minutes}
                     onChange={(e) => setParts(parts.map((x, j) => (j === i ? { ...x, minutes: e.target.value } : x)))}
-                    aria-label={`Minutes of ${p.name}`}
+                    aria-label={t('Minutes of {name}', { name: p.name })}
                   />
-                  min
+                  {t('min')}
                 </label>
                 <span className="num w-12 text-right font-semibold">{kcal(exerciseKcal(p.met, weight, num(p.minutes)))}</span>
               </li>
@@ -314,7 +315,7 @@ function DescribeTab({ date, onDone }: { date: string; onDone: () => void }) {
               onDone()
             }}
           >
-            Add {kcal(total)} kcal
+            {t('Add {n} kcal', { n: kcal(total) })}
           </button>
         </div>
       )}

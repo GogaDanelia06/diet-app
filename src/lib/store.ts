@@ -21,6 +21,7 @@ import type {
   Recipe,
   SavedMeal,
   Settings,
+  WeeklyReport,
   WeightLog,
 } from './types'
 
@@ -39,6 +40,7 @@ export const DEFAULT_SETTINGS: Settings = {
   stepGoal: 8000,
   showFasting: true,
   fastingHours: 16,
+  language: 'en',
   geminiKey: '',
   geminiModel: 'gemini-3.8-flash',
   usdaKey: '',
@@ -61,11 +63,14 @@ export interface AppData {
   measurements: BodyLog[]
   photos: PhotoMeta[]
   savedMeals: SavedMeal[]
+  /** Achievement id → when it was unlocked. */
+  achievements: Record<string, number>
+  reports: WeeklyReport[]
 }
 
 const DATA_KEYS = [
   'profile', 'settings', 'entries', 'customFoods', 'recipes', 'favorites', 'weights', 'water', 'exercises',
-  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals',
+  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports',
 ] as const satisfies readonly (keyof AppData)[]
 
 function pickData(st: AppData): AppData {
@@ -106,6 +111,8 @@ interface Actions {
   saveMeal: (name: string, entries: DiaryEntry[]) => void
   removeSavedMeal: (id: string) => void
   logSavedMeal: (id: string, date: string, meal: Meal) => void
+  unlockAchievements: (ids: string[]) => void
+  addReport: (r: WeeklyReport) => void
   importData: (data: Partial<AppData>) => void
   resetAll: () => void
 }
@@ -127,6 +134,8 @@ const EMPTY: AppData = {
   measurements: [],
   photos: [],
   savedMeals: [],
+  achievements: {},
+  reports: [],
 }
 
 /** Progress photos are kept as separate records so the main data stays small. */
@@ -262,6 +271,9 @@ export const useStore = create<AppData & Actions>()(
           const added = saved.items.map((i) => ({ ...i, id: uid(), date, meal, createdAt: Date.now() }))
           return { entries: [...st.entries, ...added] }
         }),
+      unlockAchievements: (ids) =>
+        setState((st) => ({ achievements: { ...st.achievements, ...Object.fromEntries(ids.map((id) => [id, Date.now()])) } })),
+      addReport: (r) => setState((st) => ({ reports: [r, ...st.reports].slice(0, 26) })),
       importData: (data) =>
         setState((st) => ({
           ...EMPTY,

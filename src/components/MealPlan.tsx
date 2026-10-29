@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { locale, t, tServing } from '../lib/i18n'
 import { generateMealPlan, swapPlanMeal } from '../lib/ai'
 import { dateKey, dayLabel, parseKey, shortDate } from '../lib/date'
 import { kcal, macro } from '../lib/format'
@@ -57,7 +58,7 @@ function PlanSetup({ onDone, onCancel }: { onDone: () => void; onCancel?: () => 
       setMealPlan(buildPlan(raw, dateKey(), targets.kcal))
       onDone()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'The plan could not be made. Try again.')
+      setError(e instanceof Error ? e.message : t('The plan could not be made. Try again.'))
     } finally {
       setLoading(false)
     }
@@ -68,13 +69,13 @@ function PlanSetup({ onDone, onCancel }: { onDone: () => void; onCancel?: () => 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="font-display text-2xl font-semibold">Plan my meals</h2>
+        <h2 className="font-display text-2xl font-semibold">{t('Plan my meals')}</h2>
         <p className="mt-1 text-muted">
-          The AI writes a menu that adds up to your {kcal(targets.kcal)} kcal a day with at least {targets.protein} g protein.
+          {t('The AI writes a menu that adds up to your {kcal} kcal a day with at least {protein} g protein.', { kcal: kcal(targets.kcal), protein: targets.protein })}
         </p>
       </div>
 
-      <Field label="What do you eat?">
+      <Field label={t('What do you eat?')}>
         <div className="grid grid-cols-2 gap-2">
           {DIETS.map((d) => (
             <button
@@ -83,71 +84,71 @@ function PlanSetup({ onDone, onCancel }: { onDone: () => void; onCancel?: () => 
               aria-pressed={prefs.diet === d.value}
               className={`rounded-2xl border px-3 py-2.5 text-left font-medium ${prefs.diet === d.value ? 'border-accent bg-accent-soft' : 'border-line bg-surface'}`}
             >
-              {d.label}
+              {t(d.label)}
             </button>
           ))}
         </div>
       </Field>
 
-      <Field label="Meals a day">
+      <Field label={t('Meals a day')}>
         <Segmented
           value={String(prefs.snacks) as '0' | '1' | '2'}
           onChange={(v) => set('snacks')(Number(v) as PlanPrefs['snacks'])}
           options={[
-            { value: '0', label: '3 meals' },
-            { value: '1', label: '+ 1 snack' },
-            { value: '2', label: '+ 2 snacks' },
+            { value: '0', label: t('3 meals') },
+            { value: '1', label: t('+ 1 snack') },
+            { value: '2', label: t('+ 2 snacks') },
           ]}
         />
       </Field>
 
-      <Field label="Cooking">
+      <Field label={t('Cooking')}>
         <Segmented
           value={prefs.cooking}
           onChange={set('cooking')}
           options={[
-            { value: 'quick', label: 'Quick and easy' },
-            { value: 'enjoy', label: 'I like to cook' },
+            { value: 'quick', label: t('Quick and easy') },
+            { value: 'enjoy', label: t('I like to cook') },
           ]}
         />
       </Field>
 
-      <Field label="Foods you like (optional)">
+      <Field label={t('Foods you like (optional)')}>
         <textarea
           className="field min-h-20"
           value={prefs.likes}
           onChange={(e) => set('likes')(e.target.value)}
-          placeholder="Georgian food, chicken, buckwheat, yogurt, lots of vegetables"
+          placeholder={t('Georgian food, chicken, buckwheat, yogurt, lots of vegetables')}
         />
       </Field>
 
-      <Field label="Never include (optional)" hint="Foods you dislike or are allergic to">
-        <input className="field" value={prefs.avoid} onChange={(e) => set('avoid')(e.target.value)} placeholder="mushrooms, peanuts" />
+      <Field label={t('Never include (optional)')} hint={t('Foods you dislike or are allergic to')}>
+        <input className="field" value={prefs.avoid} onChange={(e) => set('avoid')(e.target.value)} placeholder={t('mushrooms, peanuts')} />
       </Field>
 
-      <Field label="How many days?">
+      <Field label={t('How many days?')}>
         <Segmented
           value={String(prefs.days) as '1' | '3' | '7'}
           onChange={(v) => set('days')(Number(v) as PlanPrefs['days'])}
           options={[
-            { value: '1', label: '1 day' },
-            { value: '3', label: '3 days' },
-            { value: '7', label: 'A week' },
+            { value: '1', label: t('1 day') },
+            { value: '3', label: t('3 days') },
+            { value: '7', label: t('A week') },
           ]}
         />
       </Field>
 
       {loading ? (
-        <Spinner label={prefs.days === 7 ? 'Writing your week… this takes up to a minute' : 'Writing your plan…'} />
+        <Spinner label={prefs.days === 7 ? t('Writing your week… this takes up to a minute') : t('Writing your plan…')} />
       ) : (
         <div className="flex gap-2">
           {onCancel && (
             <button className="btn btn-quiet" onClick={onCancel}>
-              Cancel
+              {t('Cancel')}
             </button>
           )}
           <button className="btn btn-primary flex-1 text-lg" onClick={make}>
-            <Icon name="sparkle" className="h-5 w-5" /> Make my plan
+            <Icon name="sparkle" className="h-5 w-5" /> {t('Make my plan')}
           </button>
         </div>
       )}
@@ -169,8 +170,8 @@ function PlanDays({ plan, onNewPlan }: { plan: MealPlan; onNewPlan: () => void }
 
   useEffect(() => {
     if (!toast) return
-    const t = setTimeout(() => setToast(''), 2200)
-    return () => clearTimeout(t)
+    const timer = setTimeout(() => setToast(''), 2200)
+    return () => clearTimeout(timer)
   }, [toast])
 
   const day = plan.days.find((d) => d.date === date) ?? plan.days[0]
@@ -190,7 +191,7 @@ function PlanDays({ plan, onNewPlan }: { plan: MealPlan; onNewPlan: () => void }
       })
       replacePlanMeal(day.date, meal.id, cleanPlanMeal({ ...raw, meal: undefined }, meal.meal))
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not swap that meal. Try again.')
+      setError(e instanceof Error ? e.message : t('Could not swap that meal. Try again.'))
     } finally {
       setSwapping('')
     }
@@ -198,28 +199,28 @@ function PlanDays({ plan, onNewPlan }: { plan: MealPlan; onNewPlan: () => void }
 
   return (
     <div className="space-y-3">
-      <h2 className="font-display text-2xl font-semibold">Your meal plan</h2>
+      <h2 className="font-display text-2xl font-semibold">{t('Your meal plan')}</h2>
       <div className="grid grid-cols-2 gap-2">
         <button className="btn btn-quiet py-2.5" onClick={() => setShopping(true)}>
-          Shopping list
+          {t('Shopping list')}
         </button>
         <button className="btn btn-quiet py-2.5" onClick={onNewPlan}>
-          New plan
+          {t('New plan')}
         </button>
       </div>
 
-      {finished && <p className="rounded-xl bg-accent-soft px-3 py-2 text-sm">This plan has ended. Tap New plan for the next days.</p>}
+      {finished && <p className="rounded-xl bg-accent-soft px-3 py-2 text-sm">{t('This plan has ended. Tap New plan for the next days.')}</p>}
       {Math.abs(plan.targetKcal - targets.kcal) >= 100 && !finished && (
         <p className="text-sm text-muted">
-          Your target is now {kcal(targets.kcal)} kcal; this plan was made for {kcal(plan.targetKcal)}. Make a new plan to match.
+          {t('Your target is now {a} kcal; this plan was made for {b}. Make a new plan to match.', { a: kcal(targets.kcal), b: kcal(plan.targetKcal) })}
         </p>
       )}
 
       {plan.days.length > 1 && (
-        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4" role="tablist" aria-label="Plan days">
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4" role="tablist" aria-label={t('Plan days')}>
           {plan.days.map((d) => {
             const done = d.meals.every((m) => m.logged)
-            const label = d.date === today ? 'Today' : parseKey(d.date).toLocaleDateString(undefined, { weekday: 'short' })
+            const label = d.date === today ? t('Today') : parseKey(d.date).toLocaleDateString(locale(), { weekday: 'short' })
             return (
               <button
                 key={d.date}
@@ -243,15 +244,15 @@ function PlanDays({ plan, onNewPlan }: { plan: MealPlan; onNewPlan: () => void }
         <div className="flex items-baseline justify-between">
           <span className="text-muted">{dayLabel(day.date)}</span>
           <span>
-            <span className="num text-xl font-semibold">{kcal(totals.kcal)}</span> <span className="text-muted">kcal ·</span>{' '}
-            <span className="num font-semibold text-protein">{macro(totals.protein)} g</span> <span className="text-muted">protein</span>
+            <span className="num text-xl font-semibold">{kcal(totals.kcal)}</span> <span className="text-muted">{t('kcal ·')}</span>{' '}
+            <span className="num font-semibold text-protein">{macro(totals.protein)} g</span> <span className="text-muted">{t('protein')}</span>
           </span>
         </div>
         {Math.abs(totals.kcal - plan.targetKcal) > plan.targetKcal * 0.1 && (
           <p className="mt-1 text-sm text-muted">
             {totals.kcal < plan.targetKcal
-              ? `That’s ${kcal(plan.targetKcal - totals.kcal)} kcal under your target. Add a snack or bigger portions so you don’t get too hungry.`
-              : `That’s ${kcal(totals.kcal - plan.targetKcal)} kcal over your target. Swap a meal or make portions smaller.`}
+              ? t('That’s {n} kcal under your target. Add a snack or bigger portions so you don’t get too hungry.', { n: kcal(plan.targetKcal - totals.kcal) })
+              : t('That’s {n} kcal over your target. Swap a meal or make portions smaller.', { n: kcal(totals.kcal - plan.targetKcal) })}
           </p>
         )}
       </div>
@@ -266,7 +267,7 @@ function PlanDays({ plan, onNewPlan }: { plan: MealPlan; onNewPlan: () => void }
           busy={!!swapping}
           onLog={() => {
             logPlanMeal(day.date, m.id)
-            setToast(`Added to ${MEALS.find((x) => x.id === m.meal)!.label}, ${dayLabel(day.date)}`)
+            setToast(t('Added to {meal}, {day}', { meal: t(MEALS.find((x) => x.id === m.meal)!.label), day: dayLabel(day.date) }))
           }}
           onSwap={() => swap(m)}
         />
@@ -274,7 +275,7 @@ function PlanDays({ plan, onNewPlan }: { plan: MealPlan; onNewPlan: () => void }
 
       {plan.tips && (
         <div className="rounded-[20px] bg-accent-soft p-4">
-          <h3 className="mb-1 font-display font-semibold">Tips</h3>
+          <h3 className="mb-1 font-display font-semibold">{t('Tips')}</h3>
           <p className="whitespace-pre-wrap text-sm">{plan.tips}</p>
         </div>
       )}
@@ -307,17 +308,17 @@ function PlanMealCard({
   onLog: () => void
   onSwap: () => void
 }) {
-  const t = mealTotals(meal)
+  const tot = mealTotals(meal)
   return (
     <section className="rounded-[20px] bg-surface p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm font-medium text-muted">{MEALS.find((x) => x.id === meal.meal)!.label}</span>
+        <span className="text-sm font-medium text-muted">{t(MEALS.find((x) => x.id === meal.meal)!.label)}</span>
         <span className="num text-sm text-muted">
-          <span className="font-semibold text-ink">{kcal(t.kcal)}</span> kcal
+          <span className="font-semibold text-ink">{kcal(tot.kcal)}</span> kcal
         </span>
       </div>
       {swapping ? (
-        <Spinner label="Finding something else…" />
+        <Spinner label={t('Finding something else…')} />
       ) : (
         <>
           <h3 className="mt-0.5 font-display text-xl font-semibold leading-snug">{meal.name}</h3>
@@ -326,7 +327,7 @@ function PlanMealCard({
             {meal.items.map((i, idx) => (
               <li key={idx} className="flex justify-between gap-3">
                 <span className="min-w-0">
-                  {i.name} <span className="text-muted">· {i.portion ? `${i.portion}, ` : ''}{Math.round(i.grams)} g</span>
+                  {i.name} <span className="text-muted">· {i.portion ? `${tServing(i.portion)}, ` : ''}{Math.round(i.grams)} g</span>
                 </span>
                 <span className="num shrink-0 text-muted">{kcal(i.kcal)}</span>
               </li>
@@ -336,14 +337,14 @@ function PlanMealCard({
             <button className="btn btn-primary flex-1 py-2.5" disabled={meal.logged} onClick={onLog}>
               {meal.logged ? (
                 <>
-                  <Icon name="check" className="h-4 w-4" /> Logged
+                  <Icon name="check" className="h-4 w-4" /> {t('Logged')}
                 </>
               ) : (
-                'I ate this'
+                t('I ate this')
               )}
             </button>
             <button className="btn btn-quiet py-2.5" disabled={busy || meal.logged} onClick={onSwap}>
-              Swap
+              {t('Swap')}
             </button>
           </div>
         </>
@@ -358,10 +359,10 @@ function ShoppingList({ plan, onClose }: { plan: MealPlan; onClose: () => void }
   const amount = (g: number) => (g >= 1000 ? `${(Math.round(g / 100) / 10).toString()} kg` : `${Math.round(g / 10) * 10 || Math.round(g)} g`)
 
   return (
-    <Sheet title="Shopping list" onClose={onClose}>
-      <p className="mb-3 text-sm text-muted">Everything for the rest of this plan, as cooked or eaten weights, so buy a little extra for meat and rice.</p>
+    <Sheet title={t('Shopping list')} onClose={onClose}>
+      <p className="mb-3 text-sm text-muted">{t('Everything for the rest of this plan, as cooked or eaten weights, so buy a little extra for meat and rice.')}</p>
       {items.length === 0 ? (
-        <p className="text-muted">Nothing left to buy for this plan.</p>
+        <p className="text-muted">{t('Nothing left to buy for this plan.')}</p>
       ) : (
         <ul className="divide-y divide-line rounded-[18px] bg-surface px-4">
           {items.map((i) => {

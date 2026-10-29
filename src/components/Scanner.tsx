@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { t } from '../lib/i18n'
 import { BarcodeDetector, prepareZXingModule } from 'barcode-detector/ponyfill'
 import wasmUrl from 'zxing-wasm/reader/zxing_reader.wasm?url'
 import { lookupBarcode } from '../lib/online'
@@ -51,7 +52,7 @@ export default function Scanner({ onFound }: { onFound: (f: Food) => void }) {
         setStatus({ kind: 'missing', code })
       }
     } catch (e) {
-      setStatus({ kind: 'error', message: e instanceof Error ? e.message : 'Lookup failed. Check your internet connection.' })
+      setStatus({ kind: 'error', message: e instanceof Error ? e.message : t('Lookup failed. Check your internet connection.') })
     } finally {
       // Give the user a moment before the same barcode can trigger again.
       setTimeout(() => (busy.current = false), 1500)
@@ -77,7 +78,7 @@ export default function Scanner({ onFound }: { onFound: (f: Food) => void }) {
           video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         })
-        if (stopped) return stream.getTracks().forEach((t) => t.stop())
+        if (stopped) return stream.getTracks().forEach((track) => track.stop())
         const video = videoRef.current!
         video.srcObject = stream
         await video.play()
@@ -103,7 +104,7 @@ export default function Scanner({ onFound }: { onFound: (f: Food) => void }) {
     return () => {
       stopped = true
       clearTimeout(timer)
-      stream?.getTracks().forEach((t) => t.stop())
+      stream?.getTracks().forEach((track) => track.stop())
     }
   }, [])
 
@@ -112,9 +113,9 @@ export default function Scanner({ onFound }: { onFound: (f: Food) => void }) {
       const bitmap = await createImageBitmap(file)
       const codes = await new BarcodeDetector({ formats: [...FORMATS] }).detect(bitmap)
       if (codes[0]?.rawValue) handleCode(codes[0].rawValue)
-      else setStatus({ kind: 'error', message: 'No barcode found in that photo. Try a closer, sharper shot or type the number.' })
+      else setStatus({ kind: 'error', message: t('No barcode found in that photo. Try a closer, sharper shot or type the number.') })
     } catch {
-      setStatus({ kind: 'error', message: 'Could not read that photo.' })
+      setStatus({ kind: 'error', message: t('Could not read that photo.') })
     }
   }
 
@@ -129,27 +130,27 @@ export default function Scanner({ onFound }: { onFound: (f: Food) => void }) {
         )}
         {camera !== 'on' && (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center text-sm text-white/85">
-            {camera === 'starting' && 'Starting camera…'}
-            {camera === 'denied' && 'Camera access is off. Allow it in Settings → Safari → Camera, or use a photo or the number below.'}
-            {camera === 'off' && 'Live camera isn’t available here. Use a photo or type the number below.'}
+            {camera === 'starting' && t('Starting camera…')}
+            {camera === 'denied' && t('Camera access is off. Allow it in Settings → Safari → Camera, or use a photo or the number below.')}
+            {camera === 'off' && t('Live camera isn’t available here. Use a photo or type the number below.')}
           </div>
         )}
       </div>
-      {camera === 'on' && <p className="text-center text-sm text-muted">Point at the barcode on the package</p>}
+      {camera === 'on' && <p className="text-center text-sm text-muted">{t('Point at the barcode on the package')}</p>}
 
-      {status.kind === 'looking' && <Spinner label={`Looking up ${status.code}…`} />}
+      {status.kind === 'looking' && <Spinner label={t('Looking up {code}…', { code: status.code })} />}
       {status.kind === 'error' && <ErrorNote>{status.message}</ErrorNote>}
       {status.kind === 'missing' && (
         <div className="space-y-3 rounded-[20px] bg-surface p-4">
           <p>
-            <strong>{status.code}</strong> isn’t in the online database yet. Add it once and Plate will remember it next time.
+            <strong>{status.code}</strong> {t('isn’t in the online database yet. Add it once and Plate will remember it next time.')}
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button className="btn btn-primary" onClick={() => setEditor({ code: status.code, useAi: true })}>
-              <Icon name="camera" className="h-4 w-4" /> Read label
+              <Icon name="camera" className="h-4 w-4" /> {t('Read label')}
             </button>
             <button className="btn btn-quiet" onClick={() => setEditor({ code: status.code, useAi: false })}>
-              Type it in
+              {t('Type it in')}
             </button>
           </div>
         </div>
@@ -163,13 +164,13 @@ export default function Scanner({ onFound }: { onFound: (f: Food) => void }) {
           if (code.length >= 6) handleCode(code)
         }}
       >
-        <input className="field num" inputMode="numeric" placeholder="Or type the barcode number" value={manual} onChange={(e) => setManual(e.target.value)} />
+        <input className="field num" inputMode="numeric" placeholder={t('Or type the barcode number')} value={manual} onChange={(e) => setManual(e.target.value)} />
         <button className="btn btn-quiet shrink-0" type="submit">
-          Look up
+          {t('Look up')}
         </button>
       </form>
       <label className="btn btn-quiet w-full cursor-pointer">
-        <Icon name="camera" className="h-5 w-5" /> Scan from a photo
+        <Icon name="camera" className="h-5 w-5" /> {t('Scan from a photo')}
         <input type="file" accept="image/*" className="sr-only" onChange={(e) => e.target.files?.[0] && fromPhoto(e.target.files[0])} />
       </label>
 

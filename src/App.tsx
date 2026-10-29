@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from './lib/store'
 import { dateKey } from './lib/date'
+import { setLang, t } from './lib/i18n'
 import type { Meal } from './lib/types'
 import Onboarding from './components/Onboarding'
 import Today from './components/Today'
@@ -8,6 +9,7 @@ import Progress from './components/Progress'
 import Coach from './components/Coach'
 import Me from './components/Me'
 import AddFood from './components/AddFood'
+import Celebration, { useAchievementWatcher } from './components/Achievements'
 import { Icon } from './components/ui'
 
 type Tab = 'today' | 'progress' | 'coach' | 'me'
@@ -23,11 +25,20 @@ function defaultMeal(): Meal {
 export default function App() {
   const [hydrated, setHydrated] = useState(useStore.persist.hasHydrated())
   const profile = useStore((s) => s.profile)
+  const lang = useStore((s) => s.settings.language)
   const [tab, setTab] = useState<Tab>('today')
   const [date, setDate] = useState(dateKey())
   const [adding, setAdding] = useState<Meal | null>(null)
 
+  // Children translate with t() during render, so the language has to be set first.
+  setLang(lang)
+  useAchievementWatcher(hydrated && !!profile)
+
   useEffect(() => useStore.persist.onFinishHydration(() => setHydrated(true)), [])
+
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
 
   // Jump back to today when the app is reopened on a new day.
   useEffect(() => {
@@ -45,40 +56,45 @@ export default function App() {
   }, [])
 
   if (!hydrated) return <div className="min-h-dvh bg-bg" />
-  if (!profile) return <Onboarding onDone={() => setTab('today')} />
+  if (!profile) return <Onboarding key={lang} onDone={() => setTab('today')} />
 
   const tabs: { id: Tab; label: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
-    { id: 'today', label: 'Today', icon: 'today' },
-    { id: 'progress', label: 'Progress', icon: 'chart' },
-    { id: 'coach', label: 'Coach', icon: 'chat' },
-    { id: 'me', label: 'Me', icon: 'user' },
+    { id: 'today', label: t('Today'), icon: 'today' },
+    { id: 'progress', label: t('Progress'), icon: 'chart' },
+    { id: 'coach', label: t('Coach'), icon: 'chat' },
+    { id: 'me', label: t('Me'), icon: 'user' },
   ]
 
+  const openDay = (d: string) => {
+    setDate(d)
+    setTab('today')
+  }
+
   return (
-    <div className="min-h-dvh">
-      <main className="mx-auto max-w-lg px-4 pb-32 safe-top">
-        {tab === 'today' && <Today date={date} setDate={setDate} onAdd={setAdding} />}
-        {tab === 'progress' && <Progress />}
+    <div className="min-h-dvh" key={lang}>
+      <main key={tab} className="page-in safe-top mx-auto max-w-lg px-4 pb-36">
+        {tab === 'today' && <Today date={date} setDate={setDate} onAdd={setAdding} onOpenCoach={() => setTab('coach')} />}
+        {tab === 'progress' && <Progress onOpenDay={openDay} />}
         {tab === 'coach' && <Coach date={date} />}
         {tab === 'me' && <Me />}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/90 backdrop-blur-xl safe-bottom">
-        <div className="mx-auto grid max-w-lg grid-cols-5 items-center px-2 pt-1.5">
-          {tabs.slice(0, 2).map((t) => (
-            <TabButton key={t.id} {...t} active={tab === t.id} onClick={() => setTab(t.id)} />
+      <nav className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4">
+        <div className="glass pointer-events-auto mx-auto grid max-w-md grid-cols-5 items-center rounded-[28px] px-2 py-1.5">
+          {tabs.slice(0, 2).map((x) => (
+            <TabButton key={x.id} {...x} active={tab === x.id} onClick={() => setTab(x.id)} />
           ))}
           <div className="flex justify-center">
             <button
               onClick={() => setAdding(defaultMeal())}
-              className="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-full bg-accent text-accent-ink shadow-lg shadow-accent/30 active:scale-95"
-              aria-label="Add food"
+              className="btn-primary flex h-14 w-14 -translate-y-4 items-center justify-center rounded-full transition-transform active:-translate-y-3 active:scale-95"
+              aria-label={t('Add food')}
             >
               <Icon name="plus" className="h-7 w-7" />
             </button>
           </div>
-          {tabs.slice(2).map((t) => (
-            <TabButton key={t.id} {...t} active={tab === t.id} onClick={() => setTab(t.id)} />
+          {tabs.slice(2).map((x) => (
+            <TabButton key={x.id} {...x} active={tab === x.id} onClick={() => setTab(x.id)} />
           ))}
         </div>
       </nav>
@@ -93,6 +109,7 @@ export default function App() {
           }}
         />
       )}
+      <Celebration />
     </div>
   )
 }
@@ -112,9 +129,9 @@ function TabButton({
     <button
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      className={`flex flex-col items-center gap-0.5 py-1 text-[11px] font-medium ${active ? 'text-accent' : 'text-muted'}`}
+      className={`relative flex flex-col items-center gap-0.5 py-1.5 text-[11px] font-semibold transition-colors ${active ? 'text-accent' : 'text-muted'}`}
     >
-      <Icon name={icon} className="h-6 w-6" />
+      <Icon name={icon} className={`h-6 w-6 ${active ? 'drop-shadow-[0_0_8px_rgb(69_240_160/0.7)]' : ''}`} />
       {label}
     </button>
   )

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { t } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { testKey } from '../lib/ai'
 import { ErrorNote, Spinner } from './ui'
@@ -21,7 +22,7 @@ export default function AiKeySetup({ compact = false }: { compact?: boolean }) {
       setState('ok')
     } catch (e) {
       setState('error')
-      setError(e instanceof Error ? e.message : 'The key could not be checked.')
+      setError(e instanceof Error ? e.message : t('The key could not be checked.'))
     }
   }
 
@@ -29,24 +30,24 @@ export default function AiKeySetup({ compact = false }: { compact?: boolean }) {
     <div className="space-y-3">
       {!compact && (
         <p className="text-muted">
-          AI features use Google Gemini’s free plan. You need your own free key, which takes about a minute:
+          {t('AI features use Google Gemini’s free plan. You need your own free key, which takes about a minute:')}
         </p>
       )}
       <ol className="list-decimal space-y-1 pl-5 text-sm">
         <li>
-          Open{' '}
+          {t('Open')}{' '}
           <a className="font-medium text-accent underline" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
             aistudio.google.com/apikey
           </a>{' '}
-          and sign in with any Google account.
+          {t('and sign in with any Google account.')}
         </li>
-        <li>Tap “Create API key” and copy it.</li>
-        <li>Paste it here. It stays on this phone.</li>
+        <li>{t('Tap “Create API key” and copy it.')}</li>
+        <li>{t('Paste it here. It stays on this phone.')}</li>
       </ol>
       <div className="flex gap-2">
         <input
           className="field font-mono"
-          placeholder="Paste your Gemini API key"
+          placeholder={t('Paste your Gemini API key')}
           value={key}
           onChange={(e) => {
             setKey(e.target.value)
@@ -57,11 +58,11 @@ export default function AiKeySetup({ compact = false }: { compact?: boolean }) {
           spellCheck={false}
         />
         <button className="btn btn-primary shrink-0" disabled={!key.trim() || state === 'testing'} onClick={save}>
-          Save
+          {t('Save')}
         </button>
       </div>
-      {state === 'testing' && <Spinner label="Checking the key…" />}
-      {state === 'ok' && settings.geminiKey && <p className="text-sm font-medium text-accent">AI is ready to use.</p>}
+      {state === 'testing' && <Spinner label={t('Checking the key…')} />}
+      {state === 'ok' && settings.geminiKey && <p className="text-sm font-medium text-accent">{t('AI is ready to use.')}</p>}
       {state === 'error' && <ErrorNote>{error}</ErrorNote>}
     </div>
   )

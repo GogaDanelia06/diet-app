@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { t } from '../lib/i18n'
 import { aiItemToFood, analyzeMealPhoto, analyzeMealText, type AiItem, type AiMeal } from '../lib/ai'
 import { photoToJpegBase64 } from '../lib/image'
 import { kcal, num } from '../lib/format'
@@ -40,7 +41,7 @@ export default function AiLog({
   if (!settings.geminiKey) {
     return (
       <div className="rounded-[20px] bg-surface p-4">
-        <h3 className="mb-2 font-display text-lg font-semibold">Turn on the free AI</h3>
+        <h3 className="mb-2 font-display text-lg font-semibold">{t('Turn on the free AI')}</h3>
         <AiKeySetup />
       </div>
     )
@@ -61,7 +62,7 @@ export default function AiLog({
     try {
       show(await fn())
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong. Try again.')
+      setError(e instanceof Error ? e.message : t('Something went wrong. Try again.'))
     } finally {
       setLoading(false)
     }
@@ -73,7 +74,7 @@ export default function AiLog({
       setPhoto(p)
       run(() => analyzeMealPhoto(cfg, p.base64, text.trim()))
     } catch {
-      setError('That photo could not be opened. Try another one.')
+      setError(t('That photo could not be opened. Try another one.'))
     }
   }
 
@@ -100,7 +101,7 @@ export default function AiLog({
         food,
       })
     }
-    onAdded(chosen.length === 1 ? chosen[0].name : `${chosen.length} items`)
+    onAdded(chosen.length === 1 ? chosen[0].name : t('{n} items', { n: chosen.length }))
     setResult(null)
     setPhoto(null)
     setText('')
@@ -116,8 +117,8 @@ export default function AiLog({
             ) : (
               <>
                 <Icon name="camera" className="h-10 w-10 text-accent" />
-                <span className="font-display text-lg font-semibold">Take or choose a photo</span>
-                <span className="text-sm text-muted">The AI lists what’s on the plate and estimates the calories.</span>
+                <span className="font-display text-lg font-semibold">{t('Take or choose a photo')}</span>
+                <span className="text-sm text-muted">{t('The AI lists what’s on the plate and estimates the calories.')}</span>
               </>
             )}
             <input type="file" accept="image/*" className="sr-only" onChange={(e) => e.target.files?.[0] && choosePhoto(e.target.files[0])} />
@@ -126,11 +127,11 @@ export default function AiLog({
             className="field"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Optional: details the photo can’t show (fried in butter…)"
+            placeholder={t('Optional: details the photo can’t show (fried in butter…)')}
           />
           {photo && !loading && (
             <button className="btn btn-quiet w-full" onClick={() => run(() => analyzeMealPhoto(cfg, photo.base64, text.trim()))}>
-              Analyze again
+              {t('Analyze again')}
             </button>
           )}
         </>
@@ -140,15 +141,15 @@ export default function AiLog({
             className="field min-h-28"
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Describe what you ate, e.g. 3 meat khinkali, a slice of Imeruli khachapuri and a glass of red wine"
+            placeholder={t('Describe what you ate, e.g. 3 meat khinkali, a slice of Imeruli khachapuri and a glass of red wine')}
           />
           <button className="btn btn-primary w-full" disabled={!text.trim() || loading} onClick={() => run(() => analyzeMealText(cfg, text.trim()))}>
-            <Icon name="sparkle" className="h-5 w-5" /> Estimate calories
+            <Icon name="sparkle" className="h-5 w-5" /> {t('Estimate calories')}
           </button>
         </>
       )}
 
-      {loading && <Spinner label="The AI is looking at your meal…" />}
+      {loading && <Spinner label={t('The AI is looking at your meal…')} />}
       {error && <ErrorNote>{error}</ErrorNote>}
 
       {result && (
@@ -157,7 +158,7 @@ export default function AiLog({
             <h3 className="font-display text-xl font-semibold">{result.title}</h3>
             <span className="num text-lg font-semibold">{kcal(total)} kcal</span>
           </div>
-          {result.rows.length === 0 && <p className="text-muted">No food was found. Try another photo or describe it in words.</p>}
+          {result.rows.length === 0 && <p className="text-muted">{t('No food was found. Try another photo or describe it in words.')}</p>}
           <ul className="divide-y divide-line rounded-[18px] bg-surface px-4">
             {result.rows.map((r, i) => {
               const s = scaled(r)
@@ -168,7 +169,7 @@ export default function AiLog({
                     className="h-5 w-5 accent-[var(--accent)]"
                     checked={r.include}
                     onChange={(e) => setResult({ ...result, rows: result.rows.map((x, j) => (j === i ? { ...x, include: e.target.checked } : x)) })}
-                    aria-label={`Include ${r.name}`}
+                    aria-label={t('Include {name}', { name: r.name })}
                   />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{r.name}</div>
@@ -180,9 +181,9 @@ export default function AiLog({
                       inputMode="decimal"
                       value={r.gramsText}
                       onChange={(e) => setResult({ ...result, rows: result.rows.map((x, j) => (j === i ? { ...x, gramsText: e.target.value } : x)) })}
-                      aria-label={`Grams of ${r.name}`}
+                      aria-label={t('Grams of {name}', { name: r.name })}
                     />
-                    g
+                    {t('g')}
                   </label>
                   <span className="num w-12 text-right font-semibold">{kcal(s.kcal)}</span>
                 </li>
@@ -190,9 +191,9 @@ export default function AiLog({
             })}
           </ul>
           {result.notes && <p className="text-sm text-muted">{result.notes}</p>}
-          <p className="text-xs text-muted">AI estimates can be off by 20% or more. Fix the grams if you know them.</p>
+          <p className="text-xs text-muted">{t('AI estimates can be off by 20% or more. Fix the grams if you know them.')}</p>
           <button className="btn btn-primary w-full text-lg" disabled={!chosen.length} onClick={addAll}>
-            Add {chosen.length === 1 ? '1 item' : `${chosen.length} items`} to {mealLabel}
+            {chosen.length === 1 ? t('Add 1 item to {meal}', { meal: mealLabel }) : t('Add {n} items to {meal}', { n: chosen.length, meal: mealLabel })}
           </button>
         </div>
       )}

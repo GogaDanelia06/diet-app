@@ -88,6 +88,7 @@ export interface Settings {
   geminiKey: string
   geminiModel: string
   usdaKey: string
+  language: 'en' | 'ka'
 }
 
 export interface WeightLog {
@@ -167,6 +168,18 @@ export type BodyLog = { date: string } & Partial<Record<BodyPart, number>>
 export interface PhotoMeta {
   id: string
   date: string
+}
+
+export interface WeeklyReport {
+  id: string
+  createdAt: number
+  weekEnd: string
+  score: number
+  headline: string
+  summary: string
+  wins: string[]
+  tips: string[]
+  focus: string
 }
 
 export interface SavedMeal {

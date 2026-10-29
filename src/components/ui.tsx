@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react'
+import { t } from '../lib/i18n'
 
 export function Sheet({
   title,
@@ -6,7 +7,7 @@ export function Sheet({
   children,
   footer,
   action,
-  closeLabel = 'Close',
+  closeLabel,
 }: {
   closeLabel?: string
   title: string
@@ -28,20 +29,21 @@ export function Sheet({
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col bg-bg sheet-in" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="safe-top border-b border-line bg-bg">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(60%_100%_at_50%_0%,rgb(69_240_160/0.12),transparent)]" />
+      <div className="safe-top relative border-b border-line bg-bg/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-lg items-center gap-2 px-4 pb-3">
-          <button onClick={onClose} className="-ml-2 rounded-full px-2 py-1 text-accent font-medium">
-            {closeLabel}
+          <button onClick={onClose} className="-ml-2 rounded-full px-2 py-1 font-semibold text-accent">
+            {closeLabel ?? t('Close')}
           </button>
           <h2 className="flex-1 truncate text-center font-display text-lg font-semibold">{title}</h2>
           <div className="min-w-[52px] text-right">{action}</div>
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto overscroll-contain">
+      <div className="relative flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto max-w-lg px-4 py-4">{children}</div>
       </div>
       {footer && (
-        <div className="safe-bottom border-t border-line bg-surface">
+        <div className="safe-bottom relative border-t border-line bg-bg-raised/90 backdrop-blur-xl">
           <div className="mx-auto max-w-lg px-4 pt-3">{footer}</div>
         </div>
       )}
@@ -49,8 +51,49 @@ export function Sheet({
   )
 }
 
+const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+
+/** Leans an element toward the pointer while it is pressed, then springs back. */
+export function usePressTilt<T extends HTMLElement>(strength = 5) {
+  const ref = useRef<T>(null)
+  const set = (rx: number, ry: number, s: number, pressed: boolean) => {
+    const el = ref.current
+    if (!el) return
+    el.style.setProperty('--rx', `${rx}deg`)
+    el.style.setProperty('--ry', `${ry}deg`)
+    el.style.setProperty('--s', String(s))
+    if (pressed) el.setAttribute('data-pressed', '')
+    else el.removeAttribute('data-pressed')
+  }
+  const move = (e: PointerEvent<T>) => {
+    if (reducedMotion() || !ref.current?.hasAttribute('data-pressed')) return
+    const r = ref.current.getBoundingClientRect()
+    const x = (e.clientX - r.left) / r.width - 0.5
+    const y = (e.clientY - r.top) / r.height - 0.5
+    set(-y * strength, x * strength, 0.985, true)
+  }
+  const release = () => set(0, 0, 1, false)
+  return {
+    ref,
+    onPointerDown: (e: PointerEvent<T>) => {
+      if (reducedMotion()) return
+      ref.current?.setAttribute('data-pressed', '')
+      move(e)
+    },
+    onPointerMove: move,
+    onPointerUp: release,
+    onPointerLeave: release,
+    onPointerCancel: release,
+  }
+}
+
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-[20px] bg-surface p-4 ${className}`}>{children}</section>
+  const tilt = usePressTilt<HTMLElement>(4)
+  return (
+    <section {...tilt} className={`glass tilt rounded-[24px] p-4 ${className}`}>
+      {children}
+    </section>
+  )
 }
 
 export function Segmented<T extends string>({
@@ -63,15 +106,15 @@ export function Segmented<T extends string>({
   onChange: (v: T) => void
 }) {
   return (
-    <div className="flex gap-1 rounded-[14px] bg-surface-2 p-1 border border-line" role="tablist">
+    <div className="flex gap-1 rounded-[16px] border border-line bg-white/[0.04] p-1" role="tablist">
       {options.map((o) => (
         <button
           key={o.value}
           role="tab"
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`flex-1 rounded-[10px] px-2 py-2 text-sm font-medium ${
-            value === o.value ? 'bg-surface text-ink shadow-sm' : 'text-muted'
+          className={`flex-1 rounded-[12px] px-2 py-2 text-sm font-semibold transition-colors ${
+            value === o.value ? 'bg-white/[0.12] text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.12)]' : 'text-muted'
           }`}
         >
           {o.label}
@@ -94,15 +137,19 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 export function MacroBar({ label, value, target, color }: { label: string; value: number; target: number; color: string }) {
   const pct = target > 0 ? Math.min(100, (value / target) * 100) : 0
   return (
-    <div className="flex-1 min-w-0">
-      <div className="flex items-baseline justify-between gap-1 text-xs">
-        <span className="font-medium">{label}</span>
-        <span className="num text-muted">
-          {Math.round(value)}/{target}g
-        </span>
+    <div className="min-w-0 flex-1">
+      {/* Stacked so long labels (Georgian "ნახშირწყლები") never collide with the numbers. */}
+      <div className="truncate text-xs font-semibold" style={{ color }}>
+        {label}
       </div>
-      <div className="mt-1.5 h-2 rounded-full bg-surface-2">
-        <div className="h-2 rounded-full" style={{ width: `${pct}%`, background: color }} />
+      <div className="num text-xs text-muted">
+        {Math.round(value)}/{target} {t('g')}
+      </div>
+      <div className="mt-1.5 h-1.5 rounded-full bg-white/[0.07]">
+        <div
+          className="h-1.5 rounded-full transition-[width] duration-700"
+          style={{ width: `${pct}%`, background: color, boxShadow: pct > 0 ? `0 0 12px ${color}` : undefined }}
+        />
       </div>
     </div>
   )
@@ -115,8 +162,22 @@ export function ErrorNote({ children }: { children: ReactNode }) {
 export function Spinner({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3 py-6 text-muted" role="status">
-      <span className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" />
+      <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/10 border-t-accent shadow-[0_0_12px_rgb(69_240_160/0.5)]" />
       {label}
+    </div>
+  )
+}
+
+/** Toast that slides up from the bottom; `art` sits on its left (a 3D plate when food is logged). */
+export function Toast({ children, art }: { children: ReactNode; art?: ReactNode }) {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-28 z-50 flex justify-center px-4" role="status">
+      <div className="glass pop-in flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-sm font-semibold">
+        <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-accent-soft text-accent">
+          {art ?? <Icon name="check" className="h-4 w-4" />}
+        </span>
+        {children}
+      </div>
     </div>
   )
 }
@@ -174,6 +235,20 @@ const ICONS = {
   ),
   copy: <path d="M8 8h11v11H8zM5 16V5h11" />,
   check: <path d="M5 12l4 4 10-10" />,
+  calendar: (
+    <>
+      <rect x="4" y="5" width="16" height="15" rx="3" />
+      <path d="M4 10h16M9 3v4M15 3v4" />
+    </>
+  ),
+  trophy: <path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v4M8 20h8M10 17h4v3h-4z" />,
+  globe: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17M12 3.5c2.5 2.6 3.5 5.6 3.5 8.5s-1 5.9-3.5 8.5c-2.5-2.6-3.5-5.6-3.5-8.5s1-5.9 3.5-8.5z" />
+    </>
+  ),
+  report: <path d="M6 3h9l3 3v15H6zM9 13l2 2 4-4M9 8h4" />,
   flame: <path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5.5 1-8.5z" />,
   bookmark: <path d="M7 4h10v16l-5-4-5 4z" />,
 } as const

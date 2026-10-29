@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { t } from '../lib/i18n'
 import { dateKey, shortDate, uid } from '../lib/date'
 import { num } from '../lib/format'
 import { photoToJpegBase64 } from '../lib/image'
@@ -40,14 +41,14 @@ function Measurements() {
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold">Body measurements</h2>
+        <h2 className="font-display text-lg font-semibold">{t('Body measurements')}</h2>
         <button className="text-sm font-medium text-accent" onClick={() => setOpen(true)}>
-          {logs.length ? 'Update' : 'Add'}
+          {logs.length ? t('Update') : t('Add')}
         </button>
       </div>
       {shown.length === 0 ? (
         <p className="mt-2 text-sm text-muted">
-          The scale doesn’t show everything. Measure your waist every couple of weeks; it often shrinks even when weight stalls.
+          {t('The scale doesn’t show everything. Measure your waist every couple of weeks; it often shrinks even when weight stalls.')}
         </p>
       ) : (
         <dl className="mt-2 divide-y divide-line">
@@ -55,7 +56,7 @@ function Measurements() {
             const diff = p.v!.last - p.v!.first
             return (
               <div key={p.id} className="flex items-center justify-between py-2">
-                <dt className="text-muted">{p.label}</dt>
+                <dt className="text-muted">{t(p.label)}</dt>
                 <dd className="flex items-baseline gap-3">
                   {Math.abs(diff) >= 0.1 && (
                     <span className={`num text-sm ${diff < 0 ? 'text-accent' : 'text-muted'}`}>
@@ -72,7 +73,7 @@ function Measurements() {
           })}
         </dl>
       )}
-      {shown.length > 0 && logs.length > 1 && <p className="mt-1 text-xs text-muted">Change since {shortDate(logs[0].date)}</p>}
+      {shown.length > 0 && logs.length > 1 && <p className="mt-1 text-xs text-muted">{t('Change since {date}', { date: shortDate(logs[0].date) })}</p>}
       {open && <MeasureSheet onClose={() => setOpen(false)} />}
     </Card>
   )
@@ -95,12 +96,12 @@ function MeasureSheet({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <Sheet title="Measurements" onClose={onClose} footer={<button className="btn btn-primary w-full text-lg" onClick={save}>Save</button>}>
+    <Sheet title={t('Measurements')} onClose={onClose} footer={<button className="btn btn-primary w-full text-lg" onClick={save}>{t('Save')}</button>}>
       <div className="space-y-4">
-        <p className="text-sm text-muted">Measure in the morning, over bare skin, with the tape snug but not tight. Fill in only what you want to track.</p>
+        <p className="text-sm text-muted">{t('Measure in the morning, over bare skin, with the tape snug but not tight. Fill in only what you want to track.')}</p>
         <div className="grid grid-cols-2 gap-3">
           {PARTS.map((p) => (
-            <Field key={p.id} label={`${p.label}, ${p.unit}`} hint={latest?.[p.id] != null ? `Last: ${latest[p.id]}` : undefined}>
+            <Field key={p.id} label={`${t(p.label)}, ${p.unit}`} hint={latest?.[p.id] != null ? t('Last: {v}', { v: latest[p.id]! }) : undefined}>
               <input
                 className="field num"
                 inputMode="decimal"
@@ -128,31 +129,31 @@ function Photos() {
       const { dataUrl } = await photoToJpegBase64(file, 1000)
       await addPhoto({ id: uid(), date: dateKey() }, dataUrl)
     } catch {
-      setError('That photo could not be saved. Try another one.')
+      setError(t('That photo could not be saved. Try another one.'))
     }
   }
 
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold">Progress photos</h2>
+        <h2 className="font-display text-lg font-semibold">{t('Progress photos')}</h2>
         {photos.length >= 2 && (
           <button className="text-sm font-medium text-accent" onClick={() => setComparing(true)}>
-            Compare
+            {t('Compare')}
           </button>
         )}
       </div>
-      <p className="mt-1 text-sm text-muted">Private: photos stay on this phone and aren’t in backups.</p>
+      <p className="mt-1 text-sm text-muted">{t('Private: photos stay on this phone and aren’t in backups.')}</p>
       <div className="mt-3 grid grid-cols-3 gap-2">
         {photos.map((p) => (
           <button key={p.id} onClick={() => setViewing(p)} className="relative aspect-[3/4] overflow-hidden rounded-xl bg-surface-2">
-            <PhotoImg id={p.id} alt={`Progress photo from ${shortDate(p.date)}`} />
+            <PhotoImg id={p.id} alt={t('Progress photo from {date}', { date: shortDate(p.date) })} />
             <span className="absolute inset-x-0 bottom-0 bg-black/45 px-1.5 py-0.5 text-[11px] font-medium text-white">{shortDate(p.date)}</span>
           </button>
         ))}
         <label className="flex aspect-[3/4] cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-line text-sm text-muted">
           <Icon name="camera" className="h-6 w-6 text-accent" />
-          Add photo
+          {t('Add photo')}
           <input type="file" accept="image/*" className="sr-only" onChange={(e) => e.target.files?.[0] && add(e.target.files[0])} />
         </label>
       </div>
@@ -185,17 +186,17 @@ function PhotoViewer({ photo, onClose }: { photo: PhotoMeta; onClose: () => void
         <button
           className="btn btn-quiet w-full text-over"
           onClick={() => {
-            if (confirm('Delete this photo?')) {
+            if (confirm(t('Delete this photo?'))) {
               removePhoto(photo.id)
               onClose()
             }
           }}
         >
-          Delete photo
+          {t('Delete photo')}
         </button>
       }
     >
-      <PhotoImg id={photo.id} alt={`Progress photo from ${shortDate(photo.date)}`} className="w-full rounded-2xl" />
+      <PhotoImg id={photo.id} alt={t('Progress photo from {date}', { date: shortDate(photo.date) })} className="w-full rounded-2xl" />
     </Sheet>
   )
 }
@@ -208,7 +209,7 @@ function CompareSheet({ onClose }: { onClose: () => void }) {
   const weightOn = (date: string) => [...weights].reverse().find((w) => w.date <= date)?.kg
 
   return (
-    <Sheet title="Compare" onClose={onClose}>
+    <Sheet title={t('Compare')} onClose={onClose}>
       <div className="grid grid-cols-2 gap-2">
         {[
           [a, setA],
@@ -219,9 +220,9 @@ function CompareSheet({ onClose }: { onClose: () => void }) {
           return (
             <div key={i} className="space-y-2">
               <div className="aspect-[3/4] overflow-hidden rounded-xl bg-surface-2">
-                <PhotoImg id={id as string} alt={`Photo from ${shortDate(meta.date)}`} />
+                <PhotoImg id={id as string} alt={t('Progress photo from {date}', { date: shortDate(meta.date) })} />
               </div>
-              <select className="field text-base" value={id as string} onChange={(e) => (set as (v: string) => void)(e.target.value)} aria-label={i ? 'After photo' : 'Before photo'}>
+              <select className="field text-base" value={id as string} onChange={(e) => (set as (v: string) => void)(e.target.value)} aria-label={i ? t('After photo') : t('Before photo')}>
                 {photos.map((p) => (
                   <option key={p.id} value={p.id}>
                     {shortDate(p.date)}

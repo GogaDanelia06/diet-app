@@ -1,11 +1,12 @@
 import { useState } from 'react'
+import { t } from '../lib/i18n'
 import { ACTIVITY, MACRO_PRESETS, calorieFloor } from '../lib/calc'
 import { dateKey } from '../lib/date'
 import { kcal, num } from '../lib/format'
 import { exportData, recipeToFood, useStore, useTargets, type AppData } from '../lib/store'
 import type { Food, MacroPreset, Recipe } from '../lib/types'
 import { Card, ErrorNote, Field, Icon, Segmented } from './ui'
-import Onboarding from './Onboarding'
+import Onboarding, { LanguageSwitch } from './Onboarding'
 import AiKeySetup from './AiKeySetup'
 import FoodEditor from './FoodEditor'
 import RecipeEditor from './RecipeEditor'
@@ -33,7 +34,7 @@ export default function Me() {
     return (
       <div className="fixed inset-0 z-40 overflow-y-auto bg-bg">
         <button onClick={() => setEditingPlan(false)} className="safe-top absolute right-4 z-10 font-medium text-accent">
-          Cancel
+          {t('Cancel')}
         </button>
         <Onboarding editing onDone={() => setEditingPlan(false)} />
       </div>
@@ -45,7 +46,7 @@ export default function Me() {
     const file = new File([blob], `plate-backup-${dateKey()}.json`, { type: 'application/json' })
     // On iPhone the share sheet lets you save the file to Files or iCloud Drive.
     if (navigator.canShare?.({ files: [file] })) {
-      navigator.share({ files: [file], title: 'Plate backup' }).catch(() => {})
+      navigator.share({ files: [file], title: t('Plate backup') }).catch(() => {})
       return
     }
     const a = document.createElement('a')
@@ -60,11 +61,11 @@ export default function Me() {
     try {
       const data = JSON.parse(await file.text()) as Partial<AppData> & { app?: string }
       if (data.app !== 'plate' || !Array.isArray(data.entries)) throw new Error()
-      if (!confirm('Replace everything in Plate with this backup?')) return
+      if (!confirm(t('Replace everything in Plate with this backup?'))) return
       importData(data)
-      setMessage('Backup restored.')
+      setMessage(t('Backup restored.'))
     } catch {
-      setError('That file isn’t a Plate backup.')
+      setError(t('That file isn’t a Plate backup.'))
     }
   }
 
@@ -72,38 +73,41 @@ export default function Me() {
 
   return (
     <div className="space-y-3 pt-2">
-      <h1 className="py-2 font-display text-3xl font-bold tracking-tight">Me</h1>
+      <div className="flex items-center justify-between py-2">
+        <h1 className="font-display text-3xl font-bold tracking-tight">{t('Me')}</h1>
+        <LanguageSwitch value={settings.language} onChange={(language) => updateSettings({ language })} />
+      </div>
 
       <Card>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="font-display text-lg font-semibold">Plan</h2>
+            <h2 className="font-display text-lg font-semibold">{t('Plan')}</h2>
             <p className="text-sm text-muted">
-              {profile.sex === 'female' ? 'Female' : 'Male'}, {profile.age} · {profile.heightCm} cm · goal {profile.goalWeightKg} kg
+              {profile.sex === 'female' ? t('Female') : t('Male')}, {profile.age} · {profile.heightCm} cm · {t('goal {kg} kg', { kg: profile.goalWeightKg })}
               <br />
-              {ACTIVITY[profile.activity].label} · {profile.ratePerWeekKg ? `lose ${profile.ratePerWeekKg} kg a week` : 'keep weight steady'}
+              {t(ACTIVITY[profile.activity].label)} · {profile.ratePerWeekKg ? t('lose {kg} kg a week', { kg: profile.ratePerWeekKg }) : t('keep weight steady')}
             </p>
           </div>
           <button className="btn btn-quiet shrink-0 px-3 py-2 text-sm" onClick={() => setEditingPlan(true)}>
-            Edit
+            {t('Edit')}
           </button>
         </div>
         <div className="mt-4 flex items-baseline justify-between rounded-xl bg-surface-2 p-3">
-          <span className="text-muted">Daily target</span>
-          <span className="num text-2xl font-bold">{kcal(targets.kcal)} kcal</span>
+          <span className="text-muted">{t('Daily target')}</span>
+          <span className="num text-2xl font-bold">{kcal(targets.kcal)} {t('kcal')}</span>
         </div>
         {settings.calorieOverride == null && (
           <p className="mt-2 text-xs text-muted">
-            Your body burns about {kcal(targets.plan.maintenance)} kcal a day. The target updates as you log new weights.
+            {t('Your body burns about {n} kcal a day. The target updates as you log new weights.', { n: kcal(targets.plan.maintenance) })}
           </p>
         )}
       </Card>
 
       <Card className="space-y-4">
-        <h2 className="font-display text-lg font-semibold">Targets</h2>
+        <h2 className="font-display text-lg font-semibold">{t('Targets')}</h2>
         <Field
-          label="Set your own calorie target"
-          hint={overrideN > 0 && overrideN < calorieFloor(profile.sex) ? 'That’s below the usual safe minimum. Talk to a doctor first.' : 'Leave empty to use the calculated target.'}
+          label={t('Set your own calorie target')}
+          hint={overrideN > 0 && overrideN < calorieFloor(profile.sex) ? t('That’s below the usual safe minimum. Talk to a doctor first.') : t('Leave empty to use the calculated target.')}
         >
           <div className="flex gap-2">
             <input className="field num" inputMode="numeric" value={override} onChange={(e) => setOverride(e.target.value)} placeholder={String(targets.plan.target)} />
@@ -111,21 +115,21 @@ export default function Me() {
               className="btn btn-quiet shrink-0"
               onClick={() => updateSettings({ calorieOverride: overrideN >= 800 ? Math.round(overrideN) : null })}
             >
-              Save
+              {t('Save')}
             </button>
           </div>
         </Field>
-        <Field label="Nutrient split">
+        <Field label={t('Nutrient split')}>
           <Segmented
             value={settings.macroPreset}
             onChange={(v: MacroPreset) => updateSettings({ macroPreset: v })}
-            options={(Object.keys(MACRO_PRESETS) as MacroPreset[]).map((k) => ({ value: k, label: MACRO_PRESETS[k].label }))}
+            options={(Object.keys(MACRO_PRESETS) as MacroPreset[]).map((k) => ({ value: k, label: t(MACRO_PRESETS[k].label) }))}
           />
           <span className="mt-1 block text-xs text-muted">
             {targets.protein} g protein · {targets.carbs} g carbs · {targets.fat} g fat a day
           </span>
         </Field>
-        <Field label="Water goal, litres">
+        <Field label={t('Water goal, litres')} hint={t('2 L is a good daily goal for most adults. Drink more on hot days or when you exercise.')}>
           <input
             className="field num"
             inputMode="decimal"
@@ -133,18 +137,18 @@ export default function Me() {
             onBlur={(e) => num(e.target.value) > 0 && updateSettings({ waterGoalMl: Math.round(num(e.target.value) * 1000) })}
           />
         </Field>
-        <Field label="Add exercise calories to my budget" hint="Workout estimates can run high, so half is a safe choice if weight loss stalls.">
+        <Field label={t('Add exercise calories to my budget')} hint={t('Workout estimates can run high, so half is a safe choice if weight loss stalls.')}>
           <Segmented
             value={String(settings.exerciseEatBack) as '0' | '0.5' | '1'}
             onChange={(v) => updateSettings({ exerciseEatBack: Number(v) as 0 | 0.5 | 1 })}
             options={[
-              { value: '0', label: 'None' },
-              { value: '0.5', label: 'Half' },
-              { value: '1', label: 'All' },
+              { value: '0', label: t('None') },
+              { value: '0.5', label: t('Half') },
+              { value: '1', label: t('All') },
             ]}
           />
         </Field>
-        <Field label="Daily step goal">
+        <Field label={t('Daily step goal')}>
           <input
             className="field num"
             inputMode="numeric"
@@ -154,8 +158,8 @@ export default function Me() {
         </Field>
         <label className="flex items-center justify-between gap-3">
           <span>
-            <span className="block font-medium">Fasting timer</span>
-            <span className="block text-sm text-muted">Show the intermittent fasting card on Today</span>
+            <span className="block font-medium">{t('Fasting timer')}</span>
+            <span className="block text-sm text-muted">{t('Show the intermittent fasting card on Today')}</span>
           </span>
           <input
             type="checkbox"
@@ -167,11 +171,11 @@ export default function Me() {
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="font-display text-lg font-semibold">AI assistant</h2>
+        <h2 className="font-display text-lg font-semibold">{t('AI assistant')}</h2>
         <AiKeySetup />
         <details className="text-sm">
-          <summary className="cursor-pointer text-muted">Advanced</summary>
-          <Field label="Gemini model" hint="Plate switches to gemini-3.5-flash-lite automatically when this one is busy.">
+          <summary className="cursor-pointer text-muted">{t('Advanced')}</summary>
+          <Field label={t('Gemini model')} hint={t('Plate switches to gemini-3.5-flash-lite automatically when this one is busy.')}>
             <input
               className="field mt-1 font-mono"
               defaultValue={settings.geminiModel}
@@ -184,9 +188,9 @@ export default function Me() {
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="font-display text-lg font-semibold">Online food search</h2>
+        <h2 className="font-display text-lg font-semibold">{t('Online food search')}</h2>
         <p className="text-sm text-muted">
-          Online search uses the free USDA database with a shared key that allows a few searches an hour. For more, get your own free key at{' '}
+          {t('Online search uses the free USDA database with a shared key that allows a few searches an hour. For more, get your own free key at')}{' '}
           <a className="text-accent underline" href="https://fdc.nal.usda.gov/api-key-signup" target="_blank" rel="noreferrer">
             fdc.nal.usda.gov
           </a>
@@ -194,7 +198,7 @@ export default function Me() {
         </p>
         <input
           className="field font-mono"
-          placeholder="USDA API key (optional)"
+          placeholder={t('USDA API key (optional)')}
           defaultValue={settings.usdaKey}
           onBlur={(e) => updateSettings({ usdaKey: e.target.value.trim() })}
           autoCapitalize="off"
@@ -203,12 +207,12 @@ export default function Me() {
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="font-display text-lg font-semibold">My foods and recipes</h2>
-        {recipes.length > 0 && <FoodList title="Recipes" foods={recipes.map(recipeToFood)} onPick={(f) => setEditRecipe(recipes.find((r) => r.id === f.id) ?? null)} />}
-        {customFoods.length > 0 && <FoodList title="Foods" foods={customFoods} onPick={setEditFood} />}
+        <h2 className="font-display text-lg font-semibold">{t('My foods and recipes')}</h2>
+        {recipes.length > 0 && <FoodList title={t('Recipes')} foods={recipes.map(recipeToFood)} onPick={(f) => setEditRecipe(recipes.find((r) => r.id === f.id) ?? null)} />}
+        {customFoods.length > 0 && <FoodList title={t('Foods')} foods={customFoods} onPick={setEditFood} />}
         {savedMeals.length > 0 && (
           <div>
-            <h3 className="mb-1 text-sm font-medium text-muted">Saved meals</h3>
+            <h3 className="mb-1 text-sm font-medium text-muted">{t('Saved meals')}</h3>
             <ul className="divide-y divide-line rounded-[18px] bg-surface-2 px-4">
               {savedMeals.map((m) => (
                 <li key={m.id} className="flex items-center gap-3 py-3">
@@ -218,7 +222,7 @@ export default function Me() {
                       {m.items.length} foods · {kcal(m.items.reduce((n, i) => n + i.nutrients.kcal, 0))} kcal
                     </div>
                   </div>
-                  <button className="p-1 text-muted" onClick={() => removeSavedMeal(m.id)} aria-label={`Delete ${m.name}`}>
+                  <button className="p-1 text-muted" onClick={() => removeSavedMeal(m.id)} aria-label={t('Delete {name}', { name: m.name })}>
                     <Icon name="trash" className="h-4 w-4" />
                   </button>
                 </li>
@@ -227,21 +231,21 @@ export default function Me() {
           </div>
         )}
         {!recipes.length && !customFoods.length && !savedMeals.length && (
-          <p className="text-sm text-muted">Foods, recipes and saved meals you create show up here.</p>
+          <p className="text-sm text-muted">{t('Foods, recipes and saved meals you create show up here.')}</p>
         )}
       </Card>
 
       <Card className="space-y-3">
-        <h2 className="font-display text-lg font-semibold">Backup</h2>
+        <h2 className="font-display text-lg font-semibold">{t('Backup')}</h2>
         <p className="text-sm text-muted">
-          Everything is stored only on this phone. Save a backup now and then, so you can move to a new phone or recover after deleting the app. Progress photos aren’t included in backups.
+          {t('Everything is stored only on this phone. Save a backup now and then, so you can move to a new phone or recover after deleting the app. Progress photos aren’t included in backups.')}
         </p>
         <div className="grid grid-cols-2 gap-2">
           <button className="btn btn-quiet" onClick={backup}>
-            Save backup
+            {t('Save backup')}
           </button>
           <label className="btn btn-quiet cursor-pointer">
-            Restore
+            {t('Restore')}
             <input type="file" accept="application/json,.json" className="sr-only" onChange={(e) => e.target.files?.[0] && restore(e.target.files[0])} />
           </label>
         </div>
@@ -249,14 +253,14 @@ export default function Me() {
         {error && <ErrorNote>{error}</ErrorNote>}
         <button
           className="flex items-center gap-1.5 pt-2 text-sm text-over"
-          onClick={() => confirm('Delete all your data from this phone? This can’t be undone.') && resetAll()}
+          onClick={() => confirm(t('Delete all your data from this phone? This can’t be undone.')) && resetAll()}
         >
-          <Icon name="trash" className="h-4 w-4" /> Delete all data
+          <Icon name="trash" className="h-4 w-4" /> {t('Delete all data')}
         </button>
       </Card>
 
       <p className="px-2 pb-4 text-center text-xs text-muted">
-        Plate · food data from standard nutrition tables, Open Food Facts and USDA. Calorie numbers are estimates, not medical advice.
+        {t('Plate · food data from standard nutrition tables, Open Food Facts and USDA. Calorie numbers are estimates, not medical advice.')}
       </p>
 
       {editFood && <FoodEditor food={editFood} onClose={() => setEditFood(null)} />}

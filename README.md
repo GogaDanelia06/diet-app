@@ -15,6 +15,9 @@ A free calorie and diet tracker that installs on an iPhone from Safari. No App S
 - Intermittent fasting timer (12:12 to 24 h) with history.
 - Weight chart with a 7-day trend line and your real weekly rate, body measurements, private progress photos with before/after compare, a weekly nutrition report, an activity summary and a logging streak.
 - Water tracking and backup/restore.
+- Dark design with 3D: a glass calorie orb that fills as you eat, a spinning plate on the welcome screen and when food is logged, and a gold medal with confetti for achievements. Respects the iPhone's Reduce Motion setting.
+- 21 achievements, a month calendar coloured by how each day went, and an AI weekly report with a score and three tips.
+- English and Georgian (ქართული), including Georgian names for every built-in food and exercise; the AI answers in the chosen language.
 
 Apple Health can't be read by a web app, so steps are typed in; reminders would need a paid push server, so there are none.
 

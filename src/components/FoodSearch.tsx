@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { t, tName, tServing } from '../lib/i18n'
 import { BUILTIN_FOODS, CATEGORIES } from '../lib/foods'
 import { kcal } from '../lib/format'
 import { searchUsda } from '../lib/online'
@@ -38,7 +39,7 @@ export default function FoodSearch({
     try {
       setOnline({ query: q, foods: await searchUsda(q, usdaKey) })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Online search failed. Check your internet connection.')
+      setError(e instanceof Error ? e.message : t('Online search failed. Check your internet connection.'))
     } finally {
       setLoading(false)
     }
@@ -51,7 +52,7 @@ export default function FoodSearch({
         <input
           type="search"
           className="field pl-10"
-          placeholder="Search foods and dishes"
+          placeholder={t('Search foods and dishes')}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value)
@@ -66,14 +67,14 @@ export default function FoodSearch({
 
       {!q && !category && (
         <>
-          {showHistory && favorites.length > 0 && <FoodList title="Favorites" foods={favorites} onPick={onPick} />}
-          {showHistory && recent.length > 0 && <FoodList title="Recent" foods={recent.slice(0, 12)} onPick={onPick} />}
+          {showHistory && favorites.length > 0 && <FoodList title={t('Favorites')} foods={favorites} onPick={onPick} />}
+          {showHistory && recent.length > 0 && <FoodList title={t('Recent')} foods={recent.slice(0, 12)} onPick={onPick} />}
           <div>
-            <h3 className="mb-2 text-sm font-medium text-muted">Browse</h3>
+            <h3 className="mb-2 text-sm font-medium text-muted">{t('Browse')}</h3>
             <div className="flex flex-wrap gap-2">
               {[...(customFoods.length || recipes.length ? ['My foods'] : []), ...CATEGORIES].map((c) => (
                 <button key={c} onClick={() => setCategory(c)} className="rounded-full border border-line bg-surface px-3 py-1.5 text-sm">
-                  {c}
+                  {c === 'My foods' ? t(c) : tName(c)}
                 </button>
               ))}
             </div>
@@ -84,10 +85,10 @@ export default function FoodSearch({
       {!q && category && (
         <>
           <button onClick={() => setCategory(null)} className="flex items-center gap-1 text-sm font-medium text-accent">
-            <Icon name="left" className="h-4 w-4" /> All categories
+            <Icon name="left" className="h-4 w-4" /> {t('All categories')}
           </button>
           <FoodList
-            title={category}
+            title={category === 'My foods' ? t(category) : tName(category)}
             foods={category === 'My foods' ? [...customFoods, ...recipes.map(recipeToFood)] : BUILTIN_FOODS.filter((f) => f.category === category)}
             onPick={onPick}
           />
@@ -99,27 +100,27 @@ export default function FoodSearch({
           {results.length > 0 ? (
             <FoodList foods={results} onPick={onPick} />
           ) : (
-            <p className="text-muted">Nothing called “{q}” in Plate’s list yet.</p>
+            <p className="text-muted">{t('Nothing called “{q}” in Plate’s list yet.', { q })}</p>
           )}
           <div className="grid gap-2">
             {onAskAi && (
               <button onClick={() => onAskAi(q)} className="btn btn-quiet justify-start">
-                <Icon name="sparkle" className="h-5 w-5 text-accent" /> Estimate “{q}” with AI
+                <Icon name="sparkle" className="h-5 w-5 text-accent" /> {t('Estimate “{q}” with AI', { q })}
               </button>
             )}
             {online?.query !== q && (
               <button onClick={searchOnline} disabled={loading} className="btn btn-quiet justify-start">
-                <Icon name="search" className="h-5 w-5 text-accent" /> Search the USDA database online
+                <Icon name="search" className="h-5 w-5 text-accent" /> {t('Search the USDA database online')}
               </button>
             )}
           </div>
-          {loading && <Spinner label="Searching online…" />}
+          {loading && <Spinner label={t('Searching online…')} />}
           {error && <ErrorNote>{error}</ErrorNote>}
           {online?.query === q &&
             (online.foods.length ? (
-              <FoodList title="Online results" foods={online.foods} onPick={onPick} />
+              <FoodList title={t('Online results')} foods={online.foods} onPick={onPick} />
             ) : (
-              <p className="text-muted">No online results. Try a simpler word in English, like “yogurt”.</p>
+              <p className="text-muted">{t('No online results. Try a simpler word in English, like “yogurt”.')}</p>
             ))}
         </>
       )}
@@ -134,20 +135,20 @@ export function FoodList({ title, foods, onPick }: { title?: string; foods: Food
       <ul className="divide-y divide-line rounded-[18px] bg-surface px-4">
         {foods.map((f) => {
           const s = f.servings[0]
-          const amount = s ? `${s.label}` : '100 g'
+          const amount = s ? tServing(s.label) : '100 g'
           const cals = s ? (f.per100.kcal * s.grams) / 100 : f.per100.kcal
           return (
             <li key={f.id}>
               <button onClick={() => onPick(f)} className="flex w-full items-center gap-3 py-3 text-left">
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{f.name}</div>
+                  <div className="truncate font-medium">{tName(f.name)}</div>
                   <div className="truncate text-sm text-muted">
                     {f.brand ? `${f.brand} · ` : ''}
                     {amount}
                   </div>
                 </div>
                 <span className="num shrink-0 text-sm">
-                  <span className="font-semibold">{kcal(cals)}</span> <span className="text-muted">kcal</span>
+                  <span className="font-semibold">{kcal(cals)}</span> <span className="text-muted">{t('kcal')}</span>
                 </span>
               </button>
             </li>

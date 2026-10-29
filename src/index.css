@@ -1,61 +1,48 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/bricolage-grotesque';
 
+/* Dark premium theme: near-black ink, frosted glass surfaces, neon mint accent. */
 :root {
-  --bg: #eef1ec;
-  --surface: #ffffff;
-  --surface-2: #f5f7f3;
-  --ink: #18211d;
-  --muted: #66726b;
-  --line: #dce2da;
-  --accent: #2e6b4e;
-  --accent-ink: #ffffff;
-  --accent-soft: #dcebe1;
-  --protein: #a23b5a;
-  --carbs: #c08419;
-  --fat: #3f6ca8;
-  --over: #c2412d;
-  --water: #2a86ad;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #0f1513;
-    --surface: #18201c;
-    --surface-2: #1f2924;
-    --ink: #e8eee9;
-    --muted: #93a099;
-    --line: #2a3530;
-    --accent: #6fbf94;
-    --accent-ink: #0f1513;
-    --accent-soft: #213a2d;
-    --protein: #e07a98;
-    --carbs: #e3b04f;
-    --fat: #7fa6dd;
-    --over: #ef7a62;
-    --water: #6bc1e3;
-    color-scheme: dark;
-  }
+  --bg: #05080a;
+  --bg-raised: #0b1013;
+  --surface: rgb(255 255 255 / 0.055);
+  --surface-2: rgb(255 255 255 / 0.085);
+  --surface-solid: #10171b;
+  --ink: #eef6f1;
+  --muted: #8a9993;
+  --line: rgb(255 255 255 / 0.09);
+  --accent: #45f0a0;
+  --accent-ink: #03140b;
+  --accent-soft: rgb(69 240 160 / 0.13);
+  --violet: #7b5cff;
+  --protein: #ff5fa2;
+  --carbs: #ffc547;
+  --fat: #5ea8ff;
+  --over: #ff6b57;
+  --water: #4fd8ff;
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-bg-raised: var(--bg-raised);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-surface-solid: var(--surface-solid);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
+  --color-violet: var(--violet);
   --color-protein: var(--protein);
   --color-carbs: var(--carbs);
   --color-fat: var(--fat);
   --color-over: var(--over);
   --color-water: var(--water);
   --font-display: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Noto Sans Georgian', system-ui, sans-serif;
 }
 
 @layer base {
@@ -74,11 +61,29 @@
     line-height: 1.4;
   }
 
+  /* Two soft aurora glows behind everything, fixed so they don't scroll. */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: -20vh -30vw auto;
+    height: 70vh;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(40% 50% at 25% 40%, rgb(69 240 160 / 0.16), transparent 70%),
+      radial-gradient(45% 55% at 80% 30%, rgb(123 92 255 / 0.18), transparent 70%);
+    filter: blur(20px);
+  }
+
   /* iOS zooms into inputs with text smaller than 16px. */
   input,
   select,
   textarea {
     font-size: 16px;
+  }
+
+  ::selection {
+    background: rgb(69 240 160 / 0.3);
   }
 
   :focus-visible {
@@ -94,18 +99,50 @@
     font-feature-settings: 'tnum';
   }
 
+  /* Frosted glass panel with a faint top highlight. */
+  .glass {
+    background: linear-gradient(180deg, rgb(255 255 255 / 0.075), rgb(255 255 255 / 0.035));
+    border: 1px solid var(--line);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 10px 30px -12px rgb(0 0 0 / 0.6);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+  }
+
+  /* Cards lean toward the finger while pressed (see Card in ui.tsx). */
+  .tilt {
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(var(--s, 1));
+    transition: transform 380ms cubic-bezier(0.2, 0.9, 0.25, 1.2);
+    will-change: transform;
+  }
+  .tilt[data-pressed] {
+    transition-duration: 90ms;
+  }
+
+  .glow-text {
+    text-shadow: 0 0 24px rgb(69 240 160 / 0.35);
+  }
+
   .field {
     width: 100%;
-    border-radius: 12px;
+    border-radius: 14px;
     border: 1px solid var(--line);
-    background: var(--surface-2);
-    padding: 10px 12px;
+    background: rgb(255 255 255 / 0.06);
+    padding: 11px 13px;
     color: var(--ink);
     outline: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .field::placeholder {
+    color: rgb(238 246 241 / 0.32);
   }
   .field:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-soft);
+    border-color: rgb(69 240 160 / 0.6);
+    box-shadow: 0 0 0 4px rgb(69 240 160 / 0.12);
+  }
+  select.field option {
+    background: var(--surface-solid);
   }
 
   .btn {
@@ -113,23 +150,28 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    border-radius: 14px;
+    border-radius: 16px;
     padding: 12px 16px;
-    font-weight: 600;
-    transition: transform 120ms ease, opacity 120ms ease;
+    font-weight: 650;
+    transition: transform 140ms cubic-bezier(0.2, 0.9, 0.3, 1.3), opacity 120ms ease, box-shadow 200ms ease;
   }
   .btn:active {
-    transform: scale(0.97);
+    transform: scale(0.96) translateY(1px);
   }
   .btn:disabled {
-    opacity: 0.45;
+    opacity: 0.4;
+    box-shadow: none;
   }
   .btn-primary {
-    background: var(--accent);
+    background: linear-gradient(180deg, #6dfbb7, #2fe08c);
     color: var(--accent-ink);
+    box-shadow:
+      0 0 0 1px rgb(69 240 160 / 0.5),
+      0 8px 28px -6px rgb(69 240 160 / 0.55),
+      inset 0 1px 0 rgb(255 255 255 / 0.5);
   }
   .btn-quiet {
-    background: var(--surface-2);
+    background: rgb(255 255 255 / 0.07);
     color: var(--ink);
     border: 1px solid var(--line);
   }
@@ -143,27 +185,58 @@
 }
 
 .safe-top {
-  padding-top: max(12px, env(safe-area-inset-top));
+  padding-top: max(14px, env(safe-area-inset-top));
 }
 .safe-bottom {
   padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
 
+/* Sheets swing up from below with a little depth. */
 @keyframes sheet-in {
   from {
-    transform: translateY(24px);
+    transform: perspective(1200px) translateY(48px) rotateX(9deg);
     opacity: 0;
   }
 }
 .sheet-in {
-  animation: sheet-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: sheet-in 340ms cubic-bezier(0.2, 0.85, 0.25, 1);
+  transform-origin: 50% 100%;
+}
+
+/* Switching tabs turns the page in like a card. */
+@keyframes page-in {
+  from {
+    transform: perspective(1400px) translateX(28px) rotateY(-14deg);
+    opacity: 0;
+  }
+}
+.page-in {
+  animation: page-in 420ms cubic-bezier(0.2, 0.85, 0.25, 1);
+  transform-origin: 0% 50%;
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.6) rotateX(30deg);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.04);
+  }
+}
+.pop-in {
+  animation: pop-in 520ms cubic-bezier(0.2, 0.85, 0.25, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sheet-in {
+  .sheet-in,
+  .page-in,
+  .pop-in {
     animation: none;
   }
+  .tilt,
   .btn {
     transition: none;
+    transform: none;
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { t } from '../lib/i18n'
 import { readNutritionLabel } from '../lib/ai'
 import { uid } from '../lib/date'
 import { num } from '../lib/format'
@@ -64,7 +65,7 @@ export default function FoodEditor({
       const s = (n?: number) => (n == null ? '' : String(Math.round(n * 10) / 10))
       setVals({ kcal: s(r.per100.kcal), protein: s(r.per100.protein), carbs: s(r.per100.carbs), fat: s(r.per100.fat), fiber: s(r.per100.fiber), sugar: s(r.per100.sugar) })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not read the label.')
+      setError(e instanceof Error ? e.message : t('Could not read the label.'))
     } finally {
       setScanning(false)
     }
@@ -98,7 +99,7 @@ export default function FoodEditor({
 
   return (
     <Sheet
-      title={food ? 'Edit food' : 'New food'}
+      title={food ? t('Edit food') : t('New food')}
       onClose={onClose}
       footer={
         <div className="flex gap-2">
@@ -110,11 +111,11 @@ export default function FoodEditor({
                 onClose()
               }}
             >
-              Delete
+              {t('Delete')}
             </button>
           )}
           <button className="btn btn-primary flex-1 text-lg" disabled={!canSave} onClick={save}>
-            Save food
+            {t('Save food')}
           </button>
         </div>
       }
@@ -122,57 +123,57 @@ export default function FoodEditor({
       <div className="space-y-4">
         {settings.geminiKey ? (
           <label className="btn btn-quiet w-full cursor-pointer">
-            <Icon name="camera" className="h-5 w-5 text-accent" /> Fill in from a label photo
+            <Icon name="camera" className="h-5 w-5 text-accent" /> {t('Fill in from a label photo')}
             <input ref={fileRef} type="file" accept="image/*" className="sr-only" onChange={(e) => e.target.files?.[0] && scanLabel(e.target.files[0])} />
           </label>
         ) : (
-          <p className="text-sm text-muted">Tip: add a free AI key in Me to fill this in from a photo of the label.</p>
+          <p className="text-sm text-muted">{t('Tip: add a free AI key in Me to fill this in from a photo of the label.')}</p>
         )}
-        {scanning && <Spinner label="Reading the label…" />}
+        {scanning && <Spinner label={t('Reading the label…')} />}
         {error && <ErrorNote>{error}</ErrorNote>}
-        {barcode && <p className="text-sm text-muted">Barcode {barcode}</p>}
+        {barcode && <p className="text-sm text-muted">{t('Barcode {code}', { code: barcode })}</p>}
 
-        <Field label="Name">
-          <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder="Grandma’s lobio" />
+        <Field label={t('Name')}>
+          <input className="field" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Grandma’s lobio')} />
         </Field>
-        <Field label="Brand (optional)">
+        <Field label={t('Brand (optional)')}>
           <input className="field" value={brand} onChange={(e) => setBrand(e.target.value)} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Serving name">
+          <Field label={t('Serving name')}>
             <input className="field" value={servingLabel} onChange={(e) => setServingLabel(e.target.value)} />
           </Field>
-          <Field label="Serving size, g">
-            <input className="field num" inputMode="decimal" value={servingGrams} onChange={(e) => setServingGrams(e.target.value)} placeholder="optional" />
+          <Field label={t('Serving size, g')}>
+            <input className="field num" inputMode="decimal" value={servingGrams} onChange={(e) => setServingGrams(e.target.value)} placeholder={t('optional')} />
           </Field>
         </div>
-        <Field label="The numbers below are for">
+        <Field label={t('The numbers below are for')}>
           <Segmented
             value={basis}
             onChange={setBasis}
             options={[
               { value: '100', label: '100 g' },
-              { value: 'serving', label: 'One serving' },
+              { value: 'serving', label: t('One serving') },
             ]}
           />
         </Field>
-        <Field label="Calories">
+        <Field label={t('Calories')}>
           <input className="field num text-2xl" inputMode="decimal" value={vals.kcal} onChange={set('kcal')} placeholder="0" />
         </Field>
         <div className="grid grid-cols-3 gap-3">
-          <Field label="Protein, g">
+          <Field label={t('Protein, g')}>
             <input className="field num" inputMode="decimal" value={vals.protein} onChange={set('protein')} />
           </Field>
-          <Field label="Carbs, g">
+          <Field label={t('Carbs, g')}>
             <input className="field num" inputMode="decimal" value={vals.carbs} onChange={set('carbs')} />
           </Field>
-          <Field label="Fat, g">
+          <Field label={t('Fat, g')}>
             <input className="field num" inputMode="decimal" value={vals.fat} onChange={set('fat')} />
           </Field>
-          <Field label="Fiber, g">
+          <Field label={t('Fiber, g')}>
             <input className="field num" inputMode="decimal" value={vals.fiber} onChange={set('fiber')} />
           </Field>
-          <Field label="Sugar, g">
+          <Field label={t('Sugar, g')}>
             <input className="field num" inputMode="decimal" value={vals.sugar} onChange={set('sugar')} />
           </Field>
         </div>
