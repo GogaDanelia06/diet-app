@@ -4,7 +4,11 @@ import type { RawPlanMeal } from './plan'
 import { aiLanguageNote, t } from './i18n'
 
 // Google Gemini, called straight from the phone with the user's own free API key.
+const API = 'https://generativelanguage.googleapis.com/v1beta'
 const FALLBACK_MODEL = 'gemini-3.5-flash-lite'
+// A busy free server can keep a request open for minutes; stop waiting after this long.
+const AI_TIMEOUT_MS = 40_000
+const LONG_AI_TIMEOUT_MS = 100_000
 
 export type AiItem = PlanItem
 
@@ -41,26 +45,45 @@ class AiError extends Error {
   }
 }
 
+class Timeout extends Error {}
+
+/** fetch that gives up after `ms`, throwing Timeout, so no spinner turns forever. */
+async function fetchWithin(url: string, init: RequestInit, ms: number): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } catch (e) {
+    if (controller.signal.aborted) throw new Timeout()
+    throw e
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function callGemini(
   cfg: Config,
   body: Record<string, unknown>,
   model = cfg.model || FALLBACK_MODEL,
+  timeoutMs = AI_TIMEOUT_MS,
 ): Promise<string> {
   if (!cfg.key) throw new AiError(t('Add your free Gemini key in Me → AI assistant first.'), 0)
   let res: Response
   try {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    res = await fetchWithin(`${API}/models/${encodeURIComponent(model)}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': cfg.key },
       body: JSON.stringify(body),
-    })
-  } catch {
-    throw new AiError(t('No internet connection. AI features need to be online.'), 0)
+    }, timeoutMs)
+  } catch (e) {
+    if (!(e instanceof Timeout)) throw new AiError(t('No internet connection. AI features need to be online.'), 0)
+    if (model !== FALLBACK_MODEL) return callGemini(cfg, body, FALLBACK_MODEL, timeoutMs)
+    throw new AiError(t('The AI took too long to answer. Google’s free servers may be busy; try again in a minute.'), 0)
   }
   if (!res.ok) {
     // Busy or unknown model: retry once on the lighter free model.
     if ((res.status === 429 || res.status === 404 || res.status === 503) && model !== FALLBACK_MODEL) {
-      return callGemini(cfg, body, FALLBACK_MODEL)
+      return callGemini(cfg, body, FALLBACK_MODEL, timeoutMs)
     }
     let detail = ''
     try {
@@ -317,9 +340,38 @@ export function aiItemToFood(i: AiItem): Food {
   }
 }
 
-export async function testKey(cfg: Config): Promise<string> {
-  const text = await callGemini(cfg, { contents: [{ role: 'user', parts: [{ text: 'Reply with just: OK' }] }] })
-  return text.trim()
+/** The preferred model when this key can use it, else the newest stable Flash model, else any Flash model. */
+export function pickModel(available: string[], preferred: string) {
+  if (available.includes(preferred)) return preferred
+  const version = (name: string) => parseFloat(name.match(/^gemini-(\d+(?:\.\d+)?)/)?.[1] ?? '0')
+  const stable = available.filter((n) => /^gemini-\d+(\.\d+)?-flash$/.test(n)).sort((a, b) => version(b) - version(a))
+  return stable[0] ?? available.find((n) => n === 'gemini-flash-latest') ?? available.find((n) => /flash/.test(n) && !/image|tts|live|audio|embed/.test(n)) ?? preferred
+}
+
+/**
+ * Checks a key by listing the models it can use, which answers in about a second without
+ * generating anything, and returns the model Plate should use with it.
+ */
+export async function checkKey(cfg: Config): Promise<string> {
+  let res: Response
+  try {
+    res = await fetchWithin(`${API}/models?pageSize=1000`, { headers: { 'x-goog-api-key': cfg.key } }, 15_000)
+  } catch (e) {
+    throw new AiError(e instanceof Timeout ? t('Google didn’t answer in time. Check your internet and try again.') : t('No internet connection. AI features need to be online.'), 0)
+  }
+  if (!res.ok) {
+    let detail = ''
+    try {
+      detail = (await res.json())?.error?.message ?? ''
+    } catch {
+      // Keep the status-only message.
+    }
+    if ((res.status === 400 || res.status === 403) && /api.?key/i.test(detail)) throw new AiError(t('That Gemini key was rejected. Check it in Me → AI assistant.'), res.status)
+    throw new AiError(`${t('AI request failed ({s}).', { s: res.status })} ${detail}`.trim(), res.status)
+  }
+  const data: { models?: { name: string; supportedGenerationMethods?: string[] }[] } = await res.json()
+  const usable = (data.models ?? []).filter((m) => m.supportedGenerationMethods?.includes('generateContent')).map((m) => m.name.replace(/^models\//, ''))
+  return pickModel(usable, cfg.model)
 }
 
 const PLAN_MEAL_SCHEMA = {
@@ -397,7 +449,7 @@ Finish with "tips": two or three short, practical tips for sticking to this plan
       },
     ],
     generation_config: { response_mime_type: 'application/json', response_schema: PLAN_SCHEMA },
-  })
+  }, undefined, LONG_AI_TIMEOUT_MS)
   return parseJson(text)
 }
 
@@ -509,7 +561,7 @@ If few days were logged, say so kindly and make logging every day one of the tip
     },
     contents: [{ role: 'user', parts: [{ text: week }] }],
     generation_config: { response_mime_type: 'application/json', response_schema: REPORT_SCHEMA },
-  })
+  }, undefined, LONG_AI_TIMEOUT_MS)
   const r = parseJson<Partial<AiWeeklyReport>>(text)
   const list = (v: unknown) => (Array.isArray(v) ? v.map(String).filter(Boolean) : [])
   return {

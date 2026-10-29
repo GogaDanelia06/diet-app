@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { t } from '../lib/i18n'
 import { useStore } from '../lib/store'
-import { testKey } from '../lib/ai'
+import { checkKey } from '../lib/ai'
 import { ErrorNote, Spinner } from './ui'
 
 /** Explains how to get a free Gemini key and saves it after a quick test call. */
@@ -17,8 +17,9 @@ export default function AiKeySetup({ compact = false }: { compact?: boolean }) {
     setState('testing')
     setError('')
     try {
-      await testKey({ key: trimmed, model: settings.geminiModel })
-      updateSettings({ geminiKey: trimmed })
+      // Also switches to a model this key can use if the current one isn't available to it.
+      const model = await checkKey({ key: trimmed, model: settings.geminiModel })
+      updateSettings({ geminiKey: trimmed, geminiModel: model })
       setState('ok')
     } catch (e) {
       setState('error')

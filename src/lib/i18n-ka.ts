@@ -651,4 +651,6 @@ export const KA: Record<string, string> = {
   "AI counts the calories": "AI დაითვლის კალორიებს",
   "How much did you eat?": "რამდენი შეჭამე?",
   "All of it": "მთლიანად",
+  "The AI took too long to answer. Google’s free servers may be busy; try again in a minute.": "AI-მ დიდხანს არ უპასუხა. Google-ის უფასო სერვერები შეიძლება გადატვირთული იყოს; სცადე ერთ წუთში.",
+  "Google didn’t answer in time. Check your internet and try again.": "Google-მა დროულად არ უპასუხა. შეამოწმე ინტერნეტი და სცადე თავიდან.",
 }
