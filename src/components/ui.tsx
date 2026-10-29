@@ -129,20 +129,23 @@ export function Segmented<T extends string>({
   value,
   options,
   onChange,
+  wrap = false,
 }: {
   value: T
   options: { value: T; label: string }[]
   onChange: (v: T) => void
+  /** Let long labels move to a second row on narrow screens instead of overflowing. */
+  wrap?: boolean
 }) {
   return (
-    <div className="flex gap-1 rounded-[16px] border border-line bg-white/[0.04] p-1" role="tablist">
+    <div className={`flex gap-1 rounded-[16px] border border-line bg-white/[0.04] p-1 ${wrap ? 'flex-wrap' : ''}`} role="tablist">
       {options.map((o) => (
         <button
           key={o.value}
           role="tab"
           aria-selected={value === o.value}
           onClick={() => onChange(o.value)}
-          className={`flex-1 rounded-[12px] px-2 py-2 text-sm font-semibold transition-colors ${
+          className={`flex-1 rounded-[12px] px-2 py-2 text-sm font-semibold transition-colors ${wrap ? 'min-w-max' : ''} ${
             value === o.value ? 'bg-white/[0.12] text-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.12)]' : 'text-muted'
           }`}
         >

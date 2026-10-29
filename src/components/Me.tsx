@@ -5,7 +5,8 @@ import { dateKey } from '../lib/date'
 import { kcal, num } from '../lib/format'
 import { exportData, recipeToFood, useStore, useTargets, type AppData } from '../lib/store'
 import type { Food, MacroPreset, Recipe } from '../lib/types'
-import { checkUsdaKey, hasSharedUsdaKey } from '../lib/online'
+import { activeUsdaKey, checkUsdaKey, hasSharedUsdaKey } from '../lib/online'
+import { KeyAction, KeyStatus, maskKey } from './KeyStatus'
 import { Card, ErrorNote, Field, Icon, Logo, Segmented, Spinner } from './ui'
 import Onboarding, { LanguageSwitch } from './Onboarding'
 import AiKeySetup from './AiKeySetup'
@@ -76,7 +77,7 @@ export default function Me() {
 
   return (
     <div className="space-y-3 pt-2">
-      <div className="flex items-center justify-between py-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 py-2">
         <h1 className="font-display text-3xl font-bold tracking-tight">{t('Me')}</h1>
         <LanguageSwitch value={settings.language} onChange={(language) => updateSettings({ language })} />
       </div>
@@ -126,10 +127,11 @@ export default function Me() {
           <Segmented
             value={settings.macroPreset}
             onChange={(v: MacroPreset) => updateSettings({ macroPreset: v })}
+            wrap
             options={(Object.keys(MACRO_PRESETS) as MacroPreset[]).map((k) => ({ value: k, label: t(MACRO_PRESETS[k].label) }))}
           />
           <span className="mt-1 block text-xs text-muted">
-            {targets.protein} g protein · {targets.carbs} g carbs · {targets.fat} g fat a day
+            {t('{p} g protein · {c} g carbs · {f} g fat a day', { p: targets.protein, c: targets.carbs, f: targets.fat })}
           </span>
         </Field>
         <Field label={t('Water goal, litres')} hint={t('2 L is a good daily goal for most adults. Drink more on hot days or when you exercise.')}>
@@ -274,17 +276,13 @@ export default function Me() {
 function UsdaKeyCard() {
   const saved = useStore((s) => s.settings.usdaKey)
   const updateSettings = useStore((s) => s.updateSettings)
-  const [key, setKey] = useState(saved)
+  const [editing, setEditing] = useState(false)
+  const [key, setKey] = useState('')
   const [status, setStatus] = useState<{ kind: 'checking' | 'ok' | 'error'; text?: string } | null>(null)
   const shared = hasSharedUsdaKey()
 
   async function save() {
     const trimmed = key.trim()
-    if (!trimmed) {
-      updateSettings({ usdaKey: '' })
-      setStatus({ kind: 'ok', text: t(shared ? 'Your key is removed. Plate’s shared key is used.' : 'Your key is removed. USDA’s demo key is used.') })
-      return
-    }
     setStatus({ kind: 'checking' })
     const problem = await checkUsdaKey(trimmed)
     if (problem) {
@@ -292,43 +290,87 @@ function UsdaKeyCard() {
       return
     }
     updateSettings({ usdaKey: trimmed })
-    setKey(trimmed)
+    setEditing(false)
+    setKey('')
     setStatus({ kind: 'ok', text: t('USDA key saved and working.') })
+  }
+
+  // A real one-result search with the key Plate would use, so anyone can confirm search works.
+  async function test() {
+    setStatus({ kind: 'checking' })
+    const problem = await checkUsdaKey(activeUsdaKey(saved))
+    setStatus(problem ? { kind: 'error', text: problem } : { kind: 'ok', text: t('Working. Online food search is ready.') })
+  }
+
+  function startEditing() {
+    setEditing(true)
+    setStatus(null)
   }
 
   return (
     <Card className="space-y-3">
       <h2 className="font-display text-lg font-semibold">{t('Online food search')}</h2>
-      <p className="text-sm text-muted">
-        {shared ? (
-          t('Online search uses the free USDA database with Plate’s shared key, so it works for everyone. Add your own key only if searches stop working.')
-        ) : (
-          <>
-            {t('Online search uses the free USDA database with a shared key that allows a few searches an hour. For more, get your own free key at')}{' '}
+      {!editing && (saved ? (
+        <KeyStatus title={t('Your USDA key added')} detail={maskKey(saved)}>
+          <KeyAction onClick={test} disabled={status?.kind === 'checking'}>{t('Test')}</KeyAction>
+          <KeyAction onClick={startEditing}>{t('Edit')}</KeyAction>
+        </KeyStatus>
+      ) : shared ? (
+        <KeyStatus title={t('Plate’s shared key is active')} detail={t('Works for everyone, nothing to type.')}>
+          <KeyAction onClick={test} disabled={status?.kind === 'checking'}>{t('Test')}</KeyAction>
+          <KeyAction onClick={startEditing}>{t('Use my own')}</KeyAction>
+        </KeyStatus>
+      ) : (
+        <KeyStatus ready={false} title={t('Using USDA’s demo key')} detail={t('A few searches an hour.')}>
+          <KeyAction onClick={test} disabled={status?.kind === 'checking'}>{t('Test')}</KeyAction>
+          <KeyAction onClick={startEditing}>{t('Add key')}</KeyAction>
+        </KeyStatus>
+      ))}
+      {editing && (
+        <>
+          <p className="text-sm text-muted">
+            {t('Get a free key at')}{' '}
             <a className="text-accent underline" href="https://fdc.nal.usda.gov/api-key-signup" target="_blank" rel="noreferrer">
               fdc.nal.usda.gov
             </a>
-            .
-          </>
-        )}
-      </p>
-      <div className="flex gap-2">
-        <input
-          className="field font-mono"
-          placeholder={t('USDA API key (optional)')}
-          value={key}
-          onChange={(e) => {
-            setKey(e.target.value)
-            setStatus(null)
-          }}
-          autoComplete="off"
-          autoCapitalize="off"
-          spellCheck={false}
-        />
-        <button className="btn btn-primary shrink-0" disabled={status?.kind === 'checking' || key.trim() === saved} onClick={save}>
-          {t('Save')}
-        </button>
-      </div>
+            {t(', then paste it here.')}
+          </p>
+          <div className="flex gap-2">
+            <input
+              className="field font-mono"
+              placeholder={t(saved ? 'Paste the new key' : 'USDA API key')}
+              value={key}
+              onChange={(e) => {
+                setKey(e.target.value)
+                setStatus(null)
+              }}
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+            <button className="btn btn-primary shrink-0" disabled={status?.kind === 'checking' || !key.trim()} onClick={save}>
+              {t('Save')}
+            </button>
+          </div>
+          <div className="flex gap-2">
+            <button type="button" className="btn btn-quiet flex-1" onClick={() => { setEditing(false); setKey(''); setStatus(null) }}>{t('Cancel')}</button>
+            {saved && (
+              <button
+                type="button"
+                className="btn btn-quiet flex-1 text-over"
+                onClick={() => {
+                  updateSettings({ usdaKey: '' })
+                  setEditing(false)
+                  setKey('')
+                  setStatus({ kind: 'ok', text: t(shared ? 'Your key is removed. Plate’s shared key is used.' : 'Your key is removed. USDA’s demo key is used.') })
+                }}
+              >
+                {t('Remove key')}
+              </button>
+            )}
+          </div>
+        </>
+      )}
       {status?.kind === 'checking' && <Spinner label={t('Checking the key…')} />}
       {status?.kind === 'ok' && <p className="text-sm font-medium text-accent" role="status">{status.text}</p>}
       {status?.kind === 'error' && <ErrorNote>{status.text}</ErrorNote>}

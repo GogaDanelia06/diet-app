@@ -55,6 +55,9 @@ export function usdaKeys(own: string, shared = SHARED_USDA_KEY) {
   return [...new Set([own.trim(), shared.trim(), 'DEMO_KEY'].filter(Boolean))]
 }
 
+/** The key a search starts with. */
+export const activeUsdaKey = (own: string) => usdaKeys(own)[0]
+
 const usdaSearchUrl = (params: Record<string, string>) => `https://api.nal.usda.gov/fdc/v1/foods/search?${new URLSearchParams(params)}`
 
 /** Tries a USDA key with a one-result search; returns null when it works, otherwise what went wrong. */

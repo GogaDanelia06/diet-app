@@ -2,14 +2,16 @@ import { useState } from 'react'
 import { t } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import { checkKey } from '../lib/ai'
+import { KeyAction, KeyStatus, maskKey } from './KeyStatus'
 import { ErrorNote, Spinner } from './ui'
 
-/** Explains how to get a free Gemini key and saves it after a quick test call. */
+/** Explains how to get a free Gemini key and saves it after a quick check; once saved it shows as added, with Edit. */
 export default function AiKeySetup({ compact = false }: { compact?: boolean }) {
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
-  const [key, setKey] = useState(settings.geminiKey)
-  const [state, setState] = useState<'idle' | 'testing' | 'ok' | 'error'>(settings.geminiKey ? 'ok' : 'idle')
+  const [editing, setEditing] = useState(!settings.geminiKey)
+  const [key, setKey] = useState('')
+  const [state, setState] = useState<'idle' | 'testing' | 'ok' | 'error'>('idle')
   const [error, setError] = useState('')
 
   async function save() {
@@ -21,15 +23,35 @@ export default function AiKeySetup({ compact = false }: { compact?: boolean }) {
       const model = await checkKey({ key: trimmed, model: settings.geminiModel })
       updateSettings({ geminiKey: trimmed, geminiModel: model })
       setState('ok')
+      setEditing(false)
+      setKey('')
     } catch (e) {
       setState('error')
       setError(e instanceof Error ? e.message : t('The key could not be checked.'))
     }
   }
 
+  function stopEditing() {
+    setEditing(false)
+    setKey('')
+    setState('idle')
+    setError('')
+  }
+
+  if (settings.geminiKey && !editing) {
+    return (
+      <div className="space-y-3">
+        <KeyStatus title={t('Gemini key added')} detail={`${maskKey(settings.geminiKey)} · ${settings.geminiModel}`}>
+          <KeyAction onClick={() => { setEditing(true); setState('idle') }}>{t('Edit')}</KeyAction>
+        </KeyStatus>
+        {state === 'ok' && <p className="text-sm font-medium text-accent" role="status">{t('AI is ready to use.')}</p>}
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
-      {!compact && (
+      {!compact && !settings.geminiKey && (
         <p className="text-muted">
           {t('AI features use Google Gemini’s free plan. You need your own free key, which takes about a minute:')}
         </p>
@@ -48,7 +70,7 @@ export default function AiKeySetup({ compact = false }: { compact?: boolean }) {
       <div className="flex gap-2">
         <input
           className="field font-mono"
-          placeholder={t('Paste your Gemini API key')}
+          placeholder={t(settings.geminiKey ? 'Paste the new key' : 'Paste your Gemini API key')}
           value={key}
           onChange={(e) => {
             setKey(e.target.value)
@@ -62,8 +84,23 @@ export default function AiKeySetup({ compact = false }: { compact?: boolean }) {
           {t('Save')}
         </button>
       </div>
+      {settings.geminiKey && (
+        <div className="flex gap-2">
+          <button type="button" className="btn btn-quiet flex-1" onClick={stopEditing}>{t('Cancel')}</button>
+          <button
+            type="button"
+            className="btn btn-quiet flex-1 text-over"
+            onClick={() => {
+              updateSettings({ geminiKey: '' })
+              setKey('')
+              setState('idle')
+            }}
+          >
+            {t('Remove key')}
+          </button>
+        </div>
+      )}
       {state === 'testing' && <Spinner label={t('Checking the key…')} />}
-      {state === 'ok' && settings.geminiKey && <p className="text-sm font-medium text-accent">{t('AI is ready to use.')}</p>}
       {state === 'error' && <ErrorNote>{error}</ErrorNote>}
     </div>
   )
