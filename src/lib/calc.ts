@@ -111,8 +111,3 @@ export function toPer100(totals: Nutrients, grams: number): Nutrients {
 export function roundTo(n: number, step: number) {
   return Math.round(n / step) * step
 }
-
-/** Calories burned for an activity, using MET × body weight × hours. */
-export function exerciseKcal(met: number, weightKg: number, minutes: number) {
-  return Math.round(met * weightKg * (minutes / 60))
-}

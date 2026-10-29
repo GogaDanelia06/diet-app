@@ -351,3 +351,48 @@ ${planConstraints(r)}`,
   })
   return parseJson(text)
 }
+
+export interface AiWorkoutPart {
+  name: string
+  minutes: number
+  met: number
+}
+
+const WORKOUT_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    activities: {
+      type: 'ARRAY',
+      items: { type: 'OBJECT', properties: { name: STR, minutes: NUM, met: NUM }, required: ['name', 'minutes', 'met'] },
+    },
+  },
+  required: ['activities'],
+}
+
+/** Splits a described workout into activities with minutes and a Compendium MET value; calories are worked out locally. */
+export async function estimateWorkout(cfg: Config, description: string): Promise<AiWorkoutPart[]> {
+  const text = await callGemini(cfg, {
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: `Split this workout into separate activities. For each give a short English name, its minutes, and its MET value from the Compendium of Physical Activities (gross MET, matching the described intensity).
+If the total time isn't given, estimate a realistic duration. Count rest between sets as part of a strength session, not separately.
+Workout: ${description}`,
+          },
+        ],
+      },
+    ],
+    generation_config: { response_mime_type: 'application/json', response_schema: WORKOUT_SCHEMA },
+  })
+  const r = parseJson<{ activities?: Partial<AiWorkoutPart>[] }>(text)
+  return (r.activities ?? [])
+    .map((a) => ({
+      name: String(a.name || 'Exercise'),
+      minutes: Math.max(0, Math.round(Number(a.minutes) || 0)),
+      // Clamp to the Compendium's range so a bad answer can't inflate calories.
+      met: Math.min(20, Math.max(1, Number(a.met) || 3)),
+    }))
+    .filter((a) => a.minutes > 0)
+}

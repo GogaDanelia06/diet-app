@@ -17,6 +17,8 @@ export default function Me() {
   const updateSettings = useStore((s) => s.updateSettings)
   const customFoods = useStore((s) => s.customFoods)
   const recipes = useStore((s) => s.recipes)
+  const savedMeals = useStore((s) => s.savedMeals)
+  const removeSavedMeal = useStore((s) => s.removeSavedMeal)
   const importData = useStore((s) => s.importData)
   const resetAll = useStore((s) => s.resetAll)
   const targets = useTargets()!
@@ -131,16 +133,35 @@ export default function Me() {
             onBlur={(e) => num(e.target.value) > 0 && updateSettings({ waterGoalMl: Math.round(num(e.target.value) * 1000) })}
           />
         </Field>
+        <Field label="Add exercise calories to my budget" hint="Workout estimates can run high, so half is a safe choice if weight loss stalls.">
+          <Segmented
+            value={String(settings.exerciseEatBack) as '0' | '0.5' | '1'}
+            onChange={(v) => updateSettings({ exerciseEatBack: Number(v) as 0 | 0.5 | 1 })}
+            options={[
+              { value: '0', label: 'None' },
+              { value: '0.5', label: 'Half' },
+              { value: '1', label: 'All' },
+            ]}
+          />
+        </Field>
+        <Field label="Daily step goal">
+          <input
+            className="field num"
+            inputMode="numeric"
+            defaultValue={settings.stepGoal}
+            onBlur={(e) => num(e.target.value) > 0 && updateSettings({ stepGoal: Math.round(num(e.target.value)) })}
+          />
+        </Field>
         <label className="flex items-center justify-between gap-3">
           <span>
-            <span className="block font-medium">Eat back exercise calories</span>
-            <span className="block text-sm text-muted">Adds calories burned to today’s budget</span>
+            <span className="block font-medium">Fasting timer</span>
+            <span className="block text-sm text-muted">Show the intermittent fasting card on Today</span>
           </span>
           <input
             type="checkbox"
             className="h-6 w-6 accent-[var(--accent)]"
-            checked={settings.addExerciseCalories}
-            onChange={(e) => updateSettings({ addExerciseCalories: e.target.checked })}
+            checked={settings.showFasting}
+            onChange={(e) => updateSettings({ showFasting: e.target.checked })}
           />
         </label>
       </Card>
@@ -185,12 +206,36 @@ export default function Me() {
         <h2 className="font-display text-lg font-semibold">My foods and recipes</h2>
         {recipes.length > 0 && <FoodList title="Recipes" foods={recipes.map(recipeToFood)} onPick={(f) => setEditRecipe(recipes.find((r) => r.id === f.id) ?? null)} />}
         {customFoods.length > 0 && <FoodList title="Foods" foods={customFoods} onPick={setEditFood} />}
-        {!recipes.length && !customFoods.length && <p className="text-sm text-muted">Foods and recipes you create show up here.</p>}
+        {savedMeals.length > 0 && (
+          <div>
+            <h3 className="mb-1 text-sm font-medium text-muted">Saved meals</h3>
+            <ul className="divide-y divide-line rounded-[18px] bg-surface-2 px-4">
+              {savedMeals.map((m) => (
+                <li key={m.id} className="flex items-center gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{m.name}</div>
+                    <div className="text-sm text-muted">
+                      {m.items.length} foods · {kcal(m.items.reduce((n, i) => n + i.nutrients.kcal, 0))} kcal
+                    </div>
+                  </div>
+                  <button className="p-1 text-muted" onClick={() => removeSavedMeal(m.id)} aria-label={`Delete ${m.name}`}>
+                    <Icon name="trash" className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {!recipes.length && !customFoods.length && !savedMeals.length && (
+          <p className="text-sm text-muted">Foods, recipes and saved meals you create show up here.</p>
+        )}
       </Card>
 
       <Card className="space-y-3">
         <h2 className="font-display text-lg font-semibold">Backup</h2>
-        <p className="text-sm text-muted">Everything is stored only on this phone. Save a backup now and then, so you can move to a new phone or recover after deleting the app.</p>
+        <p className="text-sm text-muted">
+          Everything is stored only on this phone. Save a backup now and then, so you can move to a new phone or recover after deleting the app. Progress photos aren’t included in backups.
+        </p>
         <div className="grid grid-cols-2 gap-2">
           <button className="btn btn-quiet" onClick={backup}>
             Save backup

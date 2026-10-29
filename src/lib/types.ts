@@ -80,7 +80,11 @@ export interface Settings {
   macroPreset: MacroPreset
   waterGoalMl: number
   glassMl: number
-  addExerciseCalories: boolean
+  /** Share of exercise calories added back to the day's budget. */
+  exerciseEatBack: 0 | 0.5 | 1
+  stepGoal: number
+  showFasting: boolean
+  fastingHours: number
   geminiKey: string
   geminiModel: string
   usdaKey: string
@@ -141,4 +145,32 @@ export interface ExerciseLog {
   name: string
   minutes: number
   kcal: number
+  met?: number
+  distanceKm?: number
+}
+
+export interface FastLog {
+  start: number
+  end: number
+  hours: number // goal length
+}
+
+export interface FastingState {
+  active: { start: number; hours: number } | null
+  history: FastLog[]
+}
+
+export type BodyPart = 'waist' | 'hips' | 'chest' | 'arm' | 'thigh' | 'neck' | 'bodyFat'
+
+export type BodyLog = { date: string } & Partial<Record<BodyPart, number>>
+
+export interface PhotoMeta {
+  id: string
+  date: string
+}
+
+export interface SavedMeal {
+  id: string
+  name: string
+  items: Pick<DiaryEntry, 'name' | 'brand' | 'grams' | 'amountLabel' | 'nutrients' | 'food'>[]
 }

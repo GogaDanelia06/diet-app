@@ -10,8 +10,13 @@ A free calorie and diet tracker that installs on an iPhone from Safari. No App S
 - Barcode scanner for packaged food (Open Food Facts) and online search (USDA FoodData Central).
 - Free AI through Google Gemini: photograph a meal, describe it in words, read a nutrition label, or chat with a diet coach.
 - AI meal plans: a 1-, 3- or 7-day menu that fits your calorie target and preferences, with one-tap logging, meal swaps and a shopping list. Planned meals also show on the Today screen.
-- Your own foods and recipes (Plate works out the calories per portion).
-- Weight log with a chart, water tracking, exercise, a 7-day calorie view, and backup/restore.
+- Your own foods, recipes (Plate works out the calories per portion) and saved meals you can re-log in one tap.
+- Workouts: about 60 activities, calories from time or distance (speed sets the effort), daily steps with a goal, AI that turns a described workout into calories, and a choice to eat back none, half or all of them. Calories are counted above resting, so nothing is double-counted.
+- Intermittent fasting timer (12:12 to 24 h) with history.
+- Weight chart with a 7-day trend line and your real weekly rate, body measurements, private progress photos with before/after compare, a weekly nutrition report, an activity summary and a logging streak.
+- Water tracking and backup/restore.
+
+Apple Health can't be read by a web app, so steps are typed in; reminders would need a paid push server, so there are none.
 
 ## Install on iPhone
 

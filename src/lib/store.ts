@@ -5,7 +5,24 @@ import { dateKey, uid } from './date'
 import { caloriePlan, macroTargets, scaleNutrients, sumNutrients, toPer100 } from './calc'
 import { aiItemToFood } from './ai'
 import { DEFAULT_PLAN_PREFS } from './plan'
-import type { DiaryEntry, ExerciseLog, Food, Meal, MealPlan, PlanMeal, PlanPrefs, Profile, Recipe, Settings, WeightLog } from './types'
+import { stepsKcal } from './exercises'
+import type {
+  BodyLog,
+  DiaryEntry,
+  ExerciseLog,
+  FastingState,
+  Food,
+  Meal,
+  MealPlan,
+  PhotoMeta,
+  PlanMeal,
+  PlanPrefs,
+  Profile,
+  Recipe,
+  SavedMeal,
+  Settings,
+  WeightLog,
+} from './types'
 
 const idbStorage: StateStorage = {
   getItem: async (name) => (await get<string>(name)) ?? null,
@@ -18,7 +35,10 @@ export const DEFAULT_SETTINGS: Settings = {
   macroPreset: 'balanced',
   waterGoalMl: 2000,
   glassMl: 250,
-  addExerciseCalories: true,
+  exerciseEatBack: 1,
+  stepGoal: 8000,
+  showFasting: true,
+  fastingHours: 16,
   geminiKey: '',
   geminiModel: 'gemini-3.8-flash',
   usdaKey: '',
@@ -36,6 +56,20 @@ export interface AppData {
   exercises: ExerciseLog[]
   planPrefs: PlanPrefs
   mealPlan: MealPlan | null
+  steps: Record<string, number>
+  fasting: FastingState
+  measurements: BodyLog[]
+  photos: PhotoMeta[]
+  savedMeals: SavedMeal[]
+}
+
+const DATA_KEYS = [
+  'profile', 'settings', 'entries', 'customFoods', 'recipes', 'favorites', 'weights', 'water', 'exercises',
+  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals',
+] as const satisfies readonly (keyof AppData)[]
+
+function pickData(st: AppData): AppData {
+  return Object.fromEntries(DATA_KEYS.map((k) => [k, st[k]])) as unknown as AppData
 }
 
 interface Actions {
@@ -60,6 +94,18 @@ interface Actions {
   replacePlanMeal: (date: string, mealId: string, meal: PlanMeal) => void
   logPlanMeal: (date: string, mealId: string) => void
   toggleShoppingItem: (key: string) => void
+  setSteps: (date: string, steps: number) => void
+  startFast: (hours: number, start?: number) => void
+  endFast: () => void
+  cancelFast: () => void
+  removeFast: (start: number) => void
+  logMeasurements: (log: BodyLog) => void
+  removeMeasurements: (date: string) => void
+  addPhoto: (meta: PhotoMeta, dataUrl: string) => Promise<void>
+  removePhoto: (id: string) => void
+  saveMeal: (name: string, entries: DiaryEntry[]) => void
+  removeSavedMeal: (id: string) => void
+  logSavedMeal: (id: string, date: string, meal: Meal) => void
   importData: (data: Partial<AppData>) => void
   resetAll: () => void
 }
@@ -76,7 +122,16 @@ const EMPTY: AppData = {
   exercises: [],
   planPrefs: DEFAULT_PLAN_PREFS,
   mealPlan: null,
+  steps: {},
+  fasting: { active: null, history: [] },
+  measurements: [],
+  photos: [],
+  savedMeals: [],
 }
+
+/** Progress photos are kept as separate records so the main data stays small. */
+export const photoKey = (id: string) => `plate-photo-${id}`
+export const loadPhoto = (id: string) => get<string>(photoKey(id))
 
 function mapPlanMeal(plan: MealPlan, date: string, mealId: string, fn: (m: PlanMeal) => PlanMeal): MealPlan {
   return {
@@ -162,6 +217,51 @@ export const useStore = create<AppData & Actions>()(
               }
             : {},
         ),
+      setSteps: (date, steps) => setState((st) => ({ steps: { ...st.steps, [date]: Math.max(0, Math.round(steps)) } })),
+      startFast: (hours, start = Date.now()) => setState((st) => ({ fasting: { ...st.fasting, active: { start, hours } } })),
+      endFast: () =>
+        setState((st) => {
+          const a = st.fasting.active
+          if (!a) return {}
+          // A fast ended within 15 minutes was most likely started by mistake.
+          if (Date.now() - a.start < 15 * 60_000) return { fasting: { ...st.fasting, active: null } }
+          return { fasting: { active: null, history: [{ start: a.start, end: Date.now(), hours: a.hours }, ...st.fasting.history].slice(0, 200) } }
+        }),
+      cancelFast: () => setState((st) => ({ fasting: { ...st.fasting, active: null } })),
+      removeFast: (start) =>
+        setState((st) => ({ fasting: { ...st.fasting, history: st.fasting.history.filter((f) => f.start !== start) } })),
+      logMeasurements: (log) =>
+        setState((st) => ({
+          measurements: [...st.measurements.filter((m) => m.date !== log.date), log].sort((a, b) => a.date.localeCompare(b.date)),
+        })),
+      removeMeasurements: (date) => setState((st) => ({ measurements: st.measurements.filter((m) => m.date !== date) })),
+      addPhoto: async (meta, dataUrl) => {
+        await set(photoKey(meta.id), dataUrl)
+        setState((st) => ({ photos: [...st.photos, meta].sort((a, b) => a.date.localeCompare(b.date)) }))
+      },
+      removePhoto: (id) => {
+        del(photoKey(id)).catch(() => {})
+        setState((st) => ({ photos: st.photos.filter((p) => p.id !== id) }))
+      },
+      saveMeal: (name, entries) =>
+        setState((st) => ({
+          savedMeals: [
+            {
+              id: `m-${uid()}`,
+              name,
+              items: entries.map(({ name, brand, grams, amountLabel, nutrients, food }) => ({ name, brand, grams, amountLabel, nutrients, food })),
+            },
+            ...st.savedMeals,
+          ],
+        })),
+      removeSavedMeal: (id) => setState((st) => ({ savedMeals: st.savedMeals.filter((m) => m.id !== id) })),
+      logSavedMeal: (id, date, meal) =>
+        setState((st) => {
+          const saved = st.savedMeals.find((m) => m.id === id)
+          if (!saved) return {}
+          const added = saved.items.map((i) => ({ ...i, id: uid(), date, meal, createdAt: Date.now() }))
+          return { entries: [...st.entries, ...added] }
+        }),
       importData: (data) =>
         setState((st) => ({
           ...EMPTY,
@@ -174,6 +274,8 @@ export const useStore = create<AppData & Actions>()(
             usdaKey: data.settings?.usdaKey || st.settings.usdaKey,
           },
           planPrefs: { ...DEFAULT_PLAN_PREFS, ...data.planPrefs },
+          // Photos aren't in backups; keep the ones on this phone.
+          photos: st.photos,
         })),
       resetAll: () => setState(EMPTY),
     }),
@@ -181,28 +283,16 @@ export const useStore = create<AppData & Actions>()(
       name: 'plate-data',
       version: 1,
       storage: createJSONStorage(() => idbStorage),
-      partialize: (st) => {
-        const data: AppData = {
-          profile: st.profile,
-          settings: st.settings,
-          entries: st.entries,
-          customFoods: st.customFoods,
-          recipes: st.recipes,
-          favorites: st.favorites,
-          weights: st.weights,
-          water: st.water,
-          exercises: st.exercises,
-          planPrefs: st.planPrefs,
-          mealPlan: st.mealPlan,
-        }
-        return data
-      },
+      partialize: (st) => pickData(st),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppData>
+        const old = p.settings as (Partial<Settings> & { addExerciseCalories?: boolean }) | undefined
+        const { addExerciseCalories, ...settings } = old ?? {}
         return {
           ...current,
           ...p,
-          settings: { ...DEFAULT_SETTINGS, ...p.settings },
+          // Version 1 had an on/off switch for adding exercise calories back.
+          settings: { ...DEFAULT_SETTINGS, ...(addExerciseCalories === false ? { exerciseEatBack: 0 as const } : {}), ...settings },
           planPrefs: { ...DEFAULT_PLAN_PREFS, ...p.planPrefs },
         }
       },
@@ -228,13 +318,23 @@ export function useTargets() {
 export function useDay(date: string) {
   const entries = useStore((s) => s.entries)
   const exercises = useStore((s) => s.exercises)
+  const steps = useStore((s) => s.steps[date] ?? 0)
+  const profile = useStore((s) => s.profile)
+  const weight = useStore((s) => currentWeight(s))
+  const eatBack = useStore((s) => s.settings.exerciseEatBack)
   const dayEntries = entries.filter((e) => e.date === date)
   const dayExercises = exercises.filter((e) => e.date === date)
+  const fromSteps = profile ? stepsKcal(steps, weight, profile.activity) : 0
+  const burned = dayExercises.reduce((n, e) => n + e.kcal, 0) + fromSteps
   return {
     entries: dayEntries,
     exercises: dayExercises,
     totals: sumNutrients(dayEntries.map((e) => e.nutrients)),
-    burned: dayExercises.reduce((n, e) => n + e.kcal, 0),
+    steps,
+    fromSteps,
+    burned,
+    /** Exercise calories added to today's budget. */
+    bonus: Math.round(burned * eatBack),
   }
 }
 
@@ -271,22 +371,12 @@ export function recentFoods(entries: DiaryEntry[], limit = 25): Food[] {
 
 export function exportData(): string {
   const st = useStore.getState()
-  const data: AppData & { exportedAt: string; app: string } = {
+  return JSON.stringify({
     app: 'plate',
     exportedAt: new Date().toISOString(),
-    profile: st.profile,
+    ...pickData(st),
     settings: { ...st.settings, geminiKey: '', usdaKey: '' },
-    entries: st.entries,
-    customFoods: st.customFoods,
-    recipes: st.recipes,
-    favorites: st.favorites,
-    weights: st.weights,
-    water: st.water,
-    exercises: st.exercises,
-    planPrefs: st.planPrefs,
-    mealPlan: st.mealPlan,
-  }
-  return JSON.stringify(data)
+  })
 }
 
 export const today = () => dateKey()
