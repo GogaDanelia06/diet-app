@@ -4,25 +4,26 @@ import { dateKey, parseKey, shortDate } from '../lib/date'
 import { kcal } from '../lib/format'
 import { locale, t } from '../lib/i18n'
 import { useStore } from '../lib/store'
-import type { DashboardHabit } from '../lib/types'
-import { ForecastWidget, GardenWidget, NextMealWidget, WidgetHeading } from './Gadgets'
+// Used by the Little daily wins widget, which is commented out below.
+// import type { DashboardHabit } from '../lib/types'
+import { ForecastWidget, /* GardenWidget, */ NextMealWidget, WidgetHeading } from './Gadgets'
 import { Card, Icon } from './ui'
 import './dashboard-widgets.css'
 
 const WIDGETS = [
   { id: 'nextMeal', label: 'Next meal' },
-  { id: 'garden', label: 'Veggie garden' },
+  // Hidden for now: { id: 'garden', label: 'Veggie garden' },
   { id: 'forecast', label: 'Goal forecast' },
   { id: 'week', label: 'Weekly intake' },
   { id: 'nutrients', label: 'Beyond macros' },
   { id: 'weight', label: 'Weight check-in' },
-  { id: 'habits', label: 'Little daily wins' },
+  // Hidden for now: { id: 'habits', label: 'Little daily wins' },
 ] as const
-const HABITS: { id: DashboardHabit; label: string }[] = [
-  { id: 'color', label: 'Add something colorful' },
-  { id: 'movement', label: 'Take a movement break' },
-  { id: 'unwind', label: 'Make time to unwind' },
-]
+// const HABITS: { id: DashboardHabit; label: string }[] = [
+//   { id: 'color', label: 'Add something colorful' },
+//   { id: 'movement', label: 'Take a movement break' },
+//   { id: 'unwind', label: 'Make time to unwind' },
+// ]
 
 export function DashboardWidgets({ date }: { date: string }) {
   const visible = useStore((state) => state.dashboard.visible)
@@ -47,14 +48,14 @@ export function DashboardWidgets({ date }: { date: string }) {
     </fieldset>}
     <div className="widget-stack">
       {visible.nextMeal && date === dateKey() && <NextMealWidget />}
-      {visible.garden && <GardenWidget date={date} />}
+      {/* Hidden for now: {visible.garden && <GardenWidget date={date} />} */}
       {visible.forecast && <ForecastWidget />}
       {visible.week && <WeeklyIntake date={date} />}
       {visible.nutrients && <NutrientSnapshot date={date} />}
       {visible.weight && <QuickWeight key={date} date={date} />}
-      {visible.habits && <DailyHabits key={date} date={date} />}
+      {/* Hidden for now: {visible.habits && <DailyHabits key={date} date={date} />} */}
     </div>
-    {!Object.values(visible).some(Boolean) && <div className="widget-empty">{t('Make this space yours. Choose a widget above.')}</div>}
+    {!WIDGETS.some(({ id }) => visible[id]) && <div className="widget-empty">{t('Make this space yours. Choose a widget above.')}</div>}
   </section>
 }
 
@@ -138,21 +139,22 @@ function QuickWeight({ date }: { date: string }) {
   </Card>
 }
 
-function DailyHabits({ date }: { date: string }) {
-  const records = useStore((state) => state.dashboard.habits)
-  const toggleHabit = useStore((state) => state.toggleDashboardHabit)
-  const checked = records[date] ?? []
-
-  return <Card className="dashboard-widget widget-habits">
-    <WidgetHeading icon="star" title={t('Little daily wins')} detail={`${checked.length}/${HABITS.length}`} />
-    <p className="widget-note widget-intro">{t('More than a number on the scale.')}</p>
-    <div className="habit-checklist">
-      {HABITS.map(({ id, label }) => <label key={id} className={checked.includes(id) ? 'is-checked' : ''}>
-        <input type="checkbox" checked={checked.includes(id)} onChange={() => toggleHabit(date, id)} />
-        <span className="habit-checkmark" aria-hidden="true">{checked.includes(id) && <Icon name="check" className="h-3 w-3" />}</span>
-        <span>{t(label)}</span>
-      </label>)}
-    </div>
-  </Card>
-}
+// Hidden for now; restore together with the habits entries above.
+// function DailyHabits({ date }: { date: string }) {
+//   const records = useStore((state) => state.dashboard.habits)
+//   const toggleHabit = useStore((state) => state.toggleDashboardHabit)
+//   const checked = records[date] ?? []
+//
+//   return <Card className="dashboard-widget widget-habits">
+//     <WidgetHeading icon="star" title={t('Little daily wins')} detail={`${checked.length}/${HABITS.length}`} />
+//     <p className="widget-note widget-intro">{t('More than a number on the scale.')}</p>
+//     <div className="habit-checklist">
+//       {HABITS.map(({ id, label }) => <label key={id} className={checked.includes(id) ? 'is-checked' : ''}>
+//         <input type="checkbox" checked={checked.includes(id)} onChange={() => toggleHabit(date, id)} />
+//         <span className="habit-checkmark" aria-hidden="true">{checked.includes(id) && <Icon name="check" className="h-3 w-3" />}</span>
+//         <span>{t(label)}</span>
+//       </label>)}
+//     </div>
+//   </Card>
+// }
 
