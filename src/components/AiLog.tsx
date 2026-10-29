@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { t } from '../lib/i18n'
 import { aiItemToFood, analyzeMealPhoto, analyzeMealText, type AiItem, type AiMeal } from '../lib/ai'
 import { photoToJpegBase64 } from '../lib/image'
@@ -14,9 +14,19 @@ interface Row extends AiItem {
   gramsText: string
 }
 
+/** How much of the photographed food was eaten; scales every item at once. */
+const PORTIONS = [
+  { value: 0.5, label: '½' },
+  { value: 0.75, label: '¾' },
+  { value: 1, label: 'All of it' },
+  { value: 1.5, label: '1½' },
+  { value: 2, label: '2×' },
+]
+
 export default function AiLog({
   kind,
   seed,
+  photo: initialPhoto,
   date,
   meal,
   mealLabel,
@@ -24,6 +34,8 @@ export default function AiLog({
 }: {
   kind: 'photo' | 'describe'
   seed: string
+  /** A photo already taken (from Snap meal), analysed as soon as this opens. */
+  photo?: File
   date: string
   meal: Meal
   mealLabel: string
@@ -36,7 +48,16 @@ export default function AiLog({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [result, setResult] = useState<{ title: string; notes?: string; rows: Row[] } | null>(null)
+  const [portion, setPortion] = useState(1)
   const cfg = { key: settings.geminiKey, model: settings.geminiModel }
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (!initialPhoto || !settings.geminiKey || started.current) return
+    started.current = true
+    choosePhoto(initialPhoto)
+    // Runs once, for the photo the sheet was opened with.
+  }, [initialPhoto])
 
   if (!settings.geminiKey) {
     return (
@@ -48,6 +69,7 @@ export default function AiLog({
   }
 
   function show(m: AiMeal) {
+    setPortion(1)
     setResult({
       title: m.title,
       notes: m.notes,
@@ -80,7 +102,7 @@ export default function AiLog({
 
   // Scale an item's nutrition when the user corrects its weight.
   function scaled(r: Row): AiItem {
-    const g = num(r.gramsText)
+    const g = num(r.gramsText) * portion
     const f = r.baseGrams > 0 ? g / r.baseGrams : 1
     return { ...r, grams: g, kcal: r.kcal * f, protein: r.protein * f, carbs: r.carbs * f, fat: r.fat * f }
   }
@@ -89,6 +111,8 @@ export default function AiLog({
   const total = chosen.reduce((n, r) => n + r.kcal, 0)
 
   function addAll() {
+    // "½ × 1 boat" when only part of what the photo shows was eaten.
+    const share = portion === 1 ? '' : `${PORTIONS.find((p) => p.value === portion)!.label} × `
     for (const item of chosen) {
       const food = aiItemToFood(item)
       addEntry({
@@ -96,7 +120,7 @@ export default function AiLog({
         meal,
         name: item.name,
         grams: item.grams,
-        amountLabel: item.portion ? `${item.portion} (${Math.round(item.grams)} g)` : `${Math.round(item.grams)} g`,
+        amountLabel: item.portion ? `${share}${item.portion} (${Math.round(item.grams)} g)` : `${Math.round(item.grams)} g`,
         nutrients: { kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat },
         food,
       })
@@ -190,6 +214,24 @@ export default function AiLog({
               )
             })}
           </ul>
+          {result.rows.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm text-muted">{t('How much did you eat?')}</p>
+              <div className="flex gap-1.5" role="group" aria-label={t('How much did you eat?')}>
+                {PORTIONS.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    aria-pressed={portion === p.value}
+                    onClick={() => setPortion(p.value)}
+                    className={`num flex-1 rounded-full border px-2 py-1.5 text-sm font-semibold transition-colors ${portion === p.value ? 'border-accent bg-accent text-[var(--accent-ink)]' : 'border-line text-muted'}`}
+                  >
+                    {t(p.label)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {result.notes && <p className="text-sm text-muted">{result.notes}</p>}
           <p className="text-xs text-muted">{t('AI estimates can be off by 20% or more. Fix the grams if you know them.')}</p>
           <button className="btn btn-primary w-full text-lg" disabled={!chosen.length} onClick={addAll}>

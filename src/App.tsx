@@ -30,6 +30,7 @@ export default function App() {
   const [date, setDate] = useState(dateKey())
   const [adding, setAdding] = useState<Meal | null>(null)
   const [addMode, setAddMode] = useState<AddFoodMode>('search')
+  const [addPhoto, setAddPhoto] = useState<File | undefined>()
 
   // Children translate with t() during render, so the language has to be set first.
   setLang(lang)
@@ -71,8 +72,9 @@ export default function App() {
     setTab('today')
   }
 
-  const openFood = (meal: Meal = defaultMeal(), mode: AddFoodMode = 'search') => {
+  const openFood = (meal: Meal = defaultMeal(), mode: AddFoodMode = 'search', photo?: File) => {
     setAddMode(mode)
+    setAddPhoto(photo)
     setAdding(meal)
   }
 
@@ -135,6 +137,7 @@ export default function App() {
           date={date}
           meal={adding}
           initialMode={addMode}
+          initialPhoto={addPhoto}
           onClose={() => {
             setAdding(null)
             setTab('today')

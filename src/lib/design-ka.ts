@@ -26,7 +26,6 @@ export const DESIGN_KA: Record<string, string> = {
   'Scan barcode': 'შტრიხკოდის სკანირება',
   'Scan. Log. Done.': 'დაასკანერე და ჩაწერე.',
   'Calories in a tap': 'ერთი შეხებით',
-  'Recipes & saved meals': 'რეცეპტები და შენახული კერძები',
   'ONE MEAL AT A TIME': 'ყოველი კვება მნიშვნელოვანია',
   'Food diary': 'კვების დღიური',
   'BEYOND THE PLATE': 'კვებაზე მეტი',

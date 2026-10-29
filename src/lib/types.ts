@@ -96,7 +96,7 @@ export interface WeightLog {
   kg: number
 }
 
-export type DashboardWidget = 'week' | 'nutrients' | 'weight' | 'habits'
+export type DashboardWidget = 'nextMeal' | 'garden' | 'forecast' | 'week' | 'nutrients' | 'weight' | 'habits'
 export type DashboardHabit = 'color' | 'movement' | 'unwind'
 
 export interface DashboardState {

@@ -22,6 +22,13 @@ describe('Apple Health import', () => {
     expect(parseHealthText('shopping list: eggs, milk')).toBeNull()
   })
 
+  it('reads a smart scale weight in kg or lb, ignoring impossible values', () => {
+    expect(parseHealthText('plate date=2026-10-29 steps=9123 weight=89,4 kg')).toEqual({ date: '2026-10-29', steps: 9123, weightKg: 89.4 })
+    expect(parseHealthText('plate weight=197.1 lb')).toEqual({ date: undefined, weightKg: 89.4 })
+    expect(parseHealthText('plate steps=500 weight=8')).toEqual({ date: undefined, steps: 500 })
+    expect(parseHealthText('plate weight=')).toBeNull()
+  })
+
   it('only counts watch calories above a normal day', () => {
     // BMR 1880 × 0.375 = 705, minus 10% of 2585 for digestion ≈ 446
     expect(baselineActiveKcal(profile, 90)).toBe(447)

@@ -1,12 +1,12 @@
 import { addDays, dateKey, parseKey } from './date'
 import type { DashboardHabit, DashboardState, DashboardWidget, DiaryEntry, WeightLog } from './types'
 
-export const DASHBOARD_WIDGET_IDS: DashboardWidget[] = ['week', 'nutrients', 'weight', 'habits']
+export const DASHBOARD_WIDGET_IDS: DashboardWidget[] = ['nextMeal', 'garden', 'forecast', 'week', 'nutrients', 'weight', 'habits']
 export const DASHBOARD_HABIT_IDS: DashboardHabit[] = ['color', 'movement', 'unwind']
 
 /** Fresh nested values prevent resets or older imports from sharing mutable defaults. */
 export function defaultDashboard(): DashboardState {
-  return { visible: { week: true, nutrients: true, weight: true, habits: true }, habits: {} }
+  return { visible: { nextMeal: true, garden: true, forecast: true, week: true, nutrients: true, weight: true, habits: true }, habits: {} }
 }
 
 /** Older backups omit dashboard state; malformed optional fields fall back independently. */

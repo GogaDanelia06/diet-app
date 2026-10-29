@@ -593,18 +593,11 @@ export const KA: Record<string, string> = {
   "Bring in the active calories and steps your watch records, through Apple Health and a one-tap Shortcut.":
     "გადმოიტანე საათის მიერ დათვლილი აქტიური კალორიები და ნაბიჯები Apple Health-იდან, ერთი შეხებით Shortcut-ის საშუალებით.",
   "Set up and import": "დაყენება და იმპორტი",
-  "Watch: {n} active kcal": "საათი: {n} აქტიური კკალ",
   "{n} kcal above a normal day count toward your budget": "ჩვეულებრივ დღეზე მეტი {n} კკალ ემატება შენს ლიმიტს",
   "Workouts below are already part of your watch’s calories, so they aren’t counted twice.": "ქვემოთ მოცემული ვარჯიშები საათის კალორიებში უკვე შედის, ამიტომ ორჯერ არ ითვლება.",
-  "Watch": "საათი",
   "iPhone doesn’t let web apps read Apple Health, so a small Shortcut copies today’s numbers and Plate imports them. You set it up once.":
     "iPhone ვებ-აპებს Apple Health-ის წაკითხვის უფლებას არ აძლევს, ამიტომ პატარა Shortcut დააკოპირებს დღევანდელ მონაცემებს, Plate კი შემოიტანს. ამას მხოლოდ ერთხელ აყენებ.",
-  "One tap: add the shortcut to your Home Screen, or in Shortcuts → Automation choose Time of Day (for example 21:00) and Run Immediately.":
-    "ერთი შეხებით: დაამატე Shortcut მთავარ ეკრანზე, ან Shortcuts → Automation-ში აირჩიე „Time of Day“ (მაგ. 21:00) და „Run Immediately“.",
-  "In the WHOOP app’s settings, turn on Apple Health sharing. WHOOP shares calories only for workouts it detects, not steps or all-day calories. If you also wear the Apple Watch, keep the Source filter on Apple Watch so workouts aren’t counted twice. If you only wear WHOOP, choose WHOOP as the Source for Active Energy.":
-    "WHOOP-ის აპის პარამეტრებში ჩართე Apple Health-თან გაზიარება. WHOOP აზიარებს მხოლოდ მის მიერ აღმოჩენილი ვარჯიშების კალორიებს — ნაბიჯებს და მთელი დღის კალორიებს არა. თუ Apple Watch-საც ატარებ, „Source“ ფილტრში დატოვე Apple Watch, რომ ვარჯიშები ორჯერ არ ჩაითვალოს. თუ მხოლოდ WHOOP-ს ატარებ, Active Energy-სთვის „Source“-ად აირჩიე WHOOP.",
   "Nothing from the Plate shortcut is copied. Run the shortcut first, then tap Import.": "Plate-ის Shortcut-იდან არაფერია დაკოპირებული. ჯერ გაუშვი Shortcut, მერე დააჭირე იმპორტს.",
-  "Imported for {day}.": "შემოტანილია: {day}.",
   "Saved for {day}.": "შენახულია: {day}.",
   "From Apple Health": "Apple Health-იდან",
   "Typed in": "ხელით ჩაწერილი",
@@ -613,7 +606,6 @@ export const KA: Record<string, string> = {
     "შენი გეგმა ჩვეულებრივი დღისთვის უკვე ითვალისწინებს დაახლოებით {base} აქტიურ კკალ-ს, ამიტომ ემატება {extra} კკალ.",
   "That’s within a normal day for your activity level ({base} kcal), so nothing extra is added.":
     "ეს შენი აქტივობის დონისთვის ჩვეულებრივი დღის ფარგლებშია ({base} კკალ), ამიტომ დამატებით არაფერი ემატება.",
-  "Import from Apple Health": "იმპორტი Apple Health-იდან",
   "Paste what the shortcut copied": "ჩასვი, რაც Shortcut-მა დააკოპირა",
   "Import": "იმპორტი",
   "Or type it in": "ან ჩაწერე ხელით",
@@ -628,8 +620,35 @@ export const KA: Record<string, string> = {
   "Add Calculate Statistics and choose Sum.": "დაამატე „Calculate Statistics“ და აირჩიე „Sum“.",
   "Add Find Health Samples again with Type Steps, Start Date is Today and Source your Apple Watch, then another Calculate Statistics with Sum.":
     "კიდევ დაამატე „Find Health Samples“: Type „Steps“, „Start Date is Today“ და Source — შენი Apple Watch, შემდეგ კიდევ ერთი „Calculate Statistics“ → „Sum“.",
-  "Add Text and type plate active= then insert the first Statistics result, a space, steps= and the second Statistics result.":
-    "დაამატე „Text“ და ჩაწერე plate active= , შემდეგ ჩასვი პირველი „Statistics“ შედეგი, გამოტოვება, steps= და მეორე „Statistics“ შედეგი.",
   "Add Copy to Clipboard and tap Done.": "დაამატე „Copy to Clipboard“ და დააჭირე „Done“-ს.",
-  "Run the shortcut, come back to Plate and tap Import from Apple Health.": "გაუშვი Shortcut, დაბრუნდი Plate-ში და დააჭირე „იმპორტი Apple Health-იდან“.",
+  "Watch: {n} active kcal": "საათი: {n} აქტიური კკალ",
+  "Optional, for a smart scale: add Find Health Samples with Type Weight, Start Date is Today and Limit 1.":
+    "სურვილისამებრ, ჭკვიანი სასწორისთვის: დაამატე „Find Health Samples“ — Type „Weight“, „Start Date is Today“ და „Limit 1“.",
+  "Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then type a space, active= and the first Statistics result, a space, steps= and the second Statistics result. If you added weight, type a space, weight= and the Health Samples result.":
+    "დაამატე „Text“ და ჩაწერე plate date= , შემდეგ ჩასვი „Current Date“ (შეეხე მას, აირჩიე Custom ფორმატი და ჩაწერე yyyy-MM-dd). მერე ჩაწერე ჰარი, active= და პირველი Statistics-ის შედეგი, ჰარი, steps= და მეორე Statistics-ის შედეგი. თუ წონა დაამატე, ჩაწერე ჰარი, weight= და Health Samples-ის შედეგი.",
+  "Back in Plate, tap Sync Health on the Today page.": "დაბრუნდი Plate-ში და „დღეს“ გვერდზე დააჭირე „Health-ის სინქრონიზაციას“.",
+  "Make it automatic": "გახადე ავტომატური",
+  "In Shortcuts, open Automation, tap + and choose Time of Day. Pick a time, for example 13:00, set Daily, choose Run Immediately and pick the Plate shortcut. Add a second one for 21:00.":
+    "Shortcuts-ში გახსენი „Automation“, დააჭირე + და აირჩიე „Time of Day“. აირჩიე დრო, მაგალითად 13:00, „Daily“, შემდეგ „Run Immediately“ და Plate-ის Shortcut. დაამატე მეორეც 21:00-ზე.",
+  "Your numbers are then copied on their own. Open Plate and tap Sync Health — that’s it.": "ამის შემდეგ შენი მონაცემები თავისით დაკოპირდება. გახსენი Plate და დააჭირე „Health-ის სინქრონიზაციას“ — სულ ეს არის.",
+  "Want fresh numbers right now? Tap Run the Plate shortcut, come back and tap Sync Health.": "ახალი მონაცემები ახლავე გინდა? დააჭირე „Plate-ის Shortcut-ის გაშვებას“, დაბრუნდი და დააჭირე „Health-ის სინქრონიზაციას“.",
+  "Tip: in Settings → Accessibility → Touch → Back Tap, set Double Tap to the Plate shortcut. Two taps on the back of your iPhone copy the latest numbers.":
+    "რჩევა: Settings → Accessibility → Touch → Back Tap-ში „Double Tap“-ზე დააყენე Plate-ის Shortcut. iPhone-ის უკანა მხარეზე ორი შეხება ბოლო მონაცემებს დააკოპირებს.",
+  "Why one tap and not zero? Apple lets only App Store apps read Apple Health in the background. An App Store version of Plate could sync with no taps at all.":
+    "რატომ ერთი შეხება და არა ნული? Apple-ი Apple Health-ის ფონურ წაკითხვას მხოლოდ App Store-ის აპებს აძლევს. Plate-ის App Store-ის ვერსია სინქრონიზაციას საერთოდ შეხების გარეშე შეძლებდა.",
+  "In the WHOOP app’s settings, open Integrations → Apple Health and turn sharing on. WHOOP shares the calories of workouts it detects, not your steps or all-day calories. If you also wear the Apple Watch, keep the Source filters on Apple Watch so nothing is counted twice. If you only wear WHOOP, leave out Active Energy, choose your iPhone as the Source for Steps, and add WHOOP workouts with Add exercise.":
+    "WHOOP-ის აპის პარამეტრებში გახსენი Integrations → Apple Health და ჩართე გაზიარება. WHOOP აზიარებს მხოლოდ მის მიერ აღმოჩენილი ვარჯიშების კალორიებს და არა ნაბიჯებს ან მთელი დღის კალორიებს. თუ Apple Watch-საც ატარებ, Source-ის ფილტრებში დატოვე Apple Watch, რომ არაფერი ორჯერ არ დაითვალოს. თუ მხოლოდ WHOOP-ს ატარებ, Active Energy გამოტოვე, ნაბიჯების Source-ად აირჩიე შენი iPhone, ხოლო WHOOP-ის ვარჯიშები „ვარჯიშის დამატებით“ ჩაწერე.",
+  "Sync Health": "Health-ის სინქრონიზაცია",
+  "Synced {time}": "სინქრონიზებულია {time}-ზე",
+  "Synced {day}: {what}": "სინქრონიზებულია ({day}): {what}",
+  "Nothing from the Plate shortcut is copied yet.": "Plate-ის Shortcut-იდან ჯერ არაფერია დაკოპირებული.",
+  "Run the Plate shortcut": "Plate-ის Shortcut-ის გაშვება",
+  "then tap Sync Health again.": "შემდეგ კიდევ ერთხელ დააჭირე სინქრონიზაციას.",
+  "Set it up": "დაყენება",
+  "{n} steps": "{n} ნაბიჯი",
+  "{n} active kcal": "{n} აქტიური კკალ",
+  "Snap meal": "კერძის ფოტო",
+  "AI counts the calories": "AI დაითვლის კალორიებს",
+  "How much did you eat?": "რამდენი შეჭამე?",
+  "All of it": "მთლიანად",
 }

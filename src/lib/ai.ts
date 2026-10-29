@@ -119,21 +119,21 @@ Include hidden calories such as cooking oil, butter, sauces and dressings as the
 Recognise regional dishes, including Georgian food (khachapuri, khinkali, mtsvadi, lobio, pkhali, etc.).
 If something is uncertain, give your best realistic estimate and mention it briefly in "notes". Keep "title" under 5 words.`
 
-function cleanMeal(m: AiMeal): AiMeal {
+function cleanItems(items: AiItem[] | undefined): AiItem[] {
   const n = (v: unknown) => (Number.isFinite(Number(v)) ? Math.max(0, Number(v)) : 0)
-  return {
-    title: m.title || 'Meal',
-    notes: m.notes,
-    items: (m.items ?? []).map((i) => ({
-      name: String(i.name || 'Food'),
-      portion: String(i.portion || ''),
-      grams: n(i.grams) || 100,
-      kcal: n(i.kcal),
-      protein: n(i.protein),
-      carbs: n(i.carbs),
-      fat: n(i.fat),
-    })),
-  }
+  return (items ?? []).map((i) => ({
+    name: String(i.name || 'Food'),
+    portion: String(i.portion || ''),
+    grams: n(i.grams) || 100,
+    kcal: n(i.kcal),
+    protein: n(i.protein),
+    carbs: n(i.carbs),
+    fat: n(i.fat),
+  }))
+}
+
+function cleanMeal(m: AiMeal): AiMeal {
+  return { title: m.title || 'Meal', notes: m.notes, items: cleanItems(m.items) }
 }
 
 export async function analyzeMealPhoto(cfg: Config, base64Jpeg: string, hint: string): Promise<AiMeal> {
@@ -156,6 +156,78 @@ export async function analyzeMealText(cfg: Config, description: string): Promise
     generation_config: { response_mime_type: 'application/json', response_schema: MEAL_SCHEMA },
   })
   return cleanMeal(parseJson<AiMeal>(text))
+}
+
+export interface AiIdea {
+  name: string
+  why: string
+  steps?: string
+  items: AiItem[]
+}
+
+export interface IdeaRequest {
+  source: 'fridge' | 'menu'
+  photo?: string
+  text: string
+  meal: string
+  kcal: number
+  protein: number
+  diet: string
+  avoid: string
+}
+
+const IDEAS_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    ideas: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: { name: STR, why: STR, steps: STR, items: ITEMS_SCHEMA },
+        required: ['name', 'why', 'items'],
+      },
+    },
+  },
+  required: ['ideas'],
+}
+
+/** Three meals that fit what is left today, from a photo (or list) of the fridge or a menu. */
+export async function suggestMeals(cfg: Config, r: IdeaRequest): Promise<AiIdea[]> {
+  const shown = r.photo ? 'The photo shows' : 'The user listed'
+  const task =
+    r.source === 'fridge'
+      ? `${shown} what is in their fridge, pantry or kitchen. Suggest 3 different simple dishes for ${r.meal} made mainly from those ingredients; basics like oil, salt, spices and water are fine. Put 2-3 short cooking steps in "steps".`
+      : `${shown} dishes from a restaurant or cafe menu. Pick the 3 best dishes or combinations on it for ${r.meal}, named as on the menu. Estimate typical restaurant portions, and add one ordering tip to "why" (for example dressing on the side). Leave "steps" empty.`
+  const goal =
+    r.kcal < 150
+      ? `The user has only about ${r.kcal} kcal left today, so suggest very light options under ${Math.max(r.kcal, 120)} kcal, such as vegetables, broth or tea.`
+      : `Each option should be about ${r.kcal} kcal, never more than ${Math.round(r.kcal * 1.15)} kcal, with around ${r.protein} g of protein if possible.`
+  const prefs = [r.diet !== 'any' ? `Diet: ${r.diet}.` : '', r.avoid ? `Never use: ${r.avoid}.` : ''].filter(Boolean).join(' ')
+  const parts: Part[] = [
+    ...(r.photo ? [{ inline_data: { mime_type: 'image/jpeg', data: r.photo } }] : []),
+    { text: [task, goal, prefs, r.text ? `Notes from the user: ${r.text}` : ''].filter(Boolean).join('\n') },
+  ]
+  const text = await callGemini(cfg, {
+    system_instruction: {
+      parts: [
+        {
+          text: `You are a practical nutritionist inside a calorie-tracking app, helping someone lose weight safely.
+For each option give a short name (under 6 words), one short sentence in "why" on why it fits, and the foods of ONE portion as items:
+a short English name, a portion description, grams as eaten, and calories, protein, carbs and fat for that weight.
+Include cooking oil, butter, sauces and dressings as their own items. Recognise regional dishes, including Georgian food.${aiLanguageNote()}`,
+        },
+      ],
+    },
+    contents: [{ role: 'user', parts }],
+    generation_config: { response_mime_type: 'application/json', response_schema: IDEAS_SCHEMA },
+  })
+  const ideas = parseJson<{ ideas?: AiIdea[] }>(text).ideas ?? []
+  return ideas.slice(0, 3).map((i) => ({
+    name: String(i.name || 'Meal'),
+    why: String(i.why || ''),
+    steps: i.steps ? String(i.steps) : undefined,
+    items: cleanItems(i.items),
+  }))
 }
 
 const LABEL_SCHEMA = {

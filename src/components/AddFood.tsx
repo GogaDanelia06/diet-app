@@ -25,9 +25,17 @@ const MODES: { id: Mode; label: string; icon: Parameters<typeof Icon>[0]['name']
   { id: 'mine', label: 'My foods', icon: 'book' },
 ]
 
-export default function AddFood({ date, meal: initialMeal, initialMode = 'search', onClose }: { date: string; meal: Meal; initialMode?: AddFoodMode; onClose: () => void }) {
+export default function AddFood({ date, meal: initialMeal, initialMode = 'search', initialPhoto, onClose }: {
+  date: string
+  meal: Meal
+  initialMode?: AddFoodMode
+  /** A photo taken before the sheet opened; analysed once, then forgotten. */
+  initialPhoto?: File
+  onClose: () => void
+}) {
   const [meal, setMeal] = useState(initialMeal)
   const [mode, setMode] = useState<Mode>(initialMode)
+  const [photo, setPhoto] = useState(initialPhoto)
   const [picked, setPicked] = useState<Food | null>(null)
   const [seed, setSeed] = useState('')
   const [toast, setToast] = useState('')
@@ -56,7 +64,7 @@ export default function AddFood({ date, meal: initialMeal, initialMode = 'search
               key={m.id}
               role="tab"
               aria-selected={mode === m.id}
-              onClick={() => setMode(m.id)}
+              onClick={() => { setMode(m.id); setPhoto(undefined) }}
               className={`flex shrink-0 flex-col items-center gap-1 rounded-2xl border px-3.5 py-2.5 text-xs font-medium ${
                 mode === m.id ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-surface text-ink'
               }`}
@@ -78,7 +86,7 @@ export default function AddFood({ date, meal: initialMeal, initialMode = 'search
         )}
         {mode === 'barcode' && <Scanner onFound={setPicked} />}
         {(mode === 'photo' || mode === 'describe') && (
-          <AiLog key={mode + seed} kind={mode} seed={seed} date={date} meal={meal} mealLabel={mealLabel} onAdded={added} />
+          <AiLog key={mode + seed} kind={mode} seed={seed} photo={mode === 'photo' ? photo : undefined} date={date} meal={meal} mealLabel={mealLabel} onAdded={added} />
         )}
         {mode === 'quick' && <QuickAdd date={date} meal={meal} mealLabel={mealLabel} onAdded={added} />}
         {mode === 'mine' && <MyFoods onPick={setPicked} date={date} meal={meal} onAdded={added} />}

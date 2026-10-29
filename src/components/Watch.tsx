@@ -2,19 +2,115 @@ import { useState } from 'react'
 import { dateKey, dayLabel } from '../lib/date'
 import { kcal, num } from '../lib/format'
 import { parseHealthText } from '../lib/health'
-import { t } from '../lib/i18n'
+import { locale, t } from '../lib/i18n'
 import { dayBurn, useStore } from '../lib/store'
 import { Card, ErrorNote, Field, Icon, Sheet } from './ui'
+
+/** Opens the Shortcuts app and runs the shortcut the guide below builds. */
+export const RUN_SHORTCUT_URL = 'shortcuts://run-shortcut?name=Plate'
 
 const GUIDE_STEPS = [
   'Open the Shortcuts app and tap + to make a new shortcut. Name it Plate.',
   'Add the action Find Health Samples. Set Type to Active Energy and add the filter Start Date is Today. Add a second filter Source is your Apple Watch, so nothing is counted twice.',
   'Add Calculate Statistics and choose Sum.',
   'Add Find Health Samples again with Type Steps, Start Date is Today and Source your Apple Watch, then another Calculate Statistics with Sum.',
-  'Add Text and type plate active= then insert the first Statistics result, a space, steps= and the second Statistics result.',
+  'Optional, for a smart scale: add Find Health Samples with Type Weight, Start Date is Today and Limit 1.',
+  'Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then type a space, active= and the first Statistics result, a space, steps= and the second Statistics result. If you added weight, type a space, weight= and the Health Samples result.',
   'Add Copy to Clipboard and tap Done.',
-  'Run the shortcut, come back to Plate and tap Import from Apple Health.',
+  'Back in Plate, tap Sync Health on the Today page.',
 ]
+
+const AUTO_STEPS = [
+  'In Shortcuts, open Automation, tap + and choose Time of Day. Pick a time, for example 13:00, set Daily, choose Run Immediately and pick the Plate shortcut. Add a second one for 21:00.',
+  'Your numbers are then copied on their own. Open Plate and tap Sync Health — that’s it.',
+  'Want fresh numbers right now? Tap Run the Plate shortcut, come back and tap Sync Health.',
+  'Tip: in Settings → Accessibility → Touch → Back Tap, set Double Tap to the Plate shortcut. Two taps on the back of your iPhone copy the latest numbers.',
+]
+
+/** Applies what the Plate shortcut copied; returns the day it was saved to and a short summary, or null. */
+export function useHealthImport() {
+  const setDeviceDay = useStore((s) => s.setDeviceDay)
+  const setSteps = useStore((s) => s.setSteps)
+  const logWeight = useStore((s) => s.logWeight)
+  return (text: string, fallbackDate: string) => {
+    const r = parseHealthText(text)
+    if (!r) return null
+    // The shortcut collects today; an explicit date in the text wins if it isn't in the future.
+    const day = r.date && r.date <= dateKey() ? r.date : fallbackDate
+    const device = useStore.getState().deviceActivity[day]
+    if (r.activeKcal != null) {
+      setDeviceDay(day, { activeKcal: r.activeKcal, steps: r.steps, source: 'health', at: Date.now() })
+    } else if (r.steps != null && device) {
+      // Watch calories already saved for the day stay; only the steps are refreshed.
+      setDeviceDay(day, { ...device, steps: r.steps, at: Date.now() })
+    } else if (r.steps != null) {
+      setSteps(day, r.steps)
+    }
+    if (r.weightKg != null) logWeight(day, r.weightKg)
+    const summary = [
+      r.steps != null && t('{n} steps', { n: r.steps.toLocaleString(locale()) }),
+      r.activeKcal != null && t('{n} active kcal', { n: kcal(r.activeKcal) }),
+      r.weightKg != null && `${r.weightKg} ${t('kg')}`,
+    ].filter(Boolean).join(' · ')
+    return { day, summary }
+  }
+}
+
+/** The Today page's one-tap sync: reads what the Plate shortcut copied and saves it. */
+export function HealthSync({ date, onSetup }: { date: string; onSetup: () => void }) {
+  const device = useStore((s) => s.deviceActivity[date])
+  const importHealth = useHealthImport()
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
+  // Nothing synced for the day yet, or not in the last two hours: the button asks for a tap.
+  const stale = date === dateKey() && (!device || device.source !== 'health' || Date.now() - device.at > 2 * 3_600_000)
+
+  async function sync() {
+    let text: string
+    try {
+      text = await navigator.clipboard.readText()
+    } catch {
+      // Clipboard reading can be blocked; the sheet lets the user paste instead.
+      onSetup()
+      return
+    }
+    const r = importHealth(text, date)
+    setResult(r ? { ok: true, text: t('Synced {day}: {what}', { day: dayLabel(r.day), what: r.summary }) } : { ok: false, text: '' })
+  }
+
+  return (
+    <>
+      <button type="button" onClick={sync} className={`text-action ${stale ? 'sync-due' : ''}`}>
+        <Icon name="watch" className="h-4 w-4" />
+        {t('Sync Health')}
+      </button>
+      {device?.source === 'health' && !result && (
+        <span className="text-xs text-muted">{t('Synced {time}', { time: new Date(device.at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) })}</span>
+      )}
+      {result?.ok && <p className="basis-full text-sm font-semibold text-accent" role="status">{result.text}</p>}
+      {result && !result.ok && (
+        <p className="basis-full text-sm text-muted" role="status">
+          {t('Nothing from the Plate shortcut is copied yet.')}{' '}
+          <a href={RUN_SHORTCUT_URL} className="font-semibold text-accent">{t('Run the Plate shortcut')}</a>
+          {', '}{t('then tap Sync Health again.')}{' '}
+          <button type="button" onClick={onSetup} className="font-semibold text-accent underline">{t('Set it up')}</button>
+        </p>
+      )}
+    </>
+  )
+}
+
+function Steps({ steps }: { steps: string[] }) {
+  return (
+    <ol className="space-y-3">
+      {steps.map((s, i) => (
+        <li key={i} className="flex gap-3">
+          <span className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-sm font-bold text-accent">{i + 1}</span>
+          <span>{t(s)}</span>
+        </li>
+      ))}
+    </ol>
+  )
+}
 
 export function WatchGuide() {
   return (
@@ -22,22 +118,17 @@ export function WatchGuide() {
       <p className="text-muted">
         {t('iPhone doesn’t let web apps read Apple Health, so a small Shortcut copies today’s numbers and Plate imports them. You set it up once.')}
       </p>
-      <ol className="space-y-3">
-        {GUIDE_STEPS.map((s, i) => (
-          <li key={i} className="flex gap-3">
-            <span className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent-soft text-sm font-bold text-accent">{i + 1}</span>
-            <span>{t(s)}</span>
-          </li>
-        ))}
-      </ol>
-      <div className="rounded-2xl bg-white/[0.05] p-3 font-mono text-sm">plate active=640 steps=9123</div>
-      <p className="text-sm text-muted">
-        {t('One tap: add the shortcut to your Home Screen, or in Shortcuts → Automation choose Time of Day (for example 21:00) and Run Immediately.')}
-      </p>
+      <Steps steps={GUIDE_STEPS} />
+      <div className="rounded-2xl bg-white/[0.05] p-3 font-mono text-sm">plate date=2026-10-29 active=640 steps=9123 weight=89.4 kg</div>
+      <div className="space-y-3 rounded-2xl border border-line p-3">
+        <h4 className="font-semibold">{t('Make it automatic')}</h4>
+        <Steps steps={AUTO_STEPS} />
+        <p className="text-sm text-muted">{t('Why one tap and not zero? Apple lets only App Store apps read Apple Health in the background. An App Store version of Plate could sync with no taps at all.')}</p>
+      </div>
       <div className="rounded-2xl border border-line p-3">
         <h4 className="mb-1 font-semibold">WHOOP</h4>
         <p className="text-sm text-muted">
-          {t('In the WHOOP app’s settings, turn on Apple Health sharing. WHOOP shares calories only for workouts it detects, not steps or all-day calories. If you also wear the Apple Watch, keep the Source filter on Apple Watch so workouts aren’t counted twice. If you only wear WHOOP, choose WHOOP as the Source for Active Energy.')}
+          {t('In the WHOOP app’s settings, open Integrations → Apple Health and turn sharing on. WHOOP shares the calories of workouts it detects, not your steps or all-day calories. If you also wear the Apple Watch, keep the Source filters on Apple Watch so nothing is counted twice. If you only wear WHOOP, leave out Active Energy, choose your iPhone as the Source for Steps, and add WHOOP workouts with Add exercise.')}
         </p>
       </div>
     </div>
@@ -47,7 +138,7 @@ export function WatchGuide() {
 export default function WatchSheet({ date, onClose }: { date: string; onClose: () => void }) {
   const st = useStore()
   const setDeviceDay = useStore((s) => s.setDeviceDay)
-  const setSteps = useStore((s) => s.setSteps)
+  const importHealth = useHealthImport()
   const burn = dayBurn(st, date)
   const device = st.deviceActivity[date]
   const [active, setActive] = useState(device ? String(device.activeKcal) : '')
@@ -58,23 +149,19 @@ export default function WatchSheet({ date, onClose }: { date: string; onClose: (
   const [guide, setGuide] = useState(!device)
 
   function apply(text: string) {
-    const r = parseHealthText(text)
+    const r = importHealth(text, date)
     if (!r) {
       setError(t('Nothing from the Plate shortcut is copied. Run the shortcut first, then tap Import.'))
       return
     }
-    // The shortcut collects today; an explicit date in the text wins if it isn't in the future.
-    const target = r.date && r.date <= dateKey() ? r.date : date
-    if (r.activeKcal != null) {
-      setDeviceDay(target, { activeKcal: r.activeKcal, steps: r.steps, source: 'health', at: Date.now() })
-    } else if (r.steps != null) {
-      setSteps(target, r.steps)
+    const saved = useStore.getState().deviceActivity[r.day]
+    if (saved) {
+      setActive(String(saved.activeKcal))
+      if (saved.steps != null) setStepsText(String(saved.steps))
     }
-    setActive(r.activeKcal != null ? String(r.activeKcal) : active)
-    setStepsText(r.steps != null ? String(r.steps) : steps)
     setError('')
     setPaste(null)
-    setMessage(t('Imported for {day}.', { day: dayLabel(target) }))
+    setMessage(t('Synced {day}: {what}', { day: dayLabel(r.day), what: r.summary }))
   }
 
   async function importClipboard() {
@@ -124,19 +211,20 @@ export default function WatchSheet({ date, onClose }: { date: string; onClose: (
         )}
 
         <button className="btn btn-primary w-full text-lg" onClick={importClipboard}>
-          <Icon name="watch" className="h-5 w-5" /> {t('Import from Apple Health')}
+          <Icon name="watch" className="h-5 w-5" /> {t('Sync Health')}
         </button>
+        <a href={RUN_SHORTCUT_URL} className="btn btn-quiet w-full">{t('Run the Plate shortcut')}</a>
         {paste !== null && (
           <div className="space-y-2">
             <Field label={t('Paste what the shortcut copied')}>
-              <textarea className="field min-h-20 font-mono" value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="plate active=640 steps=9123" />
+              <textarea className="field min-h-20 font-mono" value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="plate date=2026-10-29 active=640 steps=9123" />
             </Field>
             <button className="btn btn-quiet w-full" disabled={!paste.trim()} onClick={() => apply(paste)}>
               {t('Import')}
             </button>
           </div>
         )}
-        {message && <p className="text-sm font-semibold text-accent">{message}</p>}
+        {message && <p className="text-sm font-semibold text-accent" role="status">{message}</p>}
         {error && <ErrorNote>{error}</ErrorNote>}
 
         <Card className="space-y-3">

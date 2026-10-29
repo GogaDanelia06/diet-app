@@ -36,11 +36,14 @@ export interface HealthImport {
   date?: string
   activeKcal?: number
   steps?: number
+  weightKg?: number
 }
 
+const LB_TO_KG = 0.45359237
+
 /**
- * Parses what the Plate shortcut copies, e.g. "plate active=640.5 steps=9,123".
- * Also accepts ":" instead of "=" and an optional "date=2026-10-29".
+ * Parses what the Plate shortcut copies, e.g. "plate date=2026-10-29 active=640.5 steps=9,123 weight=89.4 kg".
+ * Also accepts ":" instead of "=". Weight may be in kg or lb, as a smart scale wrote it to Apple Health.
  */
 export function parseHealthText(text: string): HealthImport | null {
   const grab = (key: string) => text.match(new RegExp(`${key}\\s*[=:]\\s*([0-9][0-9\\s\\u00a0\\u202f.,']*)`, 'i'))?.[1]
@@ -56,5 +59,10 @@ export function parseHealthText(text: string): HealthImport | null {
     const v = parseInt(steps.replace(/\D/g, ''), 10)
     if (Number.isFinite(v) && v >= 0 && v < 200000) out.steps = v
   }
-  return out.activeKcal == null && out.steps == null ? null : out
+  const weight = text.match(/weight\s*[=:]\s*([0-9][0-9.,]*)\s*(kg|lbs?)?/i)
+  if (weight) {
+    const v = parseLocaleNumber(weight[1]) * (weight[2]?.toLowerCase().startsWith('lb') ? LB_TO_KG : 1)
+    if (Number.isFinite(v) && v >= 30 && v <= 300) out.weightKg = Math.round(v * 10) / 10
+  }
+  return out.activeKcal == null && out.steps == null && out.weightKg == null ? null : out
 }

@@ -52,7 +52,7 @@ describe('dashboard data', () => {
       visible: { week: false, weight: 'false', unrelated: false },
       habits: { '2026-10-29': ['color', 'movement', 'color', 'unknown', 2], '2026-02-30': ['unwind'], bad: ['color'] },
     })).toEqual({
-      visible: { week: false, nutrients: true, weight: true, habits: true },
+      visible: { nextMeal: true, garden: true, forecast: true, week: false, nutrients: true, weight: true, habits: true },
       habits: { '2026-10-29': ['color', 'movement'] },
     })
   })

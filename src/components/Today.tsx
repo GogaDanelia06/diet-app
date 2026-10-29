@@ -11,9 +11,10 @@ import { Card, Field, Icon, Sheet } from './ui'
 import type { AddFoodMode } from './AddFood'
 import FoodDetail from './FoodDetail'
 import ExerciseSheet from './ExerciseSheet'
-import WatchSheet from './Watch'
+import WatchSheet, { HealthSync } from './Watch'
 import FastingCard from './Fasting'
-import { OrbView } from './ThreeViews'
+import { BowlView } from './ThreeViews'
+import { mealForHour } from '../lib/gadgets'
 import { CalendarMonth } from './Calendar'
 import { useReportDue } from './WeeklyReport'
 import { DashboardWidgets } from './DashboardWidgets'
@@ -46,7 +47,7 @@ function useCountUp(value: number, ms = 700) {
 export default function Today({ date, setDate, onAdd, onOpenCoach }: {
   date: string
   setDate: (d: string) => void
-  onAdd: (m: Meal, mode?: AddFoodMode) => void
+  onAdd: (m: Meal, mode?: AddFoodMode, photo?: File) => void
   onOpenCoach: () => void
 }) {
   const targets = useTargets()!
@@ -58,6 +59,7 @@ export default function Today({ date, setDate, onAdd, onOpenCoach }: {
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [watchOpen, setWatchOpen] = useState(false)
   const reportDue = useReportDue()
+  const photoInput = useRef<HTMLInputElement>(null)
   const budget = targets.kcal + day.bonus
   const remaining = budget - day.totals.kcal
   const over = remaining < 0
@@ -65,8 +67,7 @@ export default function Today({ date, setDate, onAdd, onOpenCoach }: {
   const isToday = date === dateKey()
   const streak = logStreak(entries, dateKey())
   const progress = budget > 0 ? day.totals.kcal / budget * 100 : 0
-  const hour = new Date().getHours()
-  const meal: Meal = hour < 11 ? 'breakfast' : hour < 16 ? 'lunch' : hour < 21 ? 'dinner' : 'snack'
+  const meal = mealForHour(new Date().getHours())
   const week = Array.from({ length: 7 }, (_, i) => addDays(date, i - 3))
 
   return (
@@ -87,7 +88,7 @@ export default function Today({ date, setDate, onAdd, onOpenCoach }: {
           <div className="energy-topline"><span><Icon name="bolt" className="h-4 w-4" />{t('Daily energy')}</span><span className="live-label">{t('YOUR DAILY TARGET')}</span></div>
           <div className="energy-content">
             <div className="energy-numbers"><div className="energy-value num">{kcal(shownRemaining)}<span>kcal</span></div><div className="energy-caption">{over ? t('kcal over budget') : t('kcal left today')}</div><div className="energy-meter"><span style={{ width: `${Math.min(100, progress)}%` }} /></div><p className="energy-target">{t('{n}% of your daily budget', { n: Math.round(progress) })}</p></div>
-            <div className="energy-orb"><div className="orb-halo" /><OrbView fill={budget > 0 ? day.totals.kcal / budget : 0} over={over} /><span className="orb-caption">{t('A little perspective.')}</span></div>
+            <div className="energy-orb"><div className="orb-halo" /><BowlView fill={budget > 0 ? day.totals.kcal / budget : 0} over={over} /><span className="orb-caption">{t('A little perspective.')}</span></div>
           </div>
           <div className="energy-stats"><div><span><i className="stat-dot eaten-dot" />{t('Eaten')}</span><strong className="num">{kcal(day.totals.kcal)}<small>kcal</small></strong></div><div><span><i className="stat-dot budget-dot" />{t('Budget')}</span><strong className="num">{kcal(budget)}<small>kcal</small></strong></div><div><span><i className="stat-dot burned-dot" />{t('Burned')}</span><strong className="num">{kcal(day.burned)}<small>kcal</small></strong></div></div>
           {day.bonus > 0 && <p className="energy-bonus">{t('+{n} exercise', { n: kcal(day.bonus) })}</p>}
@@ -95,11 +96,13 @@ export default function Today({ date, setDate, onAdd, onOpenCoach }: {
         <MacroSummary totals={day.totals} targets={targets} />
       </div>
 
+      {/* Snap meal opens the camera straight away; the photo then goes to the AI in the add-food sheet. */}
+      <input ref={photoInput} type="file" accept="image/*" capture="environment" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) onAdd(meal, 'photo', file) }} />
       <div className="quick-tools" aria-label={t('Quick tools')}>
+        <button onClick={() => settings.geminiKey ? photoInput.current?.click() : onAdd(meal, 'photo')}><span className="quick-tool-icon"><Icon name="camera" /></span><span>{t('Snap meal')}<small>{t('AI counts the calories')}</small></span><Icon name="right" className="tool-arrow h-4 w-4" /></button>
         <button onClick={() => onAdd(meal)}><span className="quick-tool-icon"><Icon name="search" /></span><span>{t('Log food')}<small>{t('Find your favorites')}</small></span><Icon name="right" className="tool-arrow h-4 w-4" /></button>
         <button onClick={() => onAdd(meal, 'barcode')}><span className="quick-tool-icon"><Icon name="barcode" /></span><span>{t('Scan barcode')}<small>{t('Scan. Log. Done.')}</small></span><Icon name="right" className="tool-arrow h-4 w-4" /></button>
         <button onClick={() => onAdd(meal, 'quick')}><span className="quick-tool-icon"><Icon name="bolt" /></span><span>{t('Quick add')}<small>{t('Calories in a tap')}</small></span><Icon name="right" className="tool-arrow h-4 w-4" /></button>
-        <button onClick={() => onAdd(meal, 'mine')}><span className="quick-tool-icon"><Icon name="book" /></span><span>{t('My foods')}<small>{t('Recipes & saved meals')}</small></span><Icon name="right" className="tool-arrow h-4 w-4" /></button>
       </div>
 
       <div className="dashboard-columns">
@@ -114,7 +117,7 @@ export default function Today({ date, setDate, onAdd, onOpenCoach }: {
             <StepsRow steps={day.steps} goal={settings.stepGoal} kcalFromSteps={day.fromSteps} onEdit={() => day.device ? setWatchOpen(true) : setExerciseOpen(true)} />
             {day.device && day.exercises.length > 0 && <p className="mt-3 text-xs text-muted">{t('Workouts below are already part of your watch’s calories, so they aren’t counted twice.')}</p>}
             <ExerciseList date={date} covered={!!day.device} />
-            <div className="mt-3 flex items-center gap-5"><button onClick={() => setExerciseOpen(true)} className="text-action"><Icon name="plus" className="h-4 w-4" />{t('Add exercise')}</button>{!day.device && <button onClick={() => setWatchOpen(true)} className="text-action"><Icon name="watch" className="h-4 w-4" />{t('Watch')}</button>}</div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1"><button onClick={() => setExerciseOpen(true)} className="text-action"><Icon name="plus" className="h-4 w-4" />{t('Add exercise')}</button><HealthSync key={date} date={date} onSetup={() => setWatchOpen(true)} /></div>
           </Card>
           {isToday && settings.showFasting && <FastingCard />}
         </div>

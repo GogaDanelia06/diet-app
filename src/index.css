@@ -348,6 +348,8 @@ button:disabled { cursor: default; }
 .diary-column { display: flex; flex-direction: column; gap: 14px; min-width: 0; }.widgets-column { min-width: 0; }
 .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 3px; min-height: 48px; }.section-heading .eyebrow { font-size: 8px; letter-spacing: 1.5px; color: #829171; }.section-heading h2 { font-family: var(--font-display); font-size: 23px; font-weight: 500; letter-spacing: -.4px; margin-top: 3px; }
 .text-action { display: inline-flex; align-items: center; gap: 5px; color: #d0e9a6; font-size: 11px; font-weight: 500; padding: 5px 0; }
+.text-action.sync-due::after { content: ''; width: 6px; height: 6px; margin-left: 2px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: sync-pulse 1.6s ease-in-out infinite; }
+@keyframes sync-pulse { 50% { opacity: .3; } }
 .diary-meals { border: 1px solid var(--line); border-radius: 17px; background: #1a1e18; overflow: hidden; }
 .diary-meals > .glass { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; backdrop-filter: none; background: transparent; padding: 17px 18px; transform: none; }
 .diary-meals > .glass:last-child { border-bottom: 0; }
@@ -372,4 +374,49 @@ button:disabled { cursor: default; }
 @media (max-width: 800px) { .desktop-sidebar { display: none; }.workspace { margin-left: 0; }.workspace-topbar { height: 65px; padding: max(12px, env(safe-area-inset-top)) 22px 12px; }.workspace-breadcrumb { display: none; }.mobile-brand { display: flex; align-items: center; gap: 7px; font: 600 25px var(--font-display); letter-spacing: -1px; }.app-main { padding: 25px 22px 130px; }.mobile-nav { display: block; }.mobile-nav > div { background: #1b2119ed; border-color: #49563b6b; box-shadow: 0 -10px 40px #080c0750; }.dashboard-heading h1 { font-size: 33px; }.energy-value { font-size: 48px; }.week-strip { gap: 4px; }.overview-grid { gap: 14px; }.dashboard-columns { gap: 18px; }.quick-tools { grid-template-columns: repeat(4, 1fr); }.quick-tools > button { flex-direction: column; align-items: flex-start; gap: 9px; padding: 12px; }.quick-tools small { font-size: 8px; }.quick-tools > button > span:nth-child(2) { font-size: 11px; } }
 @media (max-width: 640px) { .app-main { padding: 24px 16px 130px; }.workspace-topbar { padding-inline: 18px; }.dashboard-heading { align-items: flex-start; }.dashboard-heading h1 { font-size: 30px; letter-spacing: -1px; }.eyebrow { font-size: 8px; letter-spacing: 1.5px; }.heading-subtitle { font-size: 11px; }.date-picker { padding: 10px; margin-top: 15px; gap: 0; }.date-picker > span, .date-picker > svg:last-child { display: none; }.today-dashboard { gap: 19px; }.day-toolbar { flex-wrap: wrap; padding-top: 0; border-top: 0; gap: 8px; }.day-navigation { order: 0; }.streak-chip { order: 1; font-size: 9px; }.week-strip { width: 100%; order: 2; gap: 0; justify-content: space-between; }.week-strip button { width: 12%; min-width: 0; padding-block: 7px; }.week-strip button > span { font-size: 9px; }.week-strip button > b { font-size: 13px; }.overview-grid { grid-template-columns: 1fr; gap: 12px; }.energy-card { padding: 18px 20px 0; border-radius: 19px; }.energy-content { min-height: 197px; }.energy-value { font-size: 60px; }.energy-orb { height: 215px; margin-right: -20px; }.energy-topline > span:first-child { font-size: 12px; }.live-label { font-size: 7px; }.energy-stats { padding: 14px 0 17px; }.energy-stats strong { font-size: 23px; }.energy-stats > div + div { padding-left: 18px; }.macro-card { padding: 17px 18px; border-radius: 18px; display: grid; grid-template-columns: 1fr 1.1fr; column-gap: 14px; }.macro-heading h2 { font-size: 12px; }.macro-heading .tiny-pill { display: none; }.macro-tabs { margin-top: 0; }.macro-tabs button { font-size: 8px; padding-inline: 3px; }.macro-columns { grid-column: 1 / -1; padding-top: 16px; gap: 20px; }.macro-column { display: grid; grid-template-columns: 1fr auto; text-align: left; align-items: center; column-gap: 8px; }.macro-track { grid-column: 1 / -1; grid-row: 3; height: 5px; width: 100%; border-radius: 5px; margin-top: 9px; display: block; }.macro-track > div { height: 100% !important; width: var(--macro-fill); border-radius: 5px; }.macro-track > span { display: none; }.macro-label { grid-column: 1 / -1; font-size: 10px; margin-top: 0; }.macro-column strong { font-size: 24px; grid-column: 1 / -1; margin-top: 5px; }.macro-target { grid-column: 1 / -1; grid-row: 4; font-size: 8px; margin-top: 6px; }.macro-note { display: none; }.quick-tools { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }.quick-tools > button { align-items: center; text-align: center; gap: 7px; padding: 12px 3px; border-radius: 12px; }.quick-tools > button > span:nth-child(2) { font-size: 9px; }.quick-tools small { display: none; }.quick-tool-icon { width: 31px; height: 31px; background: transparent; }.quick-tool-icon svg { width: 21px; height: 21px; }.dashboard-columns { grid-template-columns: 1fr; gap: 28px; }.section-heading { min-height: 40px; }.section-heading h2 { font-size: 23px; }.diary-meals > .glass { padding: 16px; }.diary-meals h2 { font-size: 14px; }.water-card, .activity-card { padding: 17px; }.widgets-column { margin-top: 0; }.sheet-overlay { padding: 0; backdrop-filter: none; }.sheet-panel { height: 100dvh; max-height: 100dvh; max-width: none; border: 0; border-radius: 0; }.detail-main { padding-top: 16px; } }
 @media (max-width: 360px) { .energy-value { font-size: 48px; }.energy-stats small { display: none; }.energy-stats strong { font-size: 21px; }.dashboard-heading h1 { font-size: 26px; }.energy-orb { margin-left: -35px; }.macro-column strong { font-size: 21px; } }
+/* Phone polish: keep the energy card's bowl inside the card, line diary rows up with their meal and keep every label readable. */
+@media (max-width: 640px) {
+  .eyebrow, .section-heading .eyebrow { font-size: 10px; letter-spacing: 1.4px; }
+  .heading-subtitle { font-size: 13px; }
+  .streak-chip { font-size: 11px; }
+  .week-strip button > span { font-size: 10px; }
+  .energy-topline > span:first-child { font-size: 13px; }
+  .live-label { display: none; }
+  .energy-content { grid-template-columns: minmax(0, 1fr) 44%; min-height: 0; column-gap: 6px; padding: 6px 0 10px; }
+  .energy-value { font-size: clamp(40px, 13.5vw, 58px); letter-spacing: -2px; }
+  .energy-caption { font-size: 13px; }
+  .energy-meter { margin-top: 16px; width: 100%; }
+  .energy-target { font-size: 12px; }
+  .energy-orb { height: 165px; margin: 0 -10px 0 0; }
+  .energy-stats > div > span { font-size: 12px; }
+  .energy-stats small { font-size: 11px; }
+  .energy-bonus { font-size: 12px; }
+  .macro-heading h2 { font-size: 14px; }
+  .macro-card { grid-template-columns: minmax(0, 1fr); }
+  .macro-tabs { margin-top: 12px; }
+  .macro-tabs button { font-size: 12px; padding: 7px 4px; }
+  .macro-label { font-size: 12px; }
+  .macro-target { font-size: 11px; }
+  .quick-tools > button > span:nth-child(2) { font-size: 11px; line-height: 1.25; }
+  .diary-meals h2 { font-size: 16px; }
+  .diary-meals ul { margin-left: 50px; }
+  .diary-meals li .font-medium { font-size: 15px; }
+  .diary-meals li .text-sm { font-size: 13px; }
+  .diary-meals li .num { font-size: 15px; }
+  .meal-empty { font-size: 13px; margin-left: 50px; }
+  .meal-macros { font-size: 12px; padding-left: 50px; flex-wrap: wrap; row-gap: 4px; }
+  .subtle-label { display: none; }
+  .text-action { font-size: 13px; }
+  .dashboard-footnote p { font-size: 13px; }
+  .dashboard-footnote span { font-size: 11px; }
+}
+@media (max-width: 360px) {
+  .energy-content { grid-template-columns: minmax(0, 1fr) 40%; }
+  .energy-orb { height: 140px; margin: 0; }
+  .diary-meals ul { margin-left: 0; }
+  .meal-empty { margin-left: 0; }
+  .meal-macros { padding-left: 0; }
+  .mobile-nav > div { padding-inline: 4px; }
+  .mobile-nav button { min-width: 0; font-size: 9.5px; letter-spacing: -.2px; }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }.quick-tools > button:hover { transform: none; } }

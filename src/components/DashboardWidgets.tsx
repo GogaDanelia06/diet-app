@@ -1,14 +1,18 @@
 import { useId, useState } from 'react'
 import { intakeWeek, parseWeight, reportedNutrient, weightOnOrBefore } from '../lib/dashboard'
-import { parseKey, shortDate } from '../lib/date'
+import { dateKey, parseKey, shortDate } from '../lib/date'
 import { kcal } from '../lib/format'
 import { locale, t } from '../lib/i18n'
 import { useStore } from '../lib/store'
 import type { DashboardHabit } from '../lib/types'
+import { ForecastWidget, GardenWidget, NextMealWidget, WidgetHeading } from './Gadgets'
 import { Card, Icon } from './ui'
 import './dashboard-widgets.css'
 
 const WIDGETS = [
+  { id: 'nextMeal', label: 'Next meal' },
+  { id: 'garden', label: 'Veggie garden' },
+  { id: 'forecast', label: 'Goal forecast' },
   { id: 'week', label: 'Weekly intake' },
   { id: 'nutrients', label: 'Beyond macros' },
   { id: 'weight', label: 'Weight check-in' },
@@ -42,6 +46,9 @@ export function DashboardWidgets({ date }: { date: string }) {
       <p>{t('Your layout is saved on this device.')}</p>
     </fieldset>}
     <div className="widget-stack">
+      {visible.nextMeal && date === dateKey() && <NextMealWidget />}
+      {visible.garden && <GardenWidget date={date} />}
+      {visible.forecast && <ForecastWidget />}
       {visible.week && <WeeklyIntake date={date} />}
       {visible.nutrients && <NutrientSnapshot date={date} />}
       {visible.weight && <QuickWeight key={date} date={date} />}
@@ -49,14 +56,6 @@ export function DashboardWidgets({ date }: { date: string }) {
     </div>
     {!Object.values(visible).some(Boolean) && <div className="widget-empty">{t('Make this space yours. Choose a widget above.')}</div>}
   </section>
-}
-
-function WidgetHeading({ icon, title, detail }: { icon: Parameters<typeof Icon>[0]['name']; title: string; detail?: string }) {
-  return <div className="widget-card-heading">
-    <span className="widget-icon"><Icon name={icon} className="h-4 w-4" /></span>
-    <h3>{title}</h3>
-    {detail && <span className="widget-detail">{detail}</span>}
-  </div>
 }
 
 function WeeklyIntake({ date }: { date: string }) {
