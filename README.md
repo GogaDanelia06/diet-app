@@ -19,7 +19,9 @@ A free calorie and diet tracker that installs on an iPhone from Safari. No App S
 - 21 achievements, a month calendar coloured by how each day went, and an AI weekly report with a score and three tips.
 - English and Georgian (ქართული), including Georgian names for every built-in food and exercise; the AI answers in the chosen language.
 
-Apple Health can't be read by a web app, so steps are typed in; reminders would need a paid push server, so there are none.
+- Apple Watch and WHOOP: a one-tap iPhone Shortcut copies today's active calories and steps from Apple Health, and Plate imports them (or you type them in). Only calories above a normal day for your activity level count, and logged workouts aren't counted twice. The setup guide is in Me → Apple Watch & WHOOP.
+
+A web app can't read Apple Health directly, which is why the Shortcut is needed; reminders would need a paid push server, so there are none.
 
 ## Install on iPhone
 

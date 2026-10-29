@@ -90,7 +90,7 @@ export function gatherFacts(st: AppData, targets: { kcal: number; protein: numbe
     onTargetDays: days.filter((d) => d.kcal >= targets.kcal * 0.6 && d.kcal <= targets.kcal * 1.05).length,
     waterDays: Object.values(st.water).filter((ml) => ml >= st.settings.waterGoalMl).length,
     workouts: st.exercises.length,
-    maxSteps: Math.max(0, ...Object.values(st.steps)),
+    maxSteps: Math.max(0, ...Object.values(st.steps), ...Object.values(st.deviceActivity).map((d) => d.steps ?? 0)),
     fastsReached: st.fasting.history.filter((f) => hoursBetween(f.start, f.end) >= f.hours).length,
     barcodeFoods: st.entries.filter((e) => e.food?.source === 'barcode').length,
     georgianFoods: st.entries.filter((e) => e.food?.category === 'Georgian dishes').length,

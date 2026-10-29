@@ -212,6 +212,14 @@ const ICONS = {
     </>
   ),
   left: <path d="M15 5l-7 7 7 7" />,
+  up: <path d="M5 15l7-7 7 7" />,
+  down: <path d="M5 9l7 7 7-7" />,
+  watch: (
+    <>
+      <rect x="6" y="6" width="12" height="12" rx="3.5" />
+      <path d="M9 6l.6-3h4.8l.6 3M9 18l.6 3h4.8l.6-3M12 9.5V12l1.6 1.2" />
+    </>
+  ),
   right: <path d="M9 5l7 7-7 7" />,
   search: (
     <>

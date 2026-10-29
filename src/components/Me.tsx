@@ -10,6 +10,7 @@ import Onboarding, { LanguageSwitch } from './Onboarding'
 import AiKeySetup from './AiKeySetup'
 import FoodEditor from './FoodEditor'
 import RecipeEditor from './RecipeEditor'
+import WatchSheet from './Watch'
 import { FoodList } from './FoodSearch'
 
 export default function Me() {
@@ -24,6 +25,7 @@ export default function Me() {
   const resetAll = useStore((s) => s.resetAll)
   const targets = useTargets()!
   const [editingPlan, setEditingPlan] = useState(false)
+  const [watchOpen, setWatchOpen] = useState(false)
   const [override, setOverride] = useState(settings.calorieOverride ? String(settings.calorieOverride) : '')
   const [editFood, setEditFood] = useState<Food | null>(null)
   const [editRecipe, setEditRecipe] = useState<Recipe | null>(null)
@@ -171,6 +173,16 @@ export default function Me() {
       </Card>
 
       <Card className="space-y-3">
+        <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+          <Icon name="watch" className="h-5 w-5 text-accent" /> {t('Apple Watch & WHOOP')}
+        </h2>
+        <p className="text-sm text-muted">{t('Bring in the active calories and steps your watch records, through Apple Health and a one-tap Shortcut.')}</p>
+        <button className="btn btn-quiet w-full" onClick={() => setWatchOpen(true)}>
+          {t('Set up and import')}
+        </button>
+      </Card>
+
+      <Card className="space-y-3">
         <h2 className="font-display text-lg font-semibold">{t('AI assistant')}</h2>
         <AiKeySetup />
         <details className="text-sm">
@@ -269,6 +281,7 @@ export default function Me() {
 
       {editFood && <FoodEditor food={editFood} onClose={() => setEditFood(null)} />}
       {editRecipe && <RecipeEditor recipe={editRecipe} onClose={() => setEditRecipe(null)} />}
+      {watchOpen && <WatchSheet date={dateKey()} onClose={() => setWatchOpen(false)} />}
     </div>
   )
 }

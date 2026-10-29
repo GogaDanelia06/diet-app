@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { addDays, dateKey, parseKey } from '../lib/date'
 import { locale, t } from '../lib/i18n'
-import { useStore, useTargets } from '../lib/store'
+import { dayBurn, useStore, useTargets } from '../lib/store'
 import { Card, Icon } from './ui'
 
 type Status = 'none' | 'good' | 'light' | 'over'
@@ -12,20 +12,23 @@ const pad = (n: number) => String(n).padStart(2, '0')
 function useDayStatuses() {
   const entries = useStore((s) => s.entries)
   const exercises = useStore((s) => s.exercises)
+  const steps = useStore((s) => s.steps)
+  const deviceActivity = useStore((s) => s.deviceActivity)
+  const profile = useStore((s) => s.profile)
+  const weights = useStore((s) => s.weights)
   const eatBack = useStore((s) => s.settings.exerciseEatBack)
   const target = useTargets()!.kcal
   return useMemo(() => {
     const eaten = new Map<string, number>()
     for (const e of entries) eaten.set(e.date, (eaten.get(e.date) ?? 0) + e.nutrients.kcal)
-    const burned = new Map<string, number>()
-    for (const e of exercises) burned.set(e.date, (burned.get(e.date) ?? 0) + e.kcal)
     const status = new Map<string, Status>()
     for (const [date, kcal] of eaten) {
-      const budget = target + (burned.get(date) ?? 0) * eatBack
+      const { burned } = dayBurn({ exercises, steps, deviceActivity, profile, weights }, date)
+      const budget = target + burned * eatBack
       status.set(date, kcal > budget * 1.05 ? 'over' : kcal < budget * 0.6 ? 'light' : 'good')
     }
-    return { status, workouts: new Set(burned.keys()) }
-  }, [entries, exercises, eatBack, target])
+    return { status, workouts: new Set(exercises.map((e) => e.date)) }
+  }, [entries, exercises, steps, deviceActivity, profile, weights, eatBack, target])
 }
 
 const STYLE: Record<Status, string> = {

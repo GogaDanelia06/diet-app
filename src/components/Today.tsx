@@ -9,6 +9,7 @@ import { MEALS, type DiaryEntry, type Meal } from '../lib/types'
 import { Card, Field, Icon, MacroBar, Sheet } from './ui'
 import FoodDetail from './FoodDetail'
 import ExerciseSheet from './ExerciseSheet'
+import WatchSheet from './Watch'
 import FastingCard from './Fasting'
 import { OrbView } from './ThreeViews'
 import { CalendarMonth } from './Calendar'
@@ -53,6 +54,7 @@ export default function Today({
   const [editing, setEditing] = useState<DiaryEntry | null>(null)
   const [exerciseOpen, setExerciseOpen] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [watchOpen, setWatchOpen] = useState(false)
   const reportDue = useReportDue()
 
   const budget = targets.kcal + day.bonus
@@ -151,11 +153,36 @@ export default function Today({
           <h2 className="font-display text-lg font-semibold">{t('Exercise')}</h2>
           <span className="num text-sm text-muted">{t('{n} kcal burned', { n: kcal(day.burned) })}</span>
         </div>
-        <StepsRow steps={day.steps} goal={settings.stepGoal} kcalFromSteps={day.fromSteps} onEdit={() => setExerciseOpen(true)} />
-        <ExerciseList date={date} />
-        <button onClick={() => setExerciseOpen(true)} className="mt-2 flex items-center gap-1.5 py-1 font-semibold text-accent">
-          <Icon name="plus" className="h-4 w-4" /> {t('Add exercise')}
-        </button>
+        {day.device && (
+          <button onClick={() => setWatchOpen(true)} className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-accent/[0.07] px-3 py-2.5 text-left">
+            <Icon name="watch" className="h-6 w-6 shrink-0 text-accent drop-shadow-[0_0_6px_rgb(69_240_160/0.6)]" />
+            <span className="min-w-0 flex-1">
+              <span className="block font-semibold">{t('Watch: {n} active kcal', { n: kcal(day.device.activeKcal) })}</span>
+              <span className="block text-xs text-muted">{t('{n} kcal above a normal day count toward your budget', { n: kcal(day.burned) })}</span>
+            </span>
+            <Icon name="right" className="h-5 w-5 shrink-0 text-muted" />
+          </button>
+        )}
+        <StepsRow
+          steps={day.steps}
+          goal={settings.stepGoal}
+          kcalFromSteps={day.fromSteps}
+          onEdit={() => (day.device ? setWatchOpen(true) : setExerciseOpen(true))}
+        />
+        {day.device && day.exercises.length > 0 && (
+          <p className="mt-3 text-xs text-muted">{t('Workouts below are already part of your watch’s calories, so they aren’t counted twice.')}</p>
+        )}
+        <ExerciseList date={date} covered={!!day.device} />
+        <div className="mt-2 flex items-center gap-5">
+          <button onClick={() => setExerciseOpen(true)} className="flex items-center gap-1.5 py-1 font-semibold text-accent">
+            <Icon name="plus" className="h-4 w-4" /> {t('Add exercise')}
+          </button>
+          {!day.device && (
+            <button onClick={() => setWatchOpen(true)} className="flex items-center gap-1.5 py-1 font-semibold text-accent">
+              <Icon name="watch" className="h-4 w-4" /> {t('Watch')}
+            </button>
+          )}
+        </div>
       </Card>
 
       {editing && (
@@ -168,6 +195,7 @@ export default function Today({
         />
       )}
       {exerciseOpen && <ExerciseSheet date={date} onClose={() => setExerciseOpen(false)} />}
+      {watchOpen && <WatchSheet date={date} onClose={() => setWatchOpen(false)} />}
       {calendarOpen && (
         <Sheet title={t('Pick a day')} onClose={() => setCalendarOpen(false)}>
           <CalendarMonth
@@ -491,7 +519,7 @@ function StepsRow({ steps, goal, kcalFromSteps, onEdit }: { steps: number; goal:
   )
 }
 
-function ExerciseList({ date }: { date: string }) {
+function ExerciseList({ date, covered }: { date: string; covered: boolean }) {
   const exercises = useStore((s) => s.exercises).filter((e) => e.date === date)
   const remove = useStore((s) => s.removeExercise)
   if (!exercises.length) return null
@@ -506,7 +534,7 @@ function ExerciseList({ date }: { date: string }) {
               {e.distanceKm ? ` · ${e.distanceKm} km` : ''}
             </div>
           </div>
-          <span className="num font-semibold">{kcal(e.kcal)}</span>
+          <span className={`num font-semibold ${covered ? 'text-muted line-through decoration-1' : ''}`}>{kcal(e.kcal)}</span>
           <button onClick={() => remove(e.id)} className="p-1 text-muted" aria-label={t('Remove {name}', { name: tName(e.name) })}>
             <Icon name="trash" className="h-4 w-4" />
           </button>

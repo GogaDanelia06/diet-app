@@ -6,8 +6,10 @@ import { caloriePlan, macroTargets, scaleNutrients, sumNutrients, toPer100 } fro
 import { aiItemToFood } from './ai'
 import { DEFAULT_PLAN_PREFS } from './plan'
 import { stepsKcal } from './exercises'
+import { baselineActiveKcal } from './health'
 import type {
   BodyLog,
+  DeviceDay,
   DiaryEntry,
   ExerciseLog,
   FastingState,
@@ -66,11 +68,13 @@ export interface AppData {
   /** Achievement id → when it was unlocked. */
   achievements: Record<string, number>
   reports: WeeklyReport[]
+  /** Watch data per date (Apple Watch / WHOOP through Apple Health). */
+  deviceActivity: Record<string, DeviceDay>
 }
 
 const DATA_KEYS = [
   'profile', 'settings', 'entries', 'customFoods', 'recipes', 'favorites', 'weights', 'water', 'exercises',
-  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports',
+  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports', 'deviceActivity',
 ] as const satisfies readonly (keyof AppData)[]
 
 function pickData(st: AppData): AppData {
@@ -113,6 +117,7 @@ interface Actions {
   logSavedMeal: (id: string, date: string, meal: Meal) => void
   unlockAchievements: (ids: string[]) => void
   addReport: (r: WeeklyReport) => void
+  setDeviceDay: (date: string, day: DeviceDay | null) => void
   importData: (data: Partial<AppData>) => void
   resetAll: () => void
 }
@@ -136,6 +141,7 @@ const EMPTY: AppData = {
   savedMeals: [],
   achievements: {},
   reports: [],
+  deviceActivity: {},
 }
 
 /** Progress photos are kept as separate records so the main data stays small. */
@@ -274,6 +280,13 @@ export const useStore = create<AppData & Actions>()(
       unlockAchievements: (ids) =>
         setState((st) => ({ achievements: { ...st.achievements, ...Object.fromEntries(ids.map((id) => [id, Date.now()])) } })),
       addReport: (r) => setState((st) => ({ reports: [r, ...st.reports].slice(0, 26) })),
+      setDeviceDay: (date, day) =>
+        setState((st) => {
+          const next = { ...st.deviceActivity }
+          if (day) next[date] = day
+          else delete next[date]
+          return { deviceActivity: next }
+        }),
       importData: (data) =>
         setState((st) => ({
           ...EMPTY,
@@ -327,26 +340,40 @@ export function useTargets() {
   return { plan, kcal, ...macroTargets(kcal, settings.macroPreset) }
 }
 
+/**
+ * Calories burned on a day, counted above an ordinary day so nothing is double-counted.
+ * With watch data, the watch's active calories (minus what the activity level already
+ * covers) replace logged workouts and typed-in steps, which the watch includes anyway.
+ */
+export function dayBurn(st: Pick<AppData, 'exercises' | 'steps' | 'deviceActivity' | 'profile' | 'weights'>, date: string) {
+  const exercises = st.exercises.filter((e) => e.date === date)
+  const device = st.deviceActivity[date]
+  const steps = device?.steps ?? st.steps[date] ?? 0
+  const weight = currentWeight(st)
+  if (device && st.profile) {
+    const baseline = baselineActiveKcal(st.profile, weight)
+    return { exercises, steps, fromSteps: 0, device, baseline, burned: Math.max(0, device.activeKcal - baseline) }
+  }
+  const fromSteps = st.profile ? stepsKcal(steps, weight, st.profile.activity) : 0
+  return { exercises, steps, fromSteps, device: undefined, baseline: 0, burned: exercises.reduce((n, e) => n + e.kcal, 0) + fromSteps }
+}
+
 export function useDay(date: string) {
   const entries = useStore((s) => s.entries)
   const exercises = useStore((s) => s.exercises)
-  const steps = useStore((s) => s.steps[date] ?? 0)
+  const steps = useStore((s) => s.steps)
+  const deviceActivity = useStore((s) => s.deviceActivity)
   const profile = useStore((s) => s.profile)
-  const weight = useStore((s) => currentWeight(s))
+  const weights = useStore((s) => s.weights)
   const eatBack = useStore((s) => s.settings.exerciseEatBack)
   const dayEntries = entries.filter((e) => e.date === date)
-  const dayExercises = exercises.filter((e) => e.date === date)
-  const fromSteps = profile ? stepsKcal(steps, weight, profile.activity) : 0
-  const burned = dayExercises.reduce((n, e) => n + e.kcal, 0) + fromSteps
+  const burn = dayBurn({ exercises, steps, deviceActivity, profile, weights }, date)
   return {
+    ...burn,
     entries: dayEntries,
-    exercises: dayExercises,
     totals: sumNutrients(dayEntries.map((e) => e.nutrients)),
-    steps,
-    fromSteps,
-    burned,
     /** Exercise calories added to today's budget. */
-    bonus: Math.round(burned * eatBack),
+    bonus: Math.round(burn.burned * eatBack),
   }
 }
 

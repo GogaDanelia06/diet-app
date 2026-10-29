@@ -150,6 +150,14 @@ export interface ExerciseLog {
   distanceKm?: number
 }
 
+/** A day's numbers from a watch (via Apple Health) or typed in from one. */
+export interface DeviceDay {
+  activeKcal: number
+  steps?: number
+  source: 'health' | 'manual'
+  at: number
+}
+
 export interface FastLog {
   start: number
   end: number

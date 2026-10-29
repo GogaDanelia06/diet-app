@@ -19,7 +19,8 @@ export function weekForReport(st: AppData, targets: { kcal: number; protein: num
       es.length
         ? `${d}: ${Math.round(kcal)} kcal, ${Math.round(protein)} g protein, ${Math.round(fiber)} g fibre. Ate: ${foods}.` +
             (ex.length ? ` Exercise: ${ex.map((e) => `${e.name} ${e.minutes} min`).join(', ')}.` : '') +
-            (st.steps[d] ? ` Steps: ${st.steps[d]}.` : '')
+            (st.deviceActivity[d] ? ` Watch: ${st.deviceActivity[d].activeKcal} active kcal.` : '') +
+            ((st.deviceActivity[d]?.steps ?? st.steps[d]) ? ` Steps: ${st.deviceActivity[d]?.steps ?? st.steps[d]}.` : '')
         : `${d}: nothing logged.`,
     )
   }
