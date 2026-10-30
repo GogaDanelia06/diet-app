@@ -358,6 +358,31 @@ button:disabled { cursor: default; }
 .meal-symbol { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; flex-shrink: 0; font-size: 18px; background: #333222; }
 .meal-symbol-lunch { background: #283824; }.meal-symbol-dinner { background: #2b2a3a; }.meal-symbol-snack { background: #3a2b24; }
 .meal-empty { font-size: 10px; color: #7d8972; margin: 7px 0 0 51px; }
+/* The time a meal was eaten: dashed while empty, filled once set. */
+.meal-time { display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; padding: 2px 8px 2px 6px; border: 1px dashed #4a5440; border-radius: 999px; background: transparent; color: #8b9680; font-size: 10px; }
+.meal-time.has-time { border: 1px solid transparent; background: #2a3121; color: #d9e7c6; }
+.meal-time:hover { border-color: #6a7d4f; }
+
+/* Meal time sheet: hour and minute scroll wheels, like the phone's own time picker. */
+.meal-time-sheet { padding: 2px 0 4px; }
+.mt-meal { text-align: center; color: var(--ink); font-size: 16px; font-weight: 600; }
+.mt-when-row { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 30px; margin-top: 4px; }
+.mt-when { color: var(--muted); font-size: 13px; }
+.mt-now { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border: 1px solid #4c593a; border-radius: 999px; background: #2a3121; color: var(--accent); font-size: 12px; font-weight: 600; }
+.wheel-picker { position: relative; display: flex; justify-content: center; align-items: center; gap: 6px; height: 220px; margin: 18px auto 0; max-width: 300px; }
+.wheel-band { position: absolute; left: 0; right: 0; top: 50%; height: 48px; transform: translateY(-50%); border: 1px solid #4c593a; border-radius: 16px; background: #2a3121; box-shadow: 0 0 24px #d4f57a1f; pointer-events: none; }
+.wheel { position: relative; z-index: 1; width: 112px; height: 220px; padding: 88px 0; overflow-y: scroll; overscroll-behavior: contain; scroll-snap-type: y mandatory; scrollbar-width: none; -webkit-mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); mask-image: linear-gradient(transparent, #000 32%, #000 68%, transparent); border-radius: 16px; }
+.wheel::-webkit-scrollbar { display: none; }
+.wheel:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wheel-item { position: relative; display: flex; align-items: baseline; justify-content: center; gap: 4px; height: 44px; line-height: 44px; scroll-snap-align: center; color: #75806b; font: 600 24px/44px var(--font-display); cursor: pointer; transition: color .15s, transform .15s; }
+.wheel-item small { font: 600 12px var(--font-sans); color: inherit; }
+.wheel-item.is-selected { color: var(--accent); transform: scale(1.12); }
+.wheel-meal { position: absolute; right: 4px; top: 50%; font-size: 13px; font-style: normal; line-height: 1; transform: translateY(-50%); }
+.wheel-colon { position: relative; z-index: 1; padding-bottom: 4px; color: var(--accent); font: 600 26px var(--font-display); }
+.mt-summary { margin-top: 20px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 16px; background: #1a1e17; font-size: 14px; color: #c4cfb4; }
+.mt-summary strong { display: block; margin-bottom: 2px; color: var(--ink); font-weight: 600; }
+.mt-summary p + p { margin-top: 8px; color: var(--muted); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .wheel-item { transition: none; } .wheel-item.is-selected { transform: none; } }
 .diary-meals li button { border-radius: 6px; }.diary-meals li button:hover { background: #ffffff04; }
 .diary-meals li .font-medium { font-size: 12px; }.diary-meals li .text-sm { font-size: 10px; }.diary-meals li .num { font-size: 13px; }
 .meal-macros { display: flex; gap: 12px; padding: 6px 0 0 51px; color: #8b9680; font-size: 9px; }
@@ -409,6 +434,7 @@ button:disabled { cursor: default; }
   .diary-meals li .text-sm { font-size: 13px; }
   .diary-meals li .num { font-size: 15px; }
   .meal-empty { font-size: 13px; margin-left: 50px; }
+  .meal-time { font-size: 12px; padding: 3px 9px 3px 7px; }
   .meal-macros { font-size: 12px; padding-left: 50px; flex-wrap: wrap; row-gap: 4px; }
   .subtle-label { display: none; }
   .text-action { font-size: 13px; }

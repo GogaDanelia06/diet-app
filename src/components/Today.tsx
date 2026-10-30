@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
-import { addDays, dateKey, dayLabel, parseKey, shortDate } from '../lib/date'
+import { addDays, clockTime, dateKey, dayLabel, parseKey, shortDate } from '../lib/date'
 import { kcal, num } from '../lib/format'
 import { locale, t, tName } from '../lib/i18n'
 import { useDay, useStore, useTargets } from '../lib/store'
 import { toPer100 } from '../lib/calc'
 import { mealTotals } from '../lib/plan'
 import { logStreak } from '../lib/insights'
-import { MEALS, type DiaryEntry, type Meal, type Nutrients } from '../lib/types'
+import { MEAL_ICON, MEALS, type DiaryEntry, type Meal, type Nutrients } from '../lib/types'
 import { Card, Field, Icon, Sheet } from './ui'
 import type { AddFoodMode } from './AddFood'
 import FoodDetail from './FoodDetail'
 import ExerciseSheet from './ExerciseSheet'
 import WatchSheet, { HealthSync } from './Watch'
+import MealTimeSheet from './MealTimeSheet'
 import FastingCard from './Fasting'
 import { BowlView } from './ThreeViews'
 import { mealForHour } from '../lib/gadgets'
@@ -158,7 +159,20 @@ function perHundred(e: DiaryEntry) {
   return toPer100(e.nutrients, e.grams > 0 ? e.grams : 100)
 }
 
-const MEAL_ICON: Record<Meal, string> = { breakfast: '🍳', lunch: '🥗', dinner: '🍲', snack: '🍎' }
+/** The time a meal was eaten, as a chip that opens the meal time sheet. */
+function MealTime({ label, time, onOpen }: { label: string; time?: string; onOpen: () => void }) {
+  return (
+    <button
+      type="button"
+      className={`meal-time ${time ? 'has-time' : ''}`}
+      onClick={onOpen}
+      aria-label={time ? t('{meal} eaten at {time}. Change the time', { meal: label, time: clockTime(time) }) : t('Add the time you ate {meal}', { meal: label })}
+    >
+      <Icon name="clock" className="h-3.5 w-3.5" />
+      <span>{time ? clockTime(time) : t('Add time')}</span>
+    </button>
+  )
+}
 
 function MealCard({
   date,
@@ -181,17 +195,23 @@ function MealCard({
   const logPlanMeal = useStore((s) => s.logPlanMeal)
   const planned = (mealPlan?.days.find((d) => d.date === date)?.meals ?? []).filter((m) => m.meal === meal && !m.logged)
   const [saving, setSaving] = useState(false)
+  const [timeOpen, setTimeOpen] = useState(false)
   const yesterday = addDays(date, -1)
   const yesterdayCount = entries.length === 0 ? allEntries.filter((e) => e.date === yesterday && e.meal === meal).length : 0
   const total = entries.reduce((n, e) => n + e.nutrients.kcal, 0)
 
   return (
+    <>
     <Card>
       <div className="flex items-center gap-3">
         <span className={`meal-symbol meal-symbol-${meal}`} aria-hidden="true">
           {MEAL_ICON[meal]}
         </span>
-        <h2 className="flex-1 font-display text-lg font-semibold">{label}</h2>
+        <div className="flex-1">
+          <h2 className="font-display text-lg font-semibold">{label}</h2>
+          {/* No eating time for days that haven't happened yet. */}
+          {entries.length > 0 && date <= dateKey() && <MealTime label={label} time={entries.find((e) => e.time)?.time} onOpen={() => setTimeOpen(true)} />}
+        </div>
         <span className="num text-sm">
           <span className="font-semibold">{kcal(total)}</span> <span className="text-muted">kcal</span>
         </span>
@@ -251,6 +271,9 @@ function MealCard({
       )}
       {saving && <SaveMealSheet entries={entries} defaultName={`${label}, ${shortDate(date)}`} onClose={() => setSaving(false)} />}
     </Card>
+    {/* Outside the card, so dragging in the sheet doesn't tilt the card behind it. */}
+    {timeOpen && <MealTimeSheet date={date} meal={meal} label={label} onClose={() => setTimeOpen(false)} />}
+    </>
   )
 }
 

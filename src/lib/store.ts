@@ -94,6 +94,8 @@ interface Actions {
   updateEntry: (id: string, e: Partial<DiaryEntry>) => void
   removeEntry: (id: string) => void
   copyMeal: (fromDate: string, meal: Meal, toDate: string) => void
+  /** Sets (or with '' clears) the time a meal was eaten on a day. */
+  setMealTime: (date: string, meal: Meal, time: string) => void
   saveCustomFood: (f: Food) => void
   removeCustomFood: (id: string) => void
   saveRecipe: (r: Recipe) => void
@@ -173,17 +175,29 @@ export const useStore = create<AppData & Actions>()(
       setProfile: (profile) => setState({ profile }),
       updateSettings: (s) => setState((st) => ({ settings: { ...st.settings, ...s } })),
       addEntry: (e) =>
-        setState((st) => ({ entries: [...st.entries, { ...e, id: uid(), createdAt: Date.now() }] })),
+        setState((st) => ({ entries: [...st.entries, { ...e, time: e.time ?? mealTime(st.entries, e.date, e.meal), id: uid(), createdAt: Date.now() }] })),
       updateEntry: (id, e) =>
-        setState((st) => ({ entries: st.entries.map((x) => (x.id === id ? { ...x, ...e } : x)) })),
+        setState((st) => ({
+          entries: st.entries.map((x) => {
+            if (x.id !== id) return x
+            const next = { ...x, ...e }
+            // Moved to another meal: it was eaten with that meal.
+            if (e.meal && e.meal !== x.meal) next.time = mealTime(st.entries, next.date, next.meal)
+            return next
+          }),
+        })),
       removeEntry: (id) => setState((st) => ({ entries: st.entries.filter((x) => x.id !== id) })),
       copyMeal: (fromDate, meal, toDate) =>
         setState((st) => {
           const copies = st.entries
             .filter((x) => x.date === fromDate && x.meal === meal)
-            .map((x) => ({ ...x, id: uid(), date: toDate, createdAt: Date.now() }))
+            .map((x) => ({ ...x, id: uid(), date: toDate, time: mealTime(st.entries, toDate, meal), createdAt: Date.now() }))
           return { entries: [...st.entries, ...copies] }
         }),
+      setMealTime: (date, meal, time) =>
+        setState((st) => ({
+          entries: st.entries.map((x) => (x.date === date && x.meal === meal ? { ...x, time: /^\d{2}:\d{2}$/.test(time) ? time : undefined } : x)),
+        })),
       saveCustomFood: (f) =>
         setState((st) => ({ customFoods: [f, ...st.customFoods.filter((x) => x.id !== f.id)] })),
       removeCustomFood: (id) => setState((st) => ({ customFoods: st.customFoods.filter((x) => x.id !== id) })),
@@ -224,6 +238,7 @@ export const useStore = create<AppData & Actions>()(
             amountLabel: item.portion ? `${item.portion} (${Math.round(item.grams)} g)` : `${Math.round(item.grams)} g`,
             nutrients: { kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat },
             food: aiItemToFood(item),
+            time: mealTime(st.entries, date, planMeal.meal),
           }))
           return {
             entries: [...st.entries, ...added],
@@ -285,7 +300,7 @@ export const useStore = create<AppData & Actions>()(
         setState((st) => {
           const saved = st.savedMeals.find((m) => m.id === id)
           if (!saved) return {}
-          const added = saved.items.map((i) => ({ ...i, id: uid(), date, meal, createdAt: Date.now() }))
+          const added = saved.items.map((i) => ({ ...i, id: uid(), date, meal, time: mealTime(st.entries, date, meal), createdAt: Date.now() }))
           return { entries: [...st.entries, ...added] }
         }),
       unlockAchievements: (ids) =>
@@ -353,6 +368,11 @@ export const useStore = create<AppData & Actions>()(
     },
   ),
 )
+
+/** When a meal on a day was eaten, if a time was set for it. */
+export function mealTime(entries: DiaryEntry[], date: string, meal: Meal) {
+  return entries.find((e) => e.date === date && e.meal === meal && e.time)?.time
+}
 
 /** Latest logged weight, falling back to the starting weight. */
 export function currentWeight(st: Pick<AppData, 'weights' | 'profile'>) {

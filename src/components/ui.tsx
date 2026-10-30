@@ -229,6 +229,7 @@ export function Icon({ name, className = 'h-5 w-5' }: { name: keyof typeof ICONS
 
 const ICONS = {
   plus: <path d="M12 5v14M5 12h14" />,
+  minus: <path d="M5 12h14" />,
   today: (
     <>
       <circle cx="12" cy="12" r="8" />
@@ -237,6 +238,12 @@ const ICONS = {
   ),
   chart: <path d="M4 19h16M6 15l4-4 3 3 5-6" />,
   leaf: <path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14M5 19l7-7" />,
+  clock: (
+    <>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v4l2.5 2" />
+    </>
+  ),
   chat: <path d="M5 18l-1 3 4-2h9a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v9" />,
   user: (
     <>

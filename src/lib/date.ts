@@ -29,6 +29,14 @@ export function shortDate(key: string) {
   return parseKey(key).toLocaleDateString(locale(), { day: 'numeric', month: 'short' })
 }
 
+/** "22:00" shown the way the phone's language writes times, e.g. "10:00 PM". */
+export function clockTime(hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number)
+  const d = new Date()
+  d.setHours(h, m, 0, 0)
+  return d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
+}
+
 export function uid() {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36)
 }

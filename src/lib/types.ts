@@ -3,6 +3,8 @@ export type Activity = 'sedentary' | 'light' | 'moderate' | 'active' | 'very'
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 export type MacroPreset = 'balanced' | 'highProtein' | 'lowCarb'
 
+export const MEAL_ICON: Record<Meal, string> = { breakfast: '🍳', lunch: '🥗', dinner: '🍲', snack: '🍎' }
+
 export const MEALS: { id: Meal; label: string }[] = [
   { id: 'breakfast', label: 'Breakfast' },
   { id: 'lunch', label: 'Lunch' },
@@ -48,6 +50,8 @@ export interface DiaryEntry {
   amountLabel: string // e.g. "2 × 1 piece (55 g)"
   nutrients: Nutrients // totals for this entry
   food?: Food // snapshot so the entry can be re-scaled or re-added later
+  /** When the meal was eaten, "HH:mm" local time; all entries of a meal on a day share it. */
+  time?: string
   createdAt: number
 }
 
