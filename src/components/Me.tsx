@@ -13,6 +13,7 @@ import AiKeySetup from './AiKeySetup'
 import FoodEditor from './FoodEditor'
 import RecipeEditor from './RecipeEditor'
 import WatchSheet from './Watch'
+import { isNativeApp } from '../lib/nativeHealth'
 import { FoodList } from './FoodSearch'
 
 export default function Me() {
@@ -179,9 +180,9 @@ export default function Me() {
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
           <Icon name="watch" className="h-5 w-5 text-accent" /> {t('Apple Watch & WHOOP')}
         </h2>
-        <p className="text-sm text-muted">{t('Bring in the active calories and steps your watch records, through Apple Health and a one-tap Shortcut.')}</p>
+        <p className="text-sm text-muted">{t(isNativeApp() ? 'Plate reads your steps, active calories, workouts and weight from Apple Health by itself.' : 'Bring in the active calories and steps your watch records, through Apple Health and a one-tap Shortcut.')}</p>
         <button className="btn btn-quiet w-full" onClick={() => setWatchOpen(true)}>
-          {t('Set up and import')}
+          {t(isNativeApp() ? 'Apple Health' : 'Set up and import')}
         </button>
       </Card>
 

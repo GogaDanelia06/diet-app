@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { dateKey, dayLabel } from '../lib/date'
 import { kcal, num } from '../lib/format'
 import { parseHealthText } from '../lib/health'
+import { isNativeApp, syncAppleHealth, type HealthDay } from '../lib/nativeHealth'
 import { locale, t } from '../lib/i18n'
 import { dayBurn, useStore } from '../lib/store'
 import { Card, ErrorNote, Field, Icon, Sheet } from './ui'
@@ -56,8 +57,60 @@ export function useHealthImport() {
   }
 }
 
-/** The Today page's one-tap sync: reads what the Plate shortcut copied and saves it. */
-export function HealthSync({ date, onSetup }: { date: string; onSetup: () => void }) {
+/** "8,412 steps · 512 active kcal · 1 workout" for a day read from Apple Health. */
+function healthSummary(day: HealthDay) {
+  return [
+    t('{n} steps', { n: day.steps.toLocaleString(locale()) }),
+    t('{n} active kcal', { n: kcal(day.activeKcal) }),
+    day.workouts.length > 0 && t(day.workouts.length === 1 ? '1 workout' : '{n} workouts', { n: day.workouts.length }),
+  ].filter(Boolean).join(' · ')
+}
+
+/** Reads Apple Health now in the iPhone app; the message says what came in or what went wrong. */
+async function updateNow(date: string) {
+  try {
+    const day = await syncAppleHealth([date])
+    return day ? t('Updated: {what}', { what: healthSummary(day) }) : t('Apple Health isn’t available on this device.')
+  } catch {
+    return t('Apple Health couldn’t be read. Check Plate’s access in Settings → Health → Data Access & Devices.')
+  }
+}
+
+/** The Today page's Health line: automatic in the iPhone app, a one-tap Shortcut import on the website. */
+export function HealthSync(props: { date: string; onSetup: () => void }) {
+  return isNativeApp() ? <AppHealthSync date={props.date} /> : <ShortcutHealthSync {...props} />
+}
+
+/** In the iPhone app Health is read by itself; this shows when, and refreshes on a tap. */
+function AppHealthSync({ date }: { date: string }) {
+  const device = useStore((s) => s.deviceActivity[date])
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState('')
+  return (
+    <>
+      <button
+        type="button"
+        className="text-action"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true)
+          setNote(await updateNow(date))
+          setBusy(false)
+        }}
+      >
+        <Icon name="watch" className="h-4 w-4" />
+        {t(busy ? 'Updating…' : 'Apple Health')}
+      </button>
+      {device?.source === 'health' && !note && (
+        <span className="text-xs text-muted">{t('Updated {time}', { time: new Date(device.at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) })}</span>
+      )}
+      {note && <p className="basis-full text-sm font-semibold text-accent" role="status">{note}</p>}
+    </>
+  )
+}
+
+/** The website's one-tap sync: reads what the Plate shortcut copied and saves it. */
+function ShortcutHealthSync({ date, onSetup }: { date: string; onSetup: () => void }) {
   const device = useStore((s) => s.deviceActivity[date])
   const importHealth = useHealthImport()
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
@@ -147,6 +200,7 @@ export default function WatchSheet({ date, onClose }: { date: string; onClose: (
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [guide, setGuide] = useState(!device)
+  const native = isNativeApp()
 
   function apply(text: string) {
     const r = importHealth(text, date)
@@ -184,7 +238,7 @@ export default function WatchSheet({ date, onClose }: { date: string; onClose: (
   }
 
   return (
-    <Sheet title={t('Apple Watch & WHOOP')} onClose={onClose}>
+    <Sheet title={t(native ? 'Apple Health' : 'Apple Watch & WHOOP')} onClose={onClose}>
       <div className="space-y-4">
         {device && (
           <Card className="space-y-2">
@@ -210,10 +264,28 @@ export default function WatchSheet({ date, onClose }: { date: string; onClose: (
           </Card>
         )}
 
-        <button className="btn btn-primary w-full text-lg" onClick={importClipboard}>
-          <Icon name="watch" className="h-5 w-5" /> {t('Sync Health')}
-        </button>
-        <a href={RUN_SHORTCUT_URL} className="btn btn-quiet w-full">{t('Run the Plate shortcut')}</a>
+        {native ? (
+          <>
+            <p className="text-muted">{t('Plate reads Apple Health by itself whenever you open it: steps, active calories, workouts and weight. WHOOP workouts come in too when WHOOP shares them with Apple Health.')}</p>
+            <button
+              className="btn btn-primary w-full text-lg"
+              onClick={async () => {
+                setError('')
+                setMessage(await updateNow(date))
+              }}
+            >
+              <Icon name="watch" className="h-5 w-5" /> {t('Update now')}
+            </button>
+            <p className="text-sm text-muted">{t('Nothing coming in? Allow Plate in Settings → Health → Data Access & Devices.')}</p>
+          </>
+        ) : (
+          <>
+            <button className="btn btn-primary w-full text-lg" onClick={importClipboard}>
+              <Icon name="watch" className="h-5 w-5" /> {t('Sync Health')}
+            </button>
+            <a href={RUN_SHORTCUT_URL} className="btn btn-quiet w-full">{t('Run the Plate shortcut')}</a>
+          </>
+        )}
         {paste !== null && (
           <div className="space-y-2">
             <Field label={t('Paste what the shortcut copied')}>
@@ -258,13 +330,13 @@ export default function WatchSheet({ date, onClose }: { date: string; onClose: (
           </div>
         </Card>
 
-        <div>
+        {!native && <div>
           <button className="flex w-full items-center justify-between py-2 font-display text-lg font-semibold" onClick={() => setGuide(!guide)} aria-expanded={guide}>
             {t('How to set up the shortcut')}
             <Icon name={guide ? 'up' : 'down'} className="h-5 w-5 text-muted" />
           </button>
           {guide && <WatchGuide />}
-        </div>
+        </div>}
       </div>
     </Sheet>
   )

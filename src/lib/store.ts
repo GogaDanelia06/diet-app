@@ -50,6 +50,7 @@ export const DEFAULT_SETTINGS: Settings = {
   geminiKey: '',
   geminiModel: 'gemini-3.8-flash',
   usdaKey: '',
+  hiddenHealthWorkouts: [],
 }
 
 export interface AppData {
@@ -106,6 +107,8 @@ interface Actions {
   addWater: (date: string, ml: number) => void
   addExercise: (e: Omit<ExerciseLog, 'id'>) => void
   removeExercise: (id: string) => void
+  /** Replaces a day's workouts from Apple Health with the ones just read, minus any the user deleted. */
+  importHealthWorkouts: (date: string, workouts: ExerciseLog[]) => void
   setPlanPrefs: (p: Partial<PlanPrefs>) => void
   setMealPlan: (plan: MealPlan | null) => void
   replacePlanMeal: (date: string, mealId: string, meal: PlanMeal) => void
@@ -158,6 +161,9 @@ const EMPTY: AppData = {
 discardLegacyDashboardStorage()
 
 /** Progress photos are kept as separate records so the main data stays small. */
+/** Ids of workouts read from Apple Health start with this. */
+export const HEALTH_WORKOUT = 'hk-'
+
 export const photoKey = (id: string) => `plate-photo-${id}`
 export const loadPhoto = (id: string) => get<string>(photoKey(id))
 
@@ -219,7 +225,19 @@ export const useStore = create<AppData & Actions>()(
       addWater: (date, ml) =>
         setState((st) => ({ water: { ...st.water, [date]: Math.max(0, (st.water[date] ?? 0) + ml) } })),
       addExercise: (e) => setState((st) => ({ exercises: [...st.exercises, { ...e, id: uid() }] })),
-      removeExercise: (id) => setState((st) => ({ exercises: st.exercises.filter((x) => x.id !== id) })),
+      removeExercise: (id) =>
+        setState((st) => ({
+          exercises: st.exercises.filter((x) => x.id !== id),
+          // A deleted Apple Health workout stays deleted when Health is read again.
+          ...(id.startsWith(HEALTH_WORKOUT) ? { settings: { ...st.settings, hiddenHealthWorkouts: [...st.settings.hiddenHealthWorkouts, id] } } : {}),
+        })),
+      importHealthWorkouts: (date, workouts) =>
+        setState((st) => ({
+          exercises: [
+            ...st.exercises.filter((x) => !(x.date === date && x.id.startsWith(HEALTH_WORKOUT))),
+            ...workouts.filter((w) => !st.settings.hiddenHealthWorkouts.includes(w.id)),
+          ],
+        })),
       setPlanPrefs: (p) => setState((st) => ({ planPrefs: { ...st.planPrefs, ...p } })),
       setMealPlan: (mealPlan) => setState({ mealPlan }),
       replacePlanMeal: (date, mealId, meal) =>

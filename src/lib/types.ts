@@ -93,6 +93,8 @@ export interface Settings {
   geminiModel: string
   usdaKey: string
   language: 'en' | 'ka'
+  /** Apple Health workouts the user deleted, so the next sync doesn't bring them back. */
+  hiddenHealthWorkouts: string[]
 }
 
 export interface WeightLog {

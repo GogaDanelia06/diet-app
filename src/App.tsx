@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useStore } from './lib/store'
-import { dateKey } from './lib/date'
+import { App as NativeApp } from '@capacitor/app'
+import { addDays, dateKey } from './lib/date'
+import { isNativeApp, syncAppleHealth } from './lib/nativeHealth'
 import { setLang, t } from './lib/i18n'
 import type { Meal } from './lib/types'
 import Onboarding from './components/Onboarding'
@@ -56,6 +58,21 @@ export default function App() {
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
+
+  // In the iPhone app, read Apple Health on opening, on coming back, and every few minutes while open.
+  // Yesterday too, so its final totals land even if the app wasn't opened late in the evening.
+  const ready = hydrated && !!profile
+  useEffect(() => {
+    if (!ready || !isNativeApp()) return
+    const sync = () => syncAppleHealth([addDays(dateKey(), -1), dateKey()]).catch(() => {})
+    sync()
+    const timer = window.setInterval(sync, 5 * 60_000)
+    const resume = NativeApp.addListener('resume', sync)
+    return () => {
+      window.clearInterval(timer)
+      resume.then((listener) => listener.remove())
+    }
+  }, [ready])
 
   if (!hydrated) return <div className="min-h-dvh bg-bg" />
   if (!profile) return <Onboarding key={lang} onDone={() => setTab('today')} />

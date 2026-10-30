@@ -382,4 +382,8 @@ export const KA_NAMES: Record<string, string> = {
   "Moving furniture / heavy lifting": "ავეჯის გადატანა / მძიმე ტვირთი",
   "Physical work (building, farming)": "ფიზიკური შრომა (მშენებლობა, მიწის სამუშაო)",
   "Shovelling snow": "თოვლის წმენდა",
+  "Padel / racket sports": "პადელი / რაკეტით სპორტი",
+  "Cardio workout": "კარდიო ვარჯიში",
+  "Core training": "მუცლისა და ზურგის ვარჯიში",
+  "Workout": "ვარჯიში",
 }
