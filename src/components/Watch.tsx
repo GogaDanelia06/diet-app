@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { dateKey, dayLabel } from '../lib/date'
 import { kcal, num } from '../lib/format'
-import { parseHealthText } from '../lib/health'
+import { applyHealthText } from '../lib/healthImport'
 import { isNativeApp, syncAppleHealth, type HealthDay } from '../lib/nativeHealth'
 import { locale, t } from '../lib/i18n'
 import { dayBurn, useStore } from '../lib/store'
@@ -17,45 +17,19 @@ const GUIDE_STEPS = [
   'Add Find Health Samples again with Type Steps, Start Date is Today and Source your Apple Watch, then another Calculate Statistics with Sum.',
   'Optional, for a smart scale: add Find Health Samples with Type Weight, Start Date is Today and Limit 1.',
   'Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then type a space, active= and the first Statistics result, a space, steps= and the second Statistics result. If you added weight, type a space, weight= and the Health Samples result.',
-  'Add Copy to Clipboard and tap Done.',
-  'Back in Plate, tap Sync Health on the Today page.',
+  'Add Copy to Clipboard.',
+  'Add URL Encode. It encodes the same Text.',
+  'Add another Text: paste the link below, then insert URL Encoded Text right after it.',
+  'Add Open URLs and tap Done.',
 ]
 
+// The shortcut opens Plate with the numbers in the link, so opening Plate through it is the sync.
 const AUTO_STEPS = [
-  'In Shortcuts, open Automation, tap + and choose Time of Day. Pick a time, for example 13:00, set Daily, choose Run Immediately and pick the Plate shortcut. Add a second one for 21:00.',
-  'Your numbers are then copied on their own. Open Plate and tap Sync Health — that’s it.',
-  'Want fresh numbers right now? Tap Run the Plate shortcut, come back and tap Sync Health.',
-  'Tip: in Settings → Accessibility → Touch → Back Tap, set Double Tap to the Plate shortcut. Two taps on the back of your iPhone copy the latest numbers.',
+  'Put the shortcut on your Home Screen: in Shortcuts, long-press Plate, then Share → Add to Home Screen. For the picture, use the Plate logo below.',
+  'From now on, open Plate with that icon. Each time, today’s steps and calories come in by themselves, with nothing to tap or paste.',
+  'Moving from the old Plate icon? In it, open Me → Backup → Save backup. Then open Plate with the new icon, go to Me → Backup → Restore and pick that file. After that you can remove the old icon.',
+  'Each opening adds a Safari tab. In Settings → Apps → Safari → Close Tabs, choose After One Day so old tabs tidy themselves away.',
 ]
-
-/** Applies what the Plate shortcut copied; returns the day it was saved to and a short summary, or null. */
-export function useHealthImport() {
-  const setDeviceDay = useStore((s) => s.setDeviceDay)
-  const setSteps = useStore((s) => s.setSteps)
-  const logWeight = useStore((s) => s.logWeight)
-  return (text: string, fallbackDate: string) => {
-    const r = parseHealthText(text)
-    if (!r) return null
-    // The shortcut collects today; an explicit date in the text wins if it isn't in the future.
-    const day = r.date && r.date <= dateKey() ? r.date : fallbackDate
-    const device = useStore.getState().deviceActivity[day]
-    if (r.activeKcal != null) {
-      setDeviceDay(day, { activeKcal: r.activeKcal, steps: r.steps, source: 'health', at: Date.now() })
-    } else if (r.steps != null && device) {
-      // Watch calories already saved for the day stay; only the steps are refreshed.
-      setDeviceDay(day, { ...device, steps: r.steps, at: Date.now() })
-    } else if (r.steps != null) {
-      setSteps(day, r.steps)
-    }
-    if (r.weightKg != null) logWeight(day, r.weightKg)
-    const summary = [
-      r.steps != null && t('{n} steps', { n: r.steps.toLocaleString(locale()) }),
-      r.activeKcal != null && t('{n} active kcal', { n: kcal(r.activeKcal) }),
-      r.weightKg != null && `${r.weightKg} ${t('kg')}`,
-    ].filter(Boolean).join(' · ')
-    return { day, summary }
-  }
-}
 
 /** "8,412 steps · 512 active kcal · 1 workout" for a day read from Apple Health. */
 function healthSummary(day: HealthDay) {
@@ -112,7 +86,6 @@ function AppHealthSync({ date }: { date: string }) {
 /** The website's one-tap sync: reads what the Plate shortcut copied and saves it. */
 function ShortcutHealthSync({ date, onSetup }: { date: string; onSetup: () => void }) {
   const device = useStore((s) => s.deviceActivity[date])
-  const importHealth = useHealthImport()
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null)
   // Nothing synced for the day yet, or not in the last two hours: the button asks for a tap.
   const stale = date === dateKey() && (!device || device.source !== 'health' || Date.now() - device.at > 2 * 3_600_000)
@@ -126,7 +99,7 @@ function ShortcutHealthSync({ date, onSetup }: { date: string; onSetup: () => vo
       onSetup()
       return
     }
-    const r = importHealth(text, date)
+    const r = applyHealthText(text, date)
     setResult(r ? { ok: true, text: t('Synced {day}: {what}', { day: dayLabel(r.day), what: r.summary }) } : { ok: false, text: '' })
   }
 
@@ -166,17 +139,28 @@ function Steps({ steps }: { steps: string[] }) {
 }
 
 export function WatchGuide() {
+  // Wherever Plate is hosted, the shortcut opens this same page.
+  const page = `${window.location.origin}${window.location.pathname}`
+  const link = `${page}#health=`
+  const logo = new URL('apple-touch-icon-180x180.png', page).href
   return (
     <div className="space-y-4">
       <p className="text-muted">
         {t('iPhone doesn’t let web apps read Apple Health, so a small Shortcut copies today’s numbers and Plate imports them. You set it up once.')}
       </p>
       <Steps steps={GUIDE_STEPS} />
-      <div className="rounded-2xl bg-white/[0.05] p-3 font-mono text-sm">plate date=2026-10-29 active=640 steps=9123 weight=89.4 kg</div>
+      <div className="space-y-2 rounded-2xl bg-white/[0.05] p-3 text-sm">
+        <p className="text-muted">{t('The Text should read:')}</p>
+        <p className="font-mono">plate date=2026-10-29 active=640 steps=9123 weight=89.4 kg</p>
+        <p className="text-muted">{t('The link for step 9:')}</p>
+        <p className="break-all font-mono text-accent">{link}</p>
+      </div>
       <div className="space-y-3 rounded-2xl border border-line p-3">
         <h4 className="font-semibold">{t('Make it automatic')}</h4>
         <Steps steps={AUTO_STEPS} />
-        <p className="text-sm text-muted">{t('Why one tap and not zero? Apple lets only App Store apps read Apple Health in the background. An App Store version of Plate could sync with no taps at all.')}</p>
+        <a href={logo} target="_blank" rel="noreferrer" className="btn btn-quiet w-full">{t('Open the Plate logo to save it')}</a>
+        <p className="text-sm text-muted">{t('Workouts count through your Apple Watch’s active calories, so a harder workout raises your budget by itself.')}</p>
+        <p className="text-sm text-muted">{t('Safari can clear a website’s data if you don’t open it for a week, so open Plate every few days and save a backup in Me now and then.')}</p>
       </div>
       <div className="rounded-2xl border border-line p-3">
         <h4 className="mb-1 font-semibold">WHOOP</h4>
@@ -191,7 +175,6 @@ export function WatchGuide() {
 export default function WatchSheet({ date, onClose }: { date: string; onClose: () => void }) {
   const st = useStore()
   const setDeviceDay = useStore((s) => s.setDeviceDay)
-  const importHealth = useHealthImport()
   const burn = dayBurn(st, date)
   const device = st.deviceActivity[date]
   const [active, setActive] = useState(device ? String(device.activeKcal) : '')
@@ -203,7 +186,7 @@ export default function WatchSheet({ date, onClose }: { date: string; onClose: (
   const native = isNativeApp()
 
   function apply(text: string) {
-    const r = importHealth(text, date)
+    const r = applyHealthText(text, date)
     if (!r) {
       setError(t('Nothing from the Plate shortcut is copied. Run the shortcut first, then tap Import.'))
       return

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useStore } from './lib/store'
 import { App as NativeApp } from '@capacitor/app'
-import { addDays, dateKey } from './lib/date'
+import { addDays, dateKey, dayLabel } from './lib/date'
+import { applyHealthText, healthTextFromHash } from './lib/healthImport'
 import { isNativeApp, syncAppleHealth } from './lib/nativeHealth'
 import { setLang, t } from './lib/i18n'
 import type { Meal } from './lib/types'
@@ -12,7 +13,7 @@ import Coach from './components/Coach'
 import Me from './components/Me'
 import AddFood, { type AddFoodMode } from './components/AddFood'
 import Celebration, { useAchievementWatcher } from './components/Achievements'
-import { Icon, Logo } from './components/ui'
+import { Icon, Logo, Toast } from './components/ui'
 
 type Tab = 'today' | 'progress' | 'coach' | 'me'
 
@@ -73,6 +74,27 @@ export default function App() {
       resume.then((listener) => listener.remove())
     }
   }, [ready])
+
+  // The Plate shortcut opens Plate with today's Health numbers in the link: save them, then tidy the address.
+  const [healthNote, setHealthNote] = useState('')
+  useEffect(() => {
+    if (!ready) return
+    const take = () => {
+      const text = healthTextFromHash(window.location.hash)
+      if (text == null) return
+      history.replaceState(null, '', window.location.pathname + window.location.search)
+      const r = applyHealthText(text, dateKey())
+      setHealthNote(r ? t('Synced {day}: {what}', { day: dayLabel(r.day), what: r.summary }) : t('The Plate shortcut sent no numbers. Check its Text step.'))
+    }
+    take()
+    window.addEventListener('hashchange', take)
+    return () => window.removeEventListener('hashchange', take)
+  }, [ready])
+  useEffect(() => {
+    if (!healthNote) return
+    const timer = window.setTimeout(() => setHealthNote(''), 4000)
+    return () => window.clearTimeout(timer)
+  }, [healthNote])
 
   if (!hydrated) return <div className="min-h-dvh bg-bg" />
   if (!profile) return <Onboarding key={lang} onDone={() => setTab('today')} />
@@ -162,6 +184,7 @@ export default function App() {
         />
       )}
       <Celebration />
+      {healthNote && <Toast art={<Icon name="watch" className="h-4 w-4" />}>{healthNote}</Toast>}
     </div>
   )
 }

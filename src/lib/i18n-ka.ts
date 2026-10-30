@@ -617,22 +617,12 @@ export const KA: Record<string, string> = {
   "Add Calculate Statistics and choose Sum.": "დაამატე „Calculate Statistics“ და აირჩიე „Sum“.",
   "Add Find Health Samples again with Type Steps, Start Date is Today and Source your Apple Watch, then another Calculate Statistics with Sum.":
     "კიდევ დაამატე „Find Health Samples“: Type „Steps“, „Start Date is Today“ და Source — შენი Apple Watch, შემდეგ კიდევ ერთი „Calculate Statistics“ → „Sum“.",
-  "Add Copy to Clipboard and tap Done.": "დაამატე „Copy to Clipboard“ და დააჭირე „Done“-ს.",
   "Watch: {n} active kcal": "საათი: {n} აქტიური კკალ",
   "Optional, for a smart scale: add Find Health Samples with Type Weight, Start Date is Today and Limit 1.":
     "სურვილისამებრ, ჭკვიანი სასწორისთვის: დაამატე „Find Health Samples“ — Type „Weight“, „Start Date is Today“ და „Limit 1“.",
   "Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then type a space, active= and the first Statistics result, a space, steps= and the second Statistics result. If you added weight, type a space, weight= and the Health Samples result.":
     "დაამატე „Text“ და ჩაწერე plate date= , შემდეგ ჩასვი „Current Date“ (შეეხე მას, აირჩიე Custom ფორმატი და ჩაწერე yyyy-MM-dd). მერე ჩაწერე ჰარი, active= და პირველი Statistics-ის შედეგი, ჰარი, steps= და მეორე Statistics-ის შედეგი. თუ წონა დაამატე, ჩაწერე ჰარი, weight= და Health Samples-ის შედეგი.",
-  "Back in Plate, tap Sync Health on the Today page.": "დაბრუნდი Plate-ში და „დღეს“ გვერდზე დააჭირე „Health-ის სინქრონიზაციას“.",
   "Make it automatic": "გახადე ავტომატური",
-  "In Shortcuts, open Automation, tap + and choose Time of Day. Pick a time, for example 13:00, set Daily, choose Run Immediately and pick the Plate shortcut. Add a second one for 21:00.":
-    "Shortcuts-ში გახსენი „Automation“, დააჭირე + და აირჩიე „Time of Day“. აირჩიე დრო, მაგალითად 13:00, „Daily“, შემდეგ „Run Immediately“ და Plate-ის Shortcut. დაამატე მეორეც 21:00-ზე.",
-  "Your numbers are then copied on their own. Open Plate and tap Sync Health — that’s it.": "ამის შემდეგ შენი მონაცემები თავისით დაკოპირდება. გახსენი Plate და დააჭირე „Health-ის სინქრონიზაციას“ — სულ ეს არის.",
-  "Want fresh numbers right now? Tap Run the Plate shortcut, come back and tap Sync Health.": "ახალი მონაცემები ახლავე გინდა? დააჭირე „Plate-ის Shortcut-ის გაშვებას“, დაბრუნდი და დააჭირე „Health-ის სინქრონიზაციას“.",
-  "Tip: in Settings → Accessibility → Touch → Back Tap, set Double Tap to the Plate shortcut. Two taps on the back of your iPhone copy the latest numbers.":
-    "რჩევა: Settings → Accessibility → Touch → Back Tap-ში „Double Tap“-ზე დააყენე Plate-ის Shortcut. iPhone-ის უკანა მხარეზე ორი შეხება ბოლო მონაცემებს დააკოპირებს.",
-  "Why one tap and not zero? Apple lets only App Store apps read Apple Health in the background. An App Store version of Plate could sync with no taps at all.":
-    "რატომ ერთი შეხება და არა ნული? Apple-ი Apple Health-ის ფონურ წაკითხვას მხოლოდ App Store-ის აპებს აძლევს. Plate-ის App Store-ის ვერსია სინქრონიზაციას საერთოდ შეხების გარეშე შეძლებდა.",
   "In the WHOOP app’s settings, open Integrations → Apple Health and turn sharing on. WHOOP shares the calories of workouts it detects, not your steps or all-day calories. If you also wear the Apple Watch, keep the Source filters on Apple Watch so nothing is counted twice. If you only wear WHOOP, leave out Active Energy, choose your iPhone as the Source for Steps, and add WHOOP workouts with Add exercise.":
     "WHOOP-ის აპის პარამეტრებში გახსენი Integrations → Apple Health და ჩართე გაზიარება. WHOOP აზიარებს მხოლოდ მის მიერ აღმოჩენილი ვარჯიშების კალორიებს და არა ნაბიჯებს ან მთელი დღის კალორიებს. თუ Apple Watch-საც ატარებ, Source-ის ფილტრებში დატოვე Apple Watch, რომ არაფერი ორჯერ არ დაითვალოს. თუ მხოლოდ WHOOP-ს ატარებ, Active Energy გამოტოვე, ნაბიჯების Source-ად აირჩიე შენი iPhone, ხოლო WHOOP-ის ვარჯიშები „ვარჯიშის დამატებით“ ჩაწერე.",
   "Sync Health": "Health-ის სინქრონიზაცია",
@@ -700,4 +690,24 @@ export const KA: Record<string, string> = {
   "Update now": "ახლავე განახლება",
   "Nothing coming in? Allow Plate in Settings → Health → Data Access & Devices.": "არაფერი შემოდის? დაუშვი Plate: Settings → Health → Data Access & Devices.",
   "Plate reads your steps, active calories, workouts and weight from Apple Health by itself.": "Plate შენს ნაბიჯებს, აქტიურ კალორიებს, ვარჯიშებს და წონას Apple Health-იდან თავისით კითხულობს.",
+  "Add Copy to Clipboard.": "დაამატე „Copy to Clipboard“.",
+  "Add URL Encode. It encodes the same Text.": "დაამატე „URL Encode“. ის იმავე Text-ს დაშიფრავს.",
+  "Add another Text: paste the link below, then insert URL Encoded Text right after it.": "დაამატე კიდევ ერთი „Text“: ჩასვი ქვემოთ მოცემული ბმული და მის უკან პირდაპირ ჩასვი „URL Encoded Text“.",
+  "Add Open URLs and tap Done.": "დაამატე „Open URLs“ და დააჭირე „Done“-ს.",
+  "The Text should read:": "Text ასე უნდა გამოიყურებოდეს:",
+  "The link for step 9:": "ბმული მე-9 ნაბიჯისთვის:",
+  "Put the shortcut on your Home Screen: in Shortcuts, long-press Plate, then Share → Add to Home Screen. For the picture, use the Plate logo below.":
+    "დაამატე Shortcut მთავარ ეკრანზე: Shortcuts-ში ხანგრძლივად დააჭირე Plate-ს, შემდეგ Share → Add to Home Screen. სურათად გამოიყენე ქვემოთ მოცემული Plate-ის ლოგო.",
+  "From now on, open Plate with that icon. Each time, today’s steps and calories come in by themselves, with nothing to tap or paste.":
+    "ამიერიდან Plate ამ ხატულით გახსენი. ყოველ ჯერზე დღევანდელი ნაბიჯები და კალორიები თავისით შემოვა — არაფრის დაჭერა ან ჩასმა არ დაგჭირდება.",
+  "Moving from the old Plate icon? In it, open Me → Backup → Save backup. Then open Plate with the new icon, go to Me → Backup → Restore and pick that file. After that you can remove the old icon.":
+    "ძველი Plate-ის ხატულიდან გადმოდიხარ? მასში გახსენი პროფილი → სარეზერვო ასლი → ასლის შენახვა. შემდეგ Plate ახალი ხატულით გახსენი, გადადი პროფილი → სარეზერვო ასლი → აღდგენა და აირჩიე ის ფაილი. ამის მერე ძველი ხატულა შეგიძლია წაშალო.",
+  "Each opening adds a Safari tab. In Settings → Apps → Safari → Close Tabs, choose After One Day so old tabs tidy themselves away.":
+    "ყოველი გახსნა Safari-ში ახალ ჩანართს ამატებს. Settings → Apps → Safari → Close Tabs-ში აირჩიე „After One Day“, რომ ძველი ჩანართები თავისით დაიხუროს.",
+  "Open the Plate logo to save it": "გახსენი Plate-ის ლოგო, რომ შეინახო",
+  "Workouts count through your Apple Watch’s active calories, so a harder workout raises your budget by itself.":
+    "ვარჯიში Apple Watch-ის აქტიური კალორიებით ითვლება, ამიტომ უფრო ძლიერი ვარჯიში შენს ლიმიტს თავისით გაზრდის.",
+  "Safari can clear a website’s data if you don’t open it for a week, so open Plate every few days and save a backup in Me now and then.":
+    "Safari-მ შეიძლება საიტის მონაცემები წაშალოს, თუ მას ერთი კვირა არ გახსნი, ამიტომ Plate რამდენიმე დღეში ერთხელ მაინც გახსენი და დროდადრო პროფილში ასლი შეინახე.",
+  "The Plate shortcut sent no numbers. Check its Text step.": "Plate-ის Shortcut-მა რიცხვები არ გამოგზავნა. შეამოწმე მისი Text ნაბიჯი.",
 }
