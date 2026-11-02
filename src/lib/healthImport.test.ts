@@ -32,4 +32,11 @@ describe('Health numbers from the Plate shortcut', () => {
     expect(useStore.getState().deviceActivity['2026-10-30']).toMatchObject({ activeKcal: 512, steps: 9000 })
     expect(applyHealthText('shopping list', '2026-10-30')).toBeNull()
   })
+
+  it('counts steps when there’s no Apple Watch and active calories come through as 0', () => {
+    applyHealthText('plate date=2026-10-30 active=0 steps=7 500', '2026-10-30')
+    const st = useStore.getState()
+    expect(st.deviceActivity['2026-10-30']).toBeUndefined()
+    expect(st.steps['2026-10-30']).toBe(7500)
+  })
 })

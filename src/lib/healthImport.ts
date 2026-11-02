@@ -26,7 +26,8 @@ export function applyHealthText(text: string, fallbackDate: string) {
   // The shortcut collects today; an explicit date in the text wins if it isn't in the future.
   const day = r.date && r.date <= dateKey() ? r.date : fallbackDate
   const device = st.deviceActivity[day]
-  if (r.activeKcal != null) {
+  // Without an Apple Watch the active calories come through as 0; the steps count instead, as in the iPhone app.
+  if (r.activeKcal != null && r.activeKcal > 0) {
     st.setDeviceDay(day, { activeKcal: r.activeKcal, steps: r.steps, source: 'health', at: Date.now() })
   } else if (r.steps != null && device) {
     // Watch calories already saved for the day stay; only the steps are refreshed.

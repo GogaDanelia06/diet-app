@@ -1034,4 +1034,7 @@ export const KA: Record<string, string> = {
   "Fully automatic, with no Shortcut": "სრულად ავტომატურად, Shortcut-ის გარეშე",
   "Plate’s iPhone app reads Apple Health by itself whenever you open it, and catches up on the days you didn’t. It’s free to put on your own iPhone from a Mac with Xcode; the steps are in the project’s README, under Install the iPhone app.":
     "Plate-ის iPhone აპი Apple Health-ს თავად კითხულობს ყოველ გახსნაზე და ავსებს იმ დღეებსაც, როცა არ გაგიხსნია. საკუთარ iPhone-ზე მისი დაყენება უფასოა Mac-იდან Xcode-ით; ნაბიჯები პროექტის README-შია, განყოფილებაში Install the iPhone app.",
+
+  "No Apple Watch? Leave out the Active Energy part, choose your iPhone as the Source for Steps, and leave out active= in the Text. Plate then counts your steps.":
+    "Apple Watch არ გაქვს? გამოტოვე Active Energy-ს ნაწილი, Steps-ის Source-ად აირჩიე შენი iPhone და Text-ში გამოტოვე active=. მაშინ Plate ნაბიჯებს დაითვლის.",
 }

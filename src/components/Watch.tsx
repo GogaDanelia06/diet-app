@@ -156,6 +156,9 @@ export function WatchGuide() {
         <p className="text-muted">{t('The link for step 9:')}</p>
         <p className="break-all font-mono text-accent">{link}</p>
       </div>
+      <p className="text-sm text-muted">
+        {t('No Apple Watch? Leave out the Active Energy part, choose your iPhone as the Source for Steps, and leave out active= in the Text. Plate then counts your steps.')}
+      </p>
       <div className="space-y-3 rounded-2xl border border-line p-3">
         <h4 className="font-semibold">{t('Make it automatic')}</h4>
         <Steps steps={AUTO_STEPS} />
