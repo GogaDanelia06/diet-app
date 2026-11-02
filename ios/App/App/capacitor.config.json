@@ -1,0 +1,12 @@
+{
+	"appId": "com.gogadanelia.plate",
+	"appName": "Plate",
+	"webDir": "dist",
+	"backgroundColor": "#101210",
+	"ios": {
+		"backgroundColor": "#101210"
+	},
+	"packageClassList": [
+		"AppPlugin"
+	]
+}
