@@ -37,23 +37,52 @@ export interface HealthImport {
   activeKcal?: number
   steps?: number
   weightKg?: number
+  /** Last night's sleep. */
+  sleepMinutes?: number
+  /** Walking and running distance. */
+  distanceKm?: number
 }
+
+/**
+ * A number expected between min and max. "7.354" reads as 7,354 by the usual rules, but if
+ * that's out of range and there's a single separator, it's taken as a decimal: 7.354.
+ */
+function parseInRange(raw: string, min: number, max: number): number | undefined {
+  const v = parseLocaleNumber(raw)
+  if (Number.isFinite(v) && v >= min && v <= max) return v
+  if (raw.match(/[.,]/g)?.length === 1) {
+    const d = parseFloat(raw.replace(/[\s\u00a0\u202f']/g, '').replace(',', '.'))
+    if (Number.isFinite(d) && d >= min && d <= max) return d
+  }
+  return undefined
+}
+
+/** Sleep as hours ("7.4", "7,4"), hours and minutes ("7:24") or minutes ("444"). */
+function parseSleep(raw: string): number | undefined {
+  const hm = raw.match(/^(\d{1,2}):(\d{2})/)
+  if (hm) return Number(hm[1]) * 60 + Number(hm[2])
+  const v = parseInRange(raw, 0, 24 * 60)
+  if (v == null) return undefined
+  return Math.round(v <= 24 ? v * 60 : v)
+}
+
+const MI_TO_KM = 1.609344
 
 const LB_TO_KG = 0.45359237
 
 /**
- * Parses what the Plate shortcut copies, e.g. "plate date=2026-10-29 active=640.5 steps=9,123 weight=89.4 kg".
+ * Parses what the Plate shortcut copies, e.g. "plate date=2026-10-29 active=640.5 steps=9,123 sleep=7.4 distance=6.2 weight=89.4 kg".
  * Also accepts ":" instead of "=". Weight may be in kg or lb, as a smart scale wrote it to Apple Health.
  */
 export function parseHealthText(text: string): HealthImport | null {
-  const grab = (key: string) => text.match(new RegExp(`${key}\\s*[=:]\\s*([0-9][0-9\\s\\u00a0\\u202f.,']*)`, 'i'))?.[1]
+  const grab = (key: string, extra = '') => text.match(new RegExp(`${key}\\s*[=:]\\s*([0-9][0-9\\s\\u00a0\\u202f.,'${extra}]*)`, 'i'))?.[1]
   const active = grab('active')
   const steps = grab('steps')
   const date = text.match(/date\s*[=:]\s*(\d{4}-\d{2}-\d{2})/i)?.[1]
   const out: HealthImport = { date }
   if (active != null) {
-    const v = parseLocaleNumber(active.trim())
-    if (Number.isFinite(v) && v >= 0 && v < 10000) out.activeKcal = Math.round(v)
+    const v = parseInRange(active.trim(), 0, 9999)
+    if (v != null) out.activeKcal = Math.round(v)
   }
   if (steps != null) {
     const v = parseInt(steps.replace(/\D/g, ''), 10)
@@ -64,5 +93,16 @@ export function parseHealthText(text: string): HealthImport | null {
     const v = parseLocaleNumber(weight[1]) * (weight[2]?.toLowerCase().startsWith('lb') ? LB_TO_KG : 1)
     if (Number.isFinite(v) && v >= 30 && v <= 300) out.weightKg = Math.round(v * 10) / 10
   }
-  return out.activeKcal == null && out.steps == null && out.weightKg == null ? null : out
+  const sleep = grab('sleep', ':')
+  if (sleep != null) {
+    const v = parseSleep(sleep.trim())
+    if (v != null && v > 0) out.sleepMinutes = v
+  }
+  const distance = text.match(/distance\s*[=:]\s*([0-9][0-9\s\u00a0\u202f.,']*?)\s*(km|mi)?(?=\s|$)/i)
+  if (distance) {
+    const v = parseInRange(distance[1].trim(), 0, 300)
+    if (v != null) out.distanceKm = Math.round(v * (distance[2]?.toLowerCase() === 'mi' ? MI_TO_KM : 1) * 100) / 100
+  }
+  const found = [out.activeKcal, out.steps, out.weightKg, out.sleepMinutes, out.distanceKm].some((v) => v != null)
+  return found ? out : null
 }

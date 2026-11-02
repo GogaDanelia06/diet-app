@@ -87,11 +87,18 @@ export interface AppData {
   activeWorkout: ActiveWorkout | null
   /** Finished workouts with their sets, oldest first. */
   workoutLog: WorkoutLog[]
+  /** Sleep (the night before) and walking distance from Apple Health, by day. */
+  healthDays: Record<string, HealthExtras>
+}
+
+export interface HealthExtras {
+  sleepMinutes?: number
+  distanceKm?: number
 }
 
 const DATA_KEYS = [
   'profile', 'settings', 'entries', 'customFoods', 'recipes', 'favorites', 'weights', 'water', 'exercises',
-  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports', 'deviceActivity', 'dashboard', 'workoutPrefs', 'activeWorkout', 'workoutLog',
+  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports', 'deviceActivity', 'dashboard', 'workoutPrefs', 'activeWorkout', 'workoutLog', 'healthDays',
 ] as const satisfies readonly (keyof AppData)[]
 
 function pickData(st: AppData): AppData {
@@ -122,6 +129,7 @@ interface Actions {
   setPlanPrefs: (p: Partial<PlanPrefs>) => void
   setWorkoutPrefs: (p: WorkoutPrefs | null) => void
   setActiveWorkout: (w: ActiveWorkout | null) => void
+  setHealthDay: (date: string, extras: HealthExtras) => void
   updateActiveWorkout: (change: (w: ActiveWorkout) => ActiveWorkout) => void
   /** Logs a finished workout as the day's exercise and keeps its sets in the history. */
   saveWorkout: (done: ReturnType<typeof finishWorkout>) => void
@@ -164,6 +172,7 @@ const EMPTY: AppData = {
   workoutPrefs: null,
   activeWorkout: null,
   workoutLog: [],
+  healthDays: {},
   mealPlan: null,
   steps: {},
   fasting: { active: null, history: [] },
@@ -261,6 +270,7 @@ export const useStore = create<AppData & Actions>()(
       setPlanPrefs: (p) => setState((st) => ({ planPrefs: { ...st.planPrefs, ...p } })),
       setWorkoutPrefs: (workoutPrefs) => setState({ workoutPrefs }),
       setActiveWorkout: (activeWorkout) => setState({ activeWorkout }),
+      setHealthDay: (date, extras) => setState((st) => ({ healthDays: { ...st.healthDays, [date]: { ...st.healthDays[date], ...extras } } })),
       updateActiveWorkout: (change) => setState((st) => (st.activeWorkout ? { activeWorkout: change(st.activeWorkout) } : {})),
       saveWorkout: (done) =>
         setState((st) => {

@@ -15,13 +15,18 @@ const GUIDE_STEPS = [
   'Add the action Find Health Samples. Set Type to Active Energy and add the filter Start Date is Today. Add a second filter Source is your Apple Watch, so nothing is counted twice.',
   'Add Calculate Statistics and choose Sum.',
   'Add Find Health Samples again with Type Steps, Start Date is Today and Source your Apple Watch, then another Calculate Statistics with Sum.',
+  'For sleep: add Find Health Samples with Type Sleep Analysis and the filters End Date is Today, Value is not In Bed, Value is not Awake and Source is your Apple Watch. Set Unit to hr, then add Calculate Statistics with Sum.',
+  'For distance: add Find Health Samples with Type Walking + Running Distance, Start Date is Today and Source your Apple Watch. Set Unit to km, then add Calculate Statistics with Sum.',
   'Optional, for a smart scale: add Find Health Samples with Type Weight, Start Date is Today and Limit 1.',
-  'Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then type a space, active= and the first Statistics result, a space, steps= and the second Statistics result. If you added weight, type a space, weight= and the Health Samples result.',
+  'Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then, each after a space, type active= and the Active Energy Statistics, steps= and the Steps Statistics, sleep= and the sleep Statistics, and distance= and the distance Statistics. If you added weight, type a space, weight= and the Health Samples result.',
   'Add Copy to Clipboard.',
   'Add URL Encode. It encodes the same Text.',
   'Add another Text: paste the link below, then insert URL Encoded Text right after it.',
   'Add Open URLs and tap Done.',
 ]
+
+// The step where the link below goes in: the Text before Open URLs.
+const LINK_STEP = GUIDE_STEPS.length - 1
 
 // The shortcut opens Plate with the numbers in the link, so opening Plate through it is the sync.
 const AUTO_STEPS = [
@@ -152,12 +157,12 @@ export function WatchGuide() {
       <Steps steps={GUIDE_STEPS} />
       <div className="space-y-2 rounded-2xl bg-white/[0.05] p-3 text-sm">
         <p className="text-muted">{t('The Text should read:')}</p>
-        <p className="font-mono">plate date=2026-10-29 active=640 steps=9123 weight=89.4 kg</p>
-        <p className="text-muted">{t('The link for step 9:')}</p>
+        <p className="font-mono">plate date=2026-11-02 active=640 steps=9123 sleep=7.4 distance=6.2 weight=89.4 kg</p>
+        <p className="text-muted">{t('The link for step {n}:', { n: LINK_STEP })}</p>
         <p className="break-all font-mono text-accent">{link}</p>
       </div>
       <p className="text-sm text-muted">
-        {t('No Apple Watch? Leave out the Active Energy part, choose your iPhone as the Source for Steps, and leave out active= in the Text. Plate then counts your steps.')}
+        {t('No Apple Watch? Choose your iPhone as the Source everywhere; the iPhone estimates active calories from your movement, and if they come through as 0, Plate counts your steps instead. For sleep, leave out the two Value filters: without a watch, iPhone only knows your time in bed from your Sleep schedule.')}
       </p>
       <div className="space-y-3 rounded-2xl border border-line p-3">
         <h4 className="font-semibold">{t('Make it automatic')}</h4>

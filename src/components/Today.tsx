@@ -4,6 +4,7 @@ import { kcal, num } from '../lib/format'
 import { locale, t, tName } from '../lib/i18n'
 import { currentWeight, useDay, useStore, useTargets } from '../lib/store'
 import { buildWeek, sessionKcal, weekdayIndex, workoutGoal } from '../lib/workouts'
+import { sleepText } from '../lib/healthImport'
 import { clock } from '../lib/training'
 import { useNow } from './ActiveWorkout'
 import { toPer100 } from '../lib/calc'
@@ -123,6 +124,7 @@ export default function Today({ date, setDate, onAdd, onOpenCoach, onOpenWorkout
             <div className="flex items-center justify-between"><h2 className="flex items-center gap-2 font-display text-lg font-semibold"><Icon name="run" className="text-accent" />{t('Exercise')}</h2><span className="num text-sm text-muted">{t('{n} kcal burned', { n: kcal(day.burned) })}</span></div>
             {day.device && <button onClick={() => setWatchOpen(true)} className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-accent/[0.07] px-3 py-2.5 text-left"><Icon name="watch" className="h-6 w-6 shrink-0 text-accent" /><span className="min-w-0 flex-1"><span className="block font-semibold">{t('Watch: {n} active kcal', { n: kcal(day.device.activeKcal) })}</span><span className="block text-xs text-muted">{t('{n} kcal above a normal day count toward your budget', { n: kcal(day.burned) })}</span></span><Icon name="right" className="h-5 w-5 text-muted" /></button>}
             {isToday && <PlannedWorkout onOpen={onOpenWorkouts} />}
+            <HealthExtrasRow date={date} />
             <StepsRow steps={day.steps} goal={settings.stepGoal} kcalFromSteps={day.fromSteps} onEdit={() => day.device ? setWatchOpen(true) : setExerciseOpen(true)} />
             {day.device && day.exercises.length > 0 && <p className="mt-3 text-xs text-muted">{t('Workouts below are already part of your watch’s calories, so they aren’t counted twice.')}</p>}
             <ExerciseList date={date} covered={!!day.device} />
@@ -553,6 +555,32 @@ function NextWorkout({ onOpen }: { onOpen: () => void }) {
       </span>
       <Icon name="right" className="h-5 w-5 text-muted" />
     </button>
+  )
+}
+
+/** Last night's sleep and the day's walking distance, when Apple Health sent them. */
+function HealthExtrasRow({ date }: { date: string }) {
+  const extras = useStore((s) => s.healthDays[date])
+  if (!extras || (extras.sleepMinutes == null && extras.distanceKm == null)) return null
+  const short = extras.sleepMinutes != null && extras.sleepMinutes < 7 * 60
+  return (
+    <div className="mt-3 rounded-2xl bg-surface-2 px-3 py-2.5 text-sm">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+        {extras.sleepMinutes != null && (
+          <span className="flex items-center gap-1.5">
+            <Icon name="moon" className="h-4 w-4 text-violet" />
+            {t('Slept {time}', { time: sleepText(extras.sleepMinutes) })}
+          </span>
+        )}
+        {extras.distanceKm != null && (
+          <span className="flex items-center gap-1.5">
+            <Icon name="run" className="h-4 w-4 text-accent" />
+            {t('{n} km walked', { n: extras.distanceKm.toLocaleString(locale(), { maximumFractionDigits: 1 }) })}
+          </span>
+        )}
+      </div>
+      {short && <p className="mt-1 text-xs text-muted">{t('Less than 7 hours of sleep often makes you hungrier the next day. An earlier night helps your diet too.')}</p>}
+    </div>
   )
 }
 

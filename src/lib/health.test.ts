@@ -60,3 +60,28 @@ describe('calories burned on a day', () => {
     expect(b.burned).toBe(0)
   })
 })
+
+describe('sleep and distance from the Plate shortcut', () => {
+  it('reads sleep in hours, hours and minutes, or minutes', () => {
+    expect(parseHealthText('plate sleep=7.4')?.sleepMinutes).toBe(444)
+    expect(parseHealthText('plate sleep=7,4')?.sleepMinutes).toBe(444)
+    expect(parseHealthText('plate sleep=7:24')?.sleepMinutes).toBe(444)
+    expect(parseHealthText('plate sleep=444')?.sleepMinutes).toBe(444)
+    // Three decimals would read as thousands; the reading that fits a night wins.
+    expect(parseHealthText('plate sleep=7.354')?.sleepMinutes).toBe(441)
+    expect(parseHealthText('plate sleep=0 steps=10')?.sleepMinutes).toBeUndefined()
+  })
+
+  it('reads distance in km or miles', () => {
+    expect(parseHealthText('plate distance=6.2')?.distanceKm).toBe(6.2)
+    expect(parseHealthText('plate distance=5,234 km steps=9000')).toMatchObject({ distanceKm: 5.23, steps: 9000 })
+    expect(parseHealthText('plate distance=3 mi')?.distanceKm).toBe(4.83)
+  })
+
+  it('reads everything together, and active calories with three decimals', () => {
+    expect(parseHealthText('plate date=2026-11-02 active=512.345 steps=9 123 sleep=7.4 distance=6.2 weight=89.4 kg')).toEqual({
+      date: '2026-11-02', activeKcal: 512, steps: 9123, sleepMinutes: 444, distanceKm: 6.2, weightKg: 89.4,
+    })
+  })
+})
+

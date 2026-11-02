@@ -620,8 +620,6 @@ export const KA: Record<string, string> = {
   "Watch: {n} active kcal": "საათი: {n} აქტიური კკალ",
   "Optional, for a smart scale: add Find Health Samples with Type Weight, Start Date is Today and Limit 1.":
     "სურვილისამებრ, ჭკვიანი სასწორისთვის: დაამატე „Find Health Samples“ — Type „Weight“, „Start Date is Today“ და „Limit 1“.",
-  "Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then type a space, active= and the first Statistics result, a space, steps= and the second Statistics result. If you added weight, type a space, weight= and the Health Samples result.":
-    "დაამატე „Text“ და ჩაწერე plate date= , შემდეგ ჩასვი „Current Date“ (შეეხე მას, აირჩიე Custom ფორმატი და ჩაწერე yyyy-MM-dd). მერე ჩაწერე ჰარი, active= და პირველი Statistics-ის შედეგი, ჰარი, steps= და მეორე Statistics-ის შედეგი. თუ წონა დაამატე, ჩაწერე ჰარი, weight= და Health Samples-ის შედეგი.",
   "Make it automatic": "გახადე ავტომატური",
   "In the WHOOP app’s settings, open Integrations → Apple Health and turn sharing on. WHOOP shares the calories of workouts it detects, not your steps or all-day calories. If you also wear the Apple Watch, keep the Source filters on Apple Watch so nothing is counted twice. If you only wear WHOOP, leave out Active Energy, choose your iPhone as the Source for Steps, and add WHOOP workouts with Add exercise.":
     "WHOOP-ის აპის პარამეტრებში გახსენი Integrations → Apple Health და ჩართე გაზიარება. WHOOP აზიარებს მხოლოდ მის მიერ აღმოჩენილი ვარჯიშების კალორიებს და არა ნაბიჯებს ან მთელი დღის კალორიებს. თუ Apple Watch-საც ატარებ, Source-ის ფილტრებში დატოვე Apple Watch, რომ არაფერი ორჯერ არ დაითვალოს. თუ მხოლოდ WHOOP-ს ატარებ, Active Energy გამოტოვე, ნაბიჯების Source-ად აირჩიე შენი iPhone, ხოლო WHOOP-ის ვარჯიშები „ვარჯიშის დამატებით“ ჩაწერე.",
@@ -695,7 +693,6 @@ export const KA: Record<string, string> = {
   "Add another Text: paste the link below, then insert URL Encoded Text right after it.": "დაამატე კიდევ ერთი „Text“: ჩასვი ქვემოთ მოცემული ბმული და მის უკან პირდაპირ ჩასვი „URL Encoded Text“.",
   "Add Open URLs and tap Done.": "დაამატე „Open URLs“ და დააჭირე „Done“-ს.",
   "The Text should read:": "Text ასე უნდა გამოიყურებოდეს:",
-  "The link for step 9:": "ბმული მე-9 ნაბიჯისთვის:",
   "Put the shortcut on your Home Screen: in Shortcuts, long-press Plate, then Share → Add to Home Screen. For the picture, use the Plate logo below.":
     "დაამატე Shortcut მთავარ ეკრანზე: Shortcuts-ში ხანგრძლივად დააჭირე Plate-ს, შემდეგ Share → Add to Home Screen. სურათად გამოიყენე ქვემოთ მოცემული Plate-ის ლოგო.",
   "From now on, open Plate with that icon. Each time, today’s steps and calories come in by themselves, with nothing to tap or paste.":
@@ -1035,6 +1032,19 @@ export const KA: Record<string, string> = {
   "Plate’s iPhone app reads Apple Health by itself whenever you open it, and catches up on the days you didn’t. It’s free to put on your own iPhone from a Mac with Xcode; the steps are in the project’s README, under Install the iPhone app.":
     "Plate-ის iPhone აპი Apple Health-ს თავად კითხულობს ყოველ გახსნაზე და ავსებს იმ დღეებსაც, როცა არ გაგიხსნია. საკუთარ iPhone-ზე მისი დაყენება უფასოა Mac-იდან Xcode-ით; ნაბიჯები პროექტის README-შია, განყოფილებაში Install the iPhone app.",
 
-  "No Apple Watch? Leave out the Active Energy part, choose your iPhone as the Source for Steps, and leave out active= in the Text. Plate then counts your steps.":
-    "Apple Watch არ გაქვს? გამოტოვე Active Energy-ს ნაწილი, Steps-ის Source-ად აირჩიე შენი iPhone და Text-ში გამოტოვე active=. მაშინ Plate ნაბიჯებს დაითვლის.",
+  // Sleep and distance from Apple Health
+  "For sleep: add Find Health Samples with Type Sleep Analysis and the filters End Date is Today, Value is not In Bed, Value is not Awake and Source is your Apple Watch. Set Unit to hr, then add Calculate Statistics with Sum.":
+    "ძილისთვის: დაამატე „Find Health Samples“ — Type „Sleep Analysis“ და ფილტრები „End Date is Today“, „Value is not In Bed“, „Value is not Awake“ და „Source is“ შენი Apple Watch. „Unit“ დააყენე hr-ზე, შემდეგ დაამატე „Calculate Statistics“ — Sum.",
+  "For distance: add Find Health Samples with Type Walking + Running Distance, Start Date is Today and Source your Apple Watch. Set Unit to km, then add Calculate Statistics with Sum.":
+    "მანძილისთვის: დაამატე „Find Health Samples“ — Type „Walking + Running Distance“, „Start Date is Today“ და Source შენი Apple Watch. „Unit“ დააყენე km-ზე, შემდეგ დაამატე „Calculate Statistics“ — Sum.",
+  "Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then, each after a space, type active= and the Active Energy Statistics, steps= and the Steps Statistics, sleep= and the sleep Statistics, and distance= and the distance Statistics. If you added weight, type a space, weight= and the Health Samples result.":
+    "დაამატე „Text“ და ჩაწერე plate date= , შემდეგ ჩასვი „Current Date“ (შეეხე მას, აირჩიე Custom ფორმატი და ჩაწერე yyyy-MM-dd). მერე, თითოეული ჰარის შემდეგ, ჩაწერე active= და Active Energy-ს Statistics, steps= და Steps-ის Statistics, sleep= და ძილის Statistics, distance= და მანძილის Statistics. თუ წონა დაამატე, ჩაწერე ჰარი, weight= და Health Samples-ის შედეგი.",
+  "The link for step {n}:": "ბმული {n}-ე ნაბიჯისთვის:",
+  "No Apple Watch? Choose your iPhone as the Source everywhere; the iPhone estimates active calories from your movement, and if they come through as 0, Plate counts your steps instead. For sleep, leave out the two Value filters: without a watch, iPhone only knows your time in bed from your Sleep schedule.":
+    "Apple Watch არ გაქვს? ყველგან Source-ად აირჩიე შენი iPhone; iPhone აქტიურ კალორიებს მოძრაობით აფასებს, ხოლო თუ 0 მოვა, Plate ნაბიჯებს დაითვლის. ძილისთვის გამოტოვე ორივე Value ფილტრი: საათის გარეშე iPhone მხოლოდ საწოლში გატარებულ დროს იცის ძილის განრიგიდან.",
+  "{time} sleep": "{time} ძილი",
+  "{n} km": "{n} კმ",
+  "Slept {time}": "ეძინე {time}",
+  "{n} km walked": "{n} კმ გავლილი",
+  "Less than 7 hours of sleep often makes you hungrier the next day. An earlier night helps your diet too.": "7 საათზე ნაკლები ძილი ხშირად მეორე დღეს მადას ზრდის. ადრე დაძინება შენს დიეტასაც ეხმარება.",
 }

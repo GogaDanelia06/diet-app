@@ -306,4 +306,5 @@ const ICONS = {
   bookmark: <path d="M7 4h10v16l-5-4-5 4z" />,
   alert: <path d="M12 4 2.8 19.5h18.4zM12 10v4.5M12 17.2v.3" />,
   bell: <path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" />,
+  moon: <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />,
 } as const

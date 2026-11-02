@@ -33,6 +33,15 @@ describe('Health numbers from the Plate shortcut', () => {
     expect(applyHealthText('shopping list', '2026-10-30')).toBeNull()
   })
 
+  it('saves sleep and distance for the day and says so', () => {
+    useStore.setState({ healthDays: {} })
+    const r = applyHealthText('plate date=2026-10-30 steps=8000 sleep=6.5 distance=5.4', '2026-10-30')
+    expect(useStore.getState().healthDays['2026-10-30']).toEqual({ sleepMinutes: 390, distanceKm: 5.4 })
+    expect(r?.summary).toBe('8,000 steps · 6 h 30 min sleep · 5.4 km')
+    applyHealthText('plate date=2026-10-30 steps=9000', '2026-10-30')
+    expect(useStore.getState().healthDays['2026-10-30']).toEqual({ sleepMinutes: 390, distanceKm: 5.4 })
+  })
+
   it('counts steps when there’s no Apple Watch and active calories come through as 0', () => {
     applyHealthText('plate date=2026-10-30 active=0 steps=7 500', '2026-10-30')
     const st = useStore.getState()
