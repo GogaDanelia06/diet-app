@@ -52,6 +52,7 @@ export const DEFAULT_SETTINGS: Settings = {
   usdaKey: '',
   hiddenHealthWorkouts: [],
   allergies: [],
+  reminders: { meals: false, times: { breakfast: '09:00', lunch: '13:30', dinner: '19:30' }, water: false, fasting: false },
 }
 
 export interface AppData {

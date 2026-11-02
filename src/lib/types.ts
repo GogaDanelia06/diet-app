@@ -125,6 +125,18 @@ export interface Settings {
   hiddenHealthWorkouts: string[]
   /** Allergens Plate warns about on scanned products. */
   allergies: Allergen[]
+  /** Notifications the iPhone app schedules on the phone. */
+  reminders: ReminderSettings
+}
+
+export interface ReminderSettings {
+  /** Remind to log breakfast, lunch and dinner at these "HH:mm" times, unless already logged. */
+  meals: boolean
+  times: Record<'breakfast' | 'lunch' | 'dinner', string>
+  /** A few nudges to drink water until the day's goal is reached. */
+  water: boolean
+  /** When the fasting timer reaches its goal. */
+  fasting: boolean
 }
 
 export interface WeightLog {

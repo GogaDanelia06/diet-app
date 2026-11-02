@@ -4,7 +4,7 @@ import { ACTIVITY, MACRO_PRESETS, calorieFloor } from '../lib/calc'
 import { dateKey } from '../lib/date'
 import { kcal, num } from '../lib/format'
 import { exportData, recipeToFood, useStore, useTargets, type AppData } from '../lib/store'
-import type { Allergen, DietStyle, Food, MacroPreset, Recipe } from '../lib/types'
+import { MEALS, type Allergen, type DietStyle, type Food, type MacroPreset, type Recipe, type ReminderSettings } from '../lib/types'
 import { activeUsdaKey, checkUsdaKey, hasSharedUsdaKey } from '../lib/online'
 import { KeyAction, KeyStatus, maskKey } from './KeyStatus'
 import { Card, ErrorNote, Field, Icon, Logo, Segmented, Spinner } from './ui'
@@ -18,6 +18,7 @@ import { FoodList } from './FoodSearch'
 import { Chip } from './FoodDetail'
 import { ALLERGENS } from '../lib/allergens'
 import { DIETS } from '../lib/plan'
+import { REMINDER_MEALS, WATER_TIMES, allowReminders } from '../lib/reminders'
 
 export default function Me() {
   const profile = useStore((s) => s.profile)!
@@ -180,6 +181,8 @@ export default function Me() {
       </Card>
 
       <AllergyCard />
+
+      <RemindersCard />
 
       <Card className="space-y-3">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
@@ -411,5 +414,67 @@ function AllergyCard() {
         </div>
       </div>
     </Card>
+  )
+}
+
+function RemindersCard() {
+  const reminders = useStore((s) => s.settings.reminders)
+  const updateSettings = useStore((s) => s.updateSettings)
+  const [error, setError] = useState('')
+  const native = isNativeApp()
+  const set = (r: Partial<ReminderSettings>) => updateSettings({ reminders: { ...reminders, ...r } })
+
+  async function toggle(key: 'meals' | 'water' | 'fasting', on: boolean) {
+    setError('')
+    if (on && (await allowReminders()) !== 'granted') {
+      setError(t('Notifications are off for Plate. Turn them on in Settings → Notifications → Plate.'))
+      return
+    }
+    set({ [key]: on })
+  }
+
+  return (
+    <Card className="space-y-4">
+      <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
+        <Icon name="bell" className="h-5 w-5 text-accent" /> {t('Reminders')}
+      </h2>
+      {!native ? (
+        <p className="text-sm text-muted">{t('Reminders work in the Plate iPhone app. A website can’t send them without a paid server.')}</p>
+      ) : (
+        <>
+          <Toggle label={t('Meal reminders')} hint={t('Only when you haven’t logged that meal yet.')} checked={reminders.meals} onChange={(on) => toggle('meals', on)} />
+          {reminders.meals && (
+            <div className="grid grid-cols-3 gap-2">
+              {REMINDER_MEALS.map((meal) => (
+                <label key={meal} className="text-sm text-muted">
+                  {t(MEALS.find((m) => m.id === meal)!.label)}
+                  <input
+                    type="time"
+                    className="field num mt-1 px-2 text-center"
+                    value={reminders.times[meal]}
+                    onChange={(e) => e.target.value && set({ times: { ...reminders.times, [meal]: e.target.value } })}
+                  />
+                </label>
+              ))}
+            </div>
+          )}
+          <Toggle label={t('Water reminders')} hint={t('At {times}, until you reach your water goal.', { times: WATER_TIMES.join(', ') })} checked={reminders.water} onChange={(on) => toggle('water', on)} />
+          <Toggle label={t('Fast finished')} hint={t('When your fasting timer reaches its goal.')} checked={reminders.fasting} onChange={(on) => toggle('fasting', on)} />
+          {error && <ErrorNote>{error}</ErrorNote>}
+        </>
+      )}
+    </Card>
+  )
+}
+
+function Toggle({ label, hint, checked, onChange }: { label: string; hint: string; checked: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <label className="flex items-center justify-between gap-3">
+      <span>
+        <span className="block font-medium">{label}</span>
+        <span className="block text-sm text-muted">{hint}</span>
+      </span>
+      <input type="checkbox" className="h-6 w-6 shrink-0 accent-[var(--accent)]" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    </label>
   )
 }

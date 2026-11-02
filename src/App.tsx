@@ -4,6 +4,7 @@ import { App as NativeApp } from '@capacitor/app'
 import { addDays, dateKey, dayLabel } from './lib/date'
 import { applyHealthText, healthTextFromHash } from './lib/healthImport'
 import { isNativeApp, syncAppleHealth } from './lib/nativeHealth'
+import { syncReminders } from './lib/reminders'
 import { setLang, t } from './lib/i18n'
 import type { Meal } from './lib/types'
 import Onboarding from './components/Onboarding'
@@ -71,6 +72,24 @@ export default function App() {
     const resume = NativeApp.addListener('resume', sync)
     return () => {
       window.clearInterval(timer)
+      resume.then((listener) => listener.remove())
+    }
+  }, [ready])
+
+  // In the iPhone app, keep the week's reminders planned around what's logged, so a logged meal gets no reminder.
+  useEffect(() => {
+    if (!ready || !isNativeApp()) return
+    syncReminders()
+    let timer = 0
+    const unsubscribe = useStore.subscribe((st, prev) => {
+      if (st.entries === prev.entries && st.settings === prev.settings && st.water === prev.water && st.fasting === prev.fasting) return
+      window.clearTimeout(timer)
+      timer = window.setTimeout(syncReminders, 1500)
+    })
+    const resume = NativeApp.addListener('resume', syncReminders)
+    return () => {
+      unsubscribe()
+      window.clearTimeout(timer)
       resume.then((listener) => listener.remove())
     }
   }, [ready])

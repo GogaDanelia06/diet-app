@@ -8,6 +8,8 @@ A free calorie and diet tracker that installs on an iPhone from Safari. No App S
 - Food diary for breakfast, lunch, dinner and snacks, with calories, protein, carbs and fat.
 - About 270 built-in foods and dishes, including 36 Georgian dishes (khachapuri, khinkali, mtsvadi, lobio, pkhali…), with real portion sizes.
 - Barcode scanner for packaged food (Open Food Facts) and online search (USDA FoodData Central).
+- Is it a good choice? Scanned products show their Nutri-Score, how processed they are and their sugar, fat and salt, with a plain verdict (Good choice, Fine in moderation, Best to limit) and up to five better-rated alternatives. Every other food gets Plate's own estimate, and Today shows how much of the day's food was a good pick. Free, no AI needed.
+- Allergy and diet warnings: pick your allergens and what you eat, and scanned products that contain them, may contain traces, or aren't vegan or vegetarian get a red warning.
 - Free AI through Google Gemini: photograph a meal, describe it in words, read a nutrition label, or chat with a diet coach.
 - AI meal plans: a 1-, 3- or 7-day menu that fits your calorie target and preferences, with one-tap logging, meal swaps and a shopping list. Planned meals also show on the Today screen.
 - Your own foods, recipes (Plate works out the calories per portion) and saved meals you can re-log in one tap.
@@ -21,7 +23,9 @@ A free calorie and diet tracker that installs on an iPhone from Safari. No App S
 
 - Apple Watch and WHOOP: a one-tap iPhone Shortcut copies today's active calories and steps from Apple Health, and Plate imports them (or you type them in). Only calories above a normal day for your activity level count, and logged workouts aren't counted twice. The setup guide is in Me → Apple Watch & WHOOP.
 
-A web app can't read Apple Health directly, which is why the Shortcut is needed; reminders would need a paid push server, so there are none.
+- Reminders in the iPhone app: meal reminders that skip meals you've already logged, water reminders until you reach your goal, and a note when your fast is done. They're scheduled on the phone, so there's no server.
+
+A web app can't read Apple Health directly, which is why the Shortcut is needed; on the website there are no reminders, because they would need a paid push server.
 
 ## Install on iPhone
 
