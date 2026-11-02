@@ -3,17 +3,10 @@ import { locale, t, tServing } from '../lib/i18n'
 import { generateMealPlan, swapPlanMeal } from '../lib/ai'
 import { dateKey, dayLabel, parseKey, shortDate } from '../lib/date'
 import { kcal, macro } from '../lib/format'
-import { buildPlan, cleanPlanMeal, dayTotals, mealSlots, mealTotals, shoppingList } from '../lib/plan'
+import { DIETS, buildPlan, cleanPlanMeal, dayTotals, mealSlots, mealTotals, shoppingList } from '../lib/plan'
 import { currentWeight, useStore, useTargets } from '../lib/store'
-import { MEALS, type DietStyle, type MealPlan, type PlanMeal, type PlanPrefs } from '../lib/types'
+import { MEALS, type MealPlan, type PlanMeal, type PlanPrefs } from '../lib/types'
 import { ErrorNote, Field, Icon, Segmented, Sheet, Spinner } from './ui'
-
-const DIETS: { value: DietStyle; label: string }[] = [
-  { value: 'any', label: 'Anything' },
-  { value: 'vegetarian', label: 'Vegetarian' },
-  { value: 'pescatarian', label: 'Fish, no meat' },
-  { value: 'vegan', label: 'Vegan' },
-]
 
 function usePlanRequest() {
   const profile = useStore((s) => s.profile)!

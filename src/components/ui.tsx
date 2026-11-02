@@ -304,4 +304,6 @@ const ICONS = {
   report: <path d="M6 3h9l3 3v15H6zM9 13l2 2 4-4M9 8h4" />,
   flame: <path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2 1-3.5 2-4.5 0 2 1 3 2 3 0-3-1-5.5 1-8.5z" />,
   bookmark: <path d="M7 4h10v16l-5-4-5 4z" />,
+  alert: <path d="M12 4 2.8 19.5h18.4zM12 10v4.5M12 17.2v.3" />,
+  bell: <path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0" />,
 } as const

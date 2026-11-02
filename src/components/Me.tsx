@@ -4,7 +4,7 @@ import { ACTIVITY, MACRO_PRESETS, calorieFloor } from '../lib/calc'
 import { dateKey } from '../lib/date'
 import { kcal, num } from '../lib/format'
 import { exportData, recipeToFood, useStore, useTargets, type AppData } from '../lib/store'
-import type { Food, MacroPreset, Recipe } from '../lib/types'
+import type { Allergen, DietStyle, Food, MacroPreset, Recipe } from '../lib/types'
 import { activeUsdaKey, checkUsdaKey, hasSharedUsdaKey } from '../lib/online'
 import { KeyAction, KeyStatus, maskKey } from './KeyStatus'
 import { Card, ErrorNote, Field, Icon, Logo, Segmented, Spinner } from './ui'
@@ -15,6 +15,9 @@ import RecipeEditor from './RecipeEditor'
 import WatchSheet from './Watch'
 import { isNativeApp } from '../lib/nativeHealth'
 import { FoodList } from './FoodSearch'
+import { Chip } from './FoodDetail'
+import { ALLERGENS } from '../lib/allergens'
+import { DIETS } from '../lib/plan'
 
 export default function Me() {
   const profile = useStore((s) => s.profile)!
@@ -175,6 +178,8 @@ export default function Me() {
           />
         </label>
       </Card>
+
+      <AllergyCard />
 
       <Card className="space-y-3">
         <h2 className="flex items-center gap-2 font-display text-lg font-semibold">
@@ -375,6 +380,36 @@ function UsdaKeyCard() {
       {status?.kind === 'checking' && <Spinner label={t('Checking the key…')} />}
       {status?.kind === 'ok' && <p className="text-sm font-medium text-accent" role="status">{status.text}</p>}
       {status?.kind === 'error' && <ErrorNote>{status.text}</ErrorNote>}
+    </Card>
+  )
+}
+
+function AllergyCard() {
+  const allergies = useStore((s) => s.settings.allergies)
+  const updateSettings = useStore((s) => s.updateSettings)
+  const diet = useStore((s) => s.planPrefs.diet)
+  const setPlanPrefs = useStore((s) => s.setPlanPrefs)
+  const toggle = (id: Allergen) => updateSettings({ allergies: allergies.includes(id) ? allergies.filter((a) => a !== id) : [...allergies, id] })
+
+  return (
+    <Card className="space-y-4">
+      <div>
+        <h2 className="font-display text-lg font-semibold">{t('Allergies and diet')}</h2>
+        <p className="text-sm text-muted">{t('Plate warns you when a scanned product doesn’t fit. Meal plans use your diet too.')}</p>
+      </div>
+      <Field label={t('What do you eat?')}>
+        <Segmented value={diet} onChange={(d: DietStyle) => setPlanPrefs({ diet: d })} wrap options={DIETS.map((d) => ({ value: d.value, label: t(d.label) }))} />
+      </Field>
+      <div>
+        <div className="mb-2 text-sm font-medium text-muted">{t('I’m allergic to')}</div>
+        <div className="flex flex-wrap gap-2">
+          {ALLERGENS.map((a) => (
+            <Chip key={a.id} active={allergies.includes(a.id)} onClick={() => toggle(a.id)}>
+              {t(a.label)}
+            </Chip>
+          ))}
+        </div>
+      </div>
     </Card>
   )
 }

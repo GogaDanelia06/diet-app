@@ -44,12 +44,28 @@ export interface Food {
 
 export type NutrientLevel = 'low' | 'moderate' | 'high'
 
+export type Allergen =
+  | 'gluten' | 'milk' | 'eggs' | 'nuts' | 'peanuts' | 'soy' | 'fish'
+  | 'shellfish' | 'molluscs' | 'sesame' | 'celery' | 'mustard' | 'lupin' | 'sulphites'
+
+export type DietStatus = 'yes' | 'no' | 'maybe'
+
 export interface FoodHealth {
+  /** Which reading of Open Food Facts this is, so products saved by an older Plate are looked up again. */
+  version?: number
   nutriScore?: 'a' | 'b' | 'c' | 'd' | 'e'
   /** NOVA processing group: 1 unprocessed … 4 ultra-processed. */
   nova?: 1 | 2 | 3 | 4
   levels?: Partial<Record<'sugars' | 'salt' | 'fat' | 'saturatedFat', NutrientLevel>>
   additives?: number
+  /** Allergens in the ingredients; missing when Open Food Facts doesn't know them. */
+  allergens?: Allergen[]
+  /** "May contain" allergens. */
+  traces?: Allergen[]
+  vegan?: DietStatus
+  vegetarian?: DietStatus
+  /** Up to three Open Food Facts categories, most specific last, for finding better alternatives. */
+  categories?: string[]
 }
 
 export interface DiaryEntry {
@@ -107,6 +123,8 @@ export interface Settings {
   language: 'en' | 'ka'
   /** Apple Health workouts the user deleted, so the next sync doesn't bring them back. */
   hiddenHealthWorkouts: string[]
+  /** Allergens Plate warns about on scanned products. */
+  allergies: Allergen[]
 }
 
 export interface WeightLog {

@@ -6,6 +6,7 @@ import { useStore } from '../lib/store'
 import { MEALS, type DiaryEntry, type Food, type Meal } from '../lib/types'
 import { Icon, Segmented, Sheet } from './ui'
 import HealthRating from './HealthRating'
+import AllergyNote from './AllergyNote'
 
 const SOURCE_NOTE: Record<Food['source'], string> = {
   builtin: 'From Plate’s food list',
@@ -140,6 +141,7 @@ export default function FoodDetail({
           </p>
         </div>
 
+        <AllergyNote health={food.health} />
         <HealthRating health={food.health} />
 
         <div className="rounded-[20px] bg-surface p-5">

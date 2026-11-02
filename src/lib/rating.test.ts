@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { healthFromOff, rateFood } from './rating'
+import { HEALTH_VERSION, healthFromOff, rateFood } from './rating'
 
 describe('Open Food Facts health fields', () => {
   it('reads Nutri-Score, NOVA group, nutrient levels and additives', () => {
@@ -11,6 +11,7 @@ describe('Open Food Facts health fields', () => {
         additives_n: 1,
       }),
     ).toEqual({
+      version: HEALTH_VERSION,
       nutriScore: 'e',
       nova: 4,
       levels: { fat: 'high', saturatedFat: 'high', sugars: 'high', salt: 'low' },
@@ -18,10 +19,34 @@ describe('Open Food Facts health fields', () => {
     })
   })
 
+  it('reads allergens, diet and categories', () => {
+    expect(
+      healthFromOff({
+        allergens_tags: ['en:milk', 'en:nuts'],
+        traces_tags: ['en:gluten'],
+        ingredients_analysis_tags: ['en:non-vegan', 'en:vegetarian'],
+        categories_tags: ['en:breakfasts', 'en:spreads', 'fr:pates', 'en:sweet-spreads', 'en:hazelnut-spreads', 'en:cocoa-and-hazelnuts-spreads'],
+        compared_to_category: 'en:hazelnut-spreads',
+      }),
+    ).toEqual({
+      version: HEALTH_VERSION,
+      allergens: ['milk', 'nuts'],
+      traces: ['gluten'],
+      vegan: 'no',
+      vegetarian: 'yes',
+      categories: ['en:sweet-spreads', 'en:cocoa-and-hazelnuts-spreads', 'en:hazelnut-spreads'],
+    })
+  })
+
+  it('counts no allergens as none only when the ingredients are known', () => {
+    expect(healthFromOff({ allergens_tags: [], ingredients_n: 4 }).allergens).toEqual([])
+    expect(healthFromOff({ allergens_tags: [] }).allergens).toBeUndefined()
+  })
+
   it('leaves out what the product doesn’t have', () => {
-    expect(healthFromOff({ nutriscore_grade: 'unknown', nutrient_levels: {}, additives_n: null })).toEqual({})
-    expect(healthFromOff({ nutriscore_grade: 'not-applicable', nova_group: 7, nutrient_levels: { sugars: 'lots' } })).toEqual({})
-    expect(healthFromOff({ additives_n: 0 })).toEqual({ additives: 0 })
+    expect(healthFromOff({ nutriscore_grade: 'unknown', nutrient_levels: {}, additives_n: null })).toEqual({ version: HEALTH_VERSION })
+    expect(healthFromOff({ nutriscore_grade: 'not-applicable', nova_group: 7, nutrient_levels: { sugars: 'lots' } })).toEqual({ version: HEALTH_VERSION })
+    expect(healthFromOff({ additives_n: 0 })).toEqual({ version: HEALTH_VERSION, additives: 0 })
   })
 })
 

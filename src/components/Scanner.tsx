@@ -3,6 +3,7 @@ import { t } from '../lib/i18n'
 import { BarcodeDetector, prepareZXingModule } from 'barcode-detector/ponyfill'
 import wasmUrl from 'zxing-wasm/reader/zxing_reader.wasm?url'
 import { lookupBarcode } from '../lib/online'
+import { HEALTH_VERSION } from '../lib/rating'
 import { useStore } from '../lib/store'
 import type { Food } from '../lib/types'
 import { ErrorNote, Icon, Spinner } from './ui'
@@ -39,8 +40,8 @@ export default function Scanner({ onFound }: { onFound: (f: Food) => void }) {
     navigator.vibrate?.(40)
     try {
       const local = customFoods.find((f) => f.barcode === code) ?? entries.findLast((e) => e.food?.barcode === code)?.food
-      // Products logged before Plate showed health ratings are looked up again once to get them.
-      if (local && (local.source !== 'barcode' || local.health)) {
+      // Products saved by an older Plate are looked up again once to get the newer health details.
+      if (local && (local.source !== 'barcode' || local.health?.version === HEALTH_VERSION)) {
         onFound(local)
         return
       }

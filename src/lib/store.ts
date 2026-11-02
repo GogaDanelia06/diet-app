@@ -51,6 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
   geminiModel: 'gemini-3.8-flash',
   usdaKey: '',
   hiddenHealthWorkouts: [],
+  allergies: [],
 }
 
 export interface AppData {

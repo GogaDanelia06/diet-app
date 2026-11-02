@@ -1,7 +1,7 @@
 import { t } from './i18n'
 import { addDays, uid } from './date'
 import { normalize } from './search'
-import type { Meal, MealPlan, PlanDay, PlanItem, PlanMeal, PlanPrefs } from './types'
+import type { DietStyle, Meal, MealPlan, PlanDay, PlanItem, PlanMeal, PlanPrefs } from './types'
 
 export const DEFAULT_PLAN_PREFS: PlanPrefs = {
   diet: 'any',
@@ -11,6 +11,13 @@ export const DEFAULT_PLAN_PREFS: PlanPrefs = {
   avoid: '',
   days: 7,
 }
+
+export const DIETS: { value: DietStyle; label: string }[] = [
+  { value: 'any', label: 'Anything' },
+  { value: 'vegetarian', label: 'Vegetarian' },
+  { value: 'pescatarian', label: 'Fish, no meat' },
+  { value: 'vegan', label: 'Vegan' },
+]
 
 /** How the day's calories are shared between meals. */
 export function mealSlots(snacks: PlanPrefs['snacks'], targetKcal: number): { meal: Meal; kcal: number }[] {

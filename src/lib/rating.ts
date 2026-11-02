@@ -1,6 +1,14 @@
 import type { FoodHealth, NutrientLevel } from './types'
+import { allergensFromTags, dietStatus } from './allergens'
 
 export type Verdict = 'good' | 'okay' | 'limit'
+
+/** Raised when Plate starts reading more from Open Food Facts, so saved products are looked up again. */
+export const HEALTH_VERSION = 2
+
+/** The Open Food Facts fields healthFromOff reads. */
+export const OFF_HEALTH_FIELDS =
+  'nutriscore_grade,nova_group,nutrient_levels,additives_n,allergens_tags,traces_tags,ingredients_n,ingredients_analysis_tags,categories_tags,compared_to_category'
 
 const NUTRI_GRADES = ['a', 'b', 'c', 'd', 'e'] as const
 const LEVELS: readonly NutrientLevel[] = ['low', 'moderate', 'high']
@@ -23,7 +31,26 @@ export function healthFromOff(p: Record<string, unknown>): FoodHealth {
   if (Object.keys(levels).length) health.levels = levels
   const additives = Number(p.additives_n)
   if (p.additives_n != null && Number.isInteger(additives) && additives >= 0) health.additives = additives
-  return health
+  // No allergens means none only when Open Food Facts knows the ingredients.
+  const allergens = allergensFromTags(p.allergens_tags)
+  if (allergens.length || Number(p.ingredients_n) > 0) health.allergens = allergens
+  const traces = allergensFromTags(p.traces_tags)
+  if (traces.length) health.traces = traces
+  const vegan = dietStatus(p.ingredients_analysis_tags, 'vegan')
+  if (vegan) health.vegan = vegan
+  const vegetarian = dietStatus(p.ingredients_analysis_tags, 'vegetarian')
+  if (vegetarian) health.vegetarian = vegetarian
+  const categories = productCategories(p)
+  if (categories.length) health.categories = categories
+  return { version: HEALTH_VERSION, ...health }
+}
+
+/** The product's most specific categories, ending with the one Open Food Facts compares it against. */
+function productCategories(p: Record<string, unknown>): string[] {
+  const tags = (Array.isArray(p.categories_tags) ? p.categories_tags : []).filter((c): c is string => typeof c === 'string' && c.startsWith('en:'))
+  const compared = typeof p.compared_to_category === 'string' && p.compared_to_category.startsWith('en:') ? p.compared_to_category : undefined
+  const ordered = compared ? [...tags.filter((c) => c !== compared), compared] : tags
+  return ordered.slice(-3)
 }
 
 const BY_GRADE: Record<NonNullable<FoodHealth['nutriScore']>, Verdict> = { a: 'good', b: 'good', c: 'okay', d: 'limit', e: 'limit' }
