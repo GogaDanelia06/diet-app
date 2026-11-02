@@ -83,7 +83,8 @@ export default function App() {
     syncReminders()
     let timer = 0
     const unsubscribe = useStore.subscribe((st, prev) => {
-      if (st.entries === prev.entries && st.settings === prev.settings && st.water === prev.water && st.fasting === prev.fasting) return
+      const same = st.entries === prev.entries && st.settings === prev.settings && st.water === prev.water && st.fasting === prev.fasting
+      if (same && st.exercises === prev.exercises && st.workoutPrefs === prev.workoutPrefs) return
       window.clearTimeout(timer)
       timer = window.setTimeout(syncReminders, 1500)
     })

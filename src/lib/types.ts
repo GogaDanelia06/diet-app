@@ -141,6 +141,8 @@ export interface ReminderSettings {
   water: boolean
   /** When the fasting timer reaches its goal. */
   fasting: boolean
+  /** At the workout plan's time on workout days. */
+  workout?: boolean
 }
 
 export interface WeightLog {

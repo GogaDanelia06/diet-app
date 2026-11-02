@@ -40,3 +40,22 @@ describe('reminders', () => {
     expect(planReminders({ ...base, settings: { ...settings, meals: false }, now: new Date(2026, 10, 2, 7, 0) })).toEqual([])
   })
 })
+
+describe('workout reminders', () => {
+  const workouts = [
+    { date: '2026-11-02', time: '18:00', title: 'Full-body strength A', minutes: 30 },
+    { date: '2026-11-04', time: '18:00', title: 'Brisk walk', minutes: 30 },
+  ]
+  it('reminds at the workout time on workout days', () => {
+    const plan = planReminders({ ...base, settings: { ...settings, meals: false, workout: true }, now: new Date(2026, 10, 2, 12, 0), workouts })
+    expect(plan).toEqual([
+      { id: 4000, at: new Date(2026, 10, 2, 18, 0), kind: 'workout', title: 'Full-body strength A', minutes: 30 },
+      { id: 4002, at: new Date(2026, 10, 4, 18, 0), kind: 'workout', title: 'Brisk walk', minutes: 30 },
+    ])
+  })
+
+  it('skips them when turned off or already past', () => {
+    expect(planReminders({ ...base, settings: { ...settings, meals: false }, now: new Date(2026, 10, 2, 12, 0), workouts })).toEqual([])
+    expect(planReminders({ ...base, settings: { ...settings, meals: false, workout: true }, now: new Date(2026, 10, 2, 19, 0), workouts })).toHaveLength(1)
+  })
+})

@@ -6,6 +6,7 @@ import { caloriePlan, macroTargets, scaleNutrients, sumNutrients, toPer100 } fro
 import { aiItemToFood } from './ai'
 import { DEFAULT_PLAN_PREFS } from './plan'
 import type { WorkoutPrefs } from './workouts'
+import type { ActiveWorkout, WorkoutLog, finishWorkout } from './training'
 import { stepsKcal } from './exercises'
 import { baselineActiveKcal } from './health'
 import { defaultDashboard, discardLegacyDashboardStorage, normalizeDashboard } from './dashboard'
@@ -82,11 +83,15 @@ export interface AppData {
   dashboard: DashboardState
   /** Choices for the weekly workout plan; null until the person makes one. */
   workoutPrefs: WorkoutPrefs | null
+  /** The workout being done right now, if any. */
+  activeWorkout: ActiveWorkout | null
+  /** Finished workouts with their sets, oldest first. */
+  workoutLog: WorkoutLog[]
 }
 
 const DATA_KEYS = [
   'profile', 'settings', 'entries', 'customFoods', 'recipes', 'favorites', 'weights', 'water', 'exercises',
-  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports', 'deviceActivity', 'dashboard', 'workoutPrefs',
+  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports', 'deviceActivity', 'dashboard', 'workoutPrefs', 'activeWorkout', 'workoutLog',
 ] as const satisfies readonly (keyof AppData)[]
 
 function pickData(st: AppData): AppData {
@@ -116,6 +121,10 @@ interface Actions {
   importHealthWorkouts: (date: string, workouts: ExerciseLog[]) => void
   setPlanPrefs: (p: Partial<PlanPrefs>) => void
   setWorkoutPrefs: (p: WorkoutPrefs | null) => void
+  setActiveWorkout: (w: ActiveWorkout | null) => void
+  updateActiveWorkout: (change: (w: ActiveWorkout) => ActiveWorkout) => void
+  /** Logs a finished workout as the day's exercise and keeps its sets in the history. */
+  saveWorkout: (done: ReturnType<typeof finishWorkout>) => void
   setMealPlan: (plan: MealPlan | null) => void
   replacePlanMeal: (date: string, mealId: string, meal: PlanMeal) => void
   logPlanMeal: (date: string, mealId: string) => void
@@ -153,6 +162,8 @@ const EMPTY: AppData = {
   exercises: [],
   planPrefs: DEFAULT_PLAN_PREFS,
   workoutPrefs: null,
+  activeWorkout: null,
+  workoutLog: [],
   mealPlan: null,
   steps: {},
   fasting: { active: null, history: [] },
@@ -235,6 +246,8 @@ export const useStore = create<AppData & Actions>()(
       removeExercise: (id) =>
         setState((st) => ({
           exercises: st.exercises.filter((x) => x.id !== id),
+          // A finished workout goes with its diary exercise.
+          workoutLog: st.workoutLog.filter((w) => w.exerciseLogId !== id),
           // A deleted Apple Health workout stays deleted when Health is read again.
           ...(id.startsWith(HEALTH_WORKOUT) ? { settings: { ...st.settings, hiddenHealthWorkouts: [...st.settings.hiddenHealthWorkouts, id] } } : {}),
         })),
@@ -247,6 +260,13 @@ export const useStore = create<AppData & Actions>()(
         })),
       setPlanPrefs: (p) => setState((st) => ({ planPrefs: { ...st.planPrefs, ...p } })),
       setWorkoutPrefs: (workoutPrefs) => setState({ workoutPrefs }),
+      setActiveWorkout: (activeWorkout) => setState({ activeWorkout }),
+      updateActiveWorkout: (change) => setState((st) => (st.activeWorkout ? { activeWorkout: change(st.activeWorkout) } : {})),
+      saveWorkout: (done) =>
+        setState((st) => {
+          const id = uid()
+          return { exercises: [...st.exercises, { ...done.exercise, id }], workoutLog: [...st.workoutLog, done.log(id)], activeWorkout: null }
+        }),
       setMealPlan: (mealPlan) => setState({ mealPlan }),
       replacePlanMeal: (date, mealId, meal) =>
         setState((st) => (st.mealPlan ? { mealPlan: mapPlanMeal(st.mealPlan, date, mealId, () => meal) } : {})),

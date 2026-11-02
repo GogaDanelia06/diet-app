@@ -419,12 +419,13 @@ function AllergyCard() {
 
 function RemindersCard() {
   const reminders = useStore((s) => s.settings.reminders)
+  const workoutTime = useStore((s) => s.workoutPrefs?.time)
   const updateSettings = useStore((s) => s.updateSettings)
   const [error, setError] = useState('')
   const native = isNativeApp()
   const set = (r: Partial<ReminderSettings>) => updateSettings({ reminders: { ...reminders, ...r } })
 
-  async function toggle(key: 'meals' | 'water' | 'fasting', on: boolean) {
+  async function toggle(key: 'meals' | 'water' | 'fasting' | 'workout', on: boolean) {
     setError('')
     if (on && (await allowReminders()) !== 'granted') {
       setError(t('Notifications are off for Plate. Turn them on in Settings → Notifications → Plate.'))
@@ -459,6 +460,12 @@ function RemindersCard() {
             </div>
           )}
           <Toggle label={t('Water reminders')} hint={t('At {times}, until you reach your water goal.', { times: WATER_TIMES.join(', ') })} checked={reminders.water} onChange={(on) => toggle('water', on)} />
+          <Toggle
+            label={t('Workout reminders')}
+            hint={workoutTime ? t('At {time} on workout days, unless it’s done.', { time: workoutTime }) : t('Set a workout time in Workouts → Change plan first.')}
+            checked={!!reminders.workout}
+            onChange={(on) => toggle('workout', on)}
+          />
           <Toggle label={t('Fast finished')} hint={t('When your fasting timer reaches its goal.')} checked={reminders.fasting} onChange={(on) => toggle('fasting', on)} />
           {error && <ErrorNote>{error}</ErrorNote>}
         </>

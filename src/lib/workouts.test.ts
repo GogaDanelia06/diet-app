@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { KA } from './i18n-ka'
 import { KA_NAMES } from './i18n-ka-names'
-import { buildWeek, fuelPicks, sessionKcal, workoutGoal, type Goal, type Level, type Place, type WorkoutPrefs } from './workouts'
+import { MOVE_LIBRARY, buildWeek, fuelPicks, sessionKcal, workoutGoal, type Goal, type Level, type Place, type WorkoutPrefs } from './workouts'
 
 const prefs = (p: Partial<WorkoutPrefs> = {}): WorkoutPrefs => ({ place: 'home', days: 3, minutes: 30, level: 'beginner', ...p })
 const titles = (goal: Goal, p: Partial<WorkoutPrefs> = {}) => buildWeek(prefs(p), goal).map((s) => s?.title ?? '-')
@@ -77,5 +77,10 @@ describe('Georgian', () => {
               }
             }
     expect([...missing]).toEqual([])
+  })
+
+  it('has every exercise that can be added to a workout', () => {
+    expect(MOVE_LIBRARY.flatMap((m) => [m.name, m.cue]).filter((text) => !KA[text])).toEqual([])
+    expect(KA_NAMES['Custom workout']).toBeTruthy()
   })
 })

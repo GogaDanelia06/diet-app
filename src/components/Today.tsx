@@ -4,6 +4,8 @@ import { kcal, num } from '../lib/format'
 import { locale, t, tName } from '../lib/i18n'
 import { currentWeight, useDay, useStore, useTargets } from '../lib/store'
 import { buildWeek, sessionKcal, weekdayIndex, workoutGoal } from '../lib/workouts'
+import { clock } from '../lib/training'
+import { useNow } from './ActiveWorkout'
 import { toPer100 } from '../lib/calc'
 import { mealTotals } from '../lib/plan'
 import { logStreak } from '../lib/insights'
@@ -511,6 +513,28 @@ function WaterCard({ date }: { date: string }) {
 
 /** Today's session from the workout plan, until it's done; or a nudge to make a plan. */
 function PlannedWorkout({ onOpen }: { onOpen: () => void }) {
+  const active = useStore((s) => s.activeWorkout)
+  if (active) return <RunningWorkout title={active.title} startedAt={active.startedAt} onOpen={onOpen} />
+  return <NextWorkout onOpen={onOpen} />
+}
+
+function RunningWorkout({ title, startedAt, onOpen }: { title: string; startedAt: number; onOpen: () => void }) {
+  const now = useNow(1000)
+  return (
+    <button onClick={onOpen} className="mt-3 flex w-full items-center gap-3 rounded-2xl bg-accent px-3 py-2.5 text-left text-accent-ink">
+      <Icon name="bolt" className="h-6 w-6 shrink-0" />
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">{t('Workout in progress')}</span>
+        <span className="block truncate text-xs opacity-80">
+          {tName(title)} · {clock(now - startedAt)}
+        </span>
+      </span>
+      <span className="text-sm font-semibold">{t('Resume')}</span>
+    </button>
+  )
+}
+
+function NextWorkout({ onOpen }: { onOpen: () => void }) {
   const prefs = useStore((s) => s.workoutPrefs)
   const profile = useStore((s) => s.profile)!
   const weight = useStore((s) => currentWeight(s))
