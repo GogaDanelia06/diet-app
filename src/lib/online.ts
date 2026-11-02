@@ -1,11 +1,12 @@
 import { t } from './i18n'
 import type { Food, Nutrients, Serving } from './types'
+import { healthFromOff } from './rating'
 
 const round1 = (n: number) => Math.round(n * 10) / 10
 
 /** Looks up a packaged product by barcode in Open Food Facts. Returns null if not found. */
 export async function lookupBarcode(code: string): Promise<Food | null> {
-  const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,product_name_en,brands,nutriments,serving_quantity,serving_size,quantity`
+  const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,product_name_en,brands,nutriments,serving_quantity,serving_size,quantity,nutriscore_grade,nova_group,nutrient_levels,additives_n`
   const res = await fetch(url)
   if (res.status === 404) return null
   if (!res.ok) throw new Error(t('Open Food Facts answered {s}. Try again in a minute.', { s: res.status }))
@@ -37,6 +38,7 @@ export async function lookupBarcode(code: string): Promise<Food | null> {
     servings,
     source: 'barcode',
     barcode: code,
+    health: healthFromOff(p),
   }
 }
 

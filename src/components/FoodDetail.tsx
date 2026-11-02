@@ -5,6 +5,7 @@ import { grams as fmtGrams, kcal, macro, num } from '../lib/format'
 import { useStore } from '../lib/store'
 import { MEALS, type DiaryEntry, type Food, type Meal } from '../lib/types'
 import { Icon, Segmented, Sheet } from './ui'
+import HealthRating from './HealthRating'
 
 const SOURCE_NOTE: Record<Food['source'], string> = {
   builtin: 'From Plate’s food list',
@@ -138,6 +139,8 @@ export default function FoodDetail({
             {t(SOURCE_NOTE[food.source])}
           </p>
         </div>
+
+        <HealthRating health={food.health} />
 
         <div className="rounded-[20px] bg-surface p-5">
           <div className="flex items-baseline gap-2">

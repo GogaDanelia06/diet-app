@@ -39,12 +39,20 @@ export default function Scanner({ onFound }: { onFound: (f: Food) => void }) {
     navigator.vibrate?.(40)
     try {
       const local = customFoods.find((f) => f.barcode === code) ?? entries.findLast((e) => e.food?.barcode === code)?.food
-      if (local) {
+      // Products logged before Plate showed health ratings are looked up again once to get them.
+      if (local && (local.source !== 'barcode' || local.health)) {
         onFound(local)
         return
       }
       setStatus({ kind: 'looking', code })
-      const food = await lookupBarcode(code)
+      let food: Food | null
+      try {
+        food = await lookupBarcode(code)
+      } catch (e) {
+        if (!local) throw e
+        food = null
+      }
+      food ??= local ?? null
       if (food) {
         setStatus({ kind: 'idle' })
         onFound(food)

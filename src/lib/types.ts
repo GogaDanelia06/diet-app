@@ -38,6 +38,18 @@ export interface Food {
   servings: Serving[]
   source: FoodSource
   barcode?: string
+  /** Health ratings Open Food Facts has for a packaged product; empty when it has none. */
+  health?: FoodHealth
+}
+
+export type NutrientLevel = 'low' | 'moderate' | 'high'
+
+export interface FoodHealth {
+  nutriScore?: 'a' | 'b' | 'c' | 'd' | 'e'
+  /** NOVA processing group: 1 unprocessed … 4 ultra-processed. */
+  nova?: 1 | 2 | 3 | 4
+  levels?: Partial<Record<'sugars' | 'salt' | 'fat' | 'saturatedFat', NutrientLevel>>
+  additives?: number
 }
 
 export interface DiaryEntry {
