@@ -7,6 +7,7 @@ import { MEALS, type DiaryEntry, type Food, type Meal } from '../lib/types'
 import { Icon, Segmented, Sheet } from './ui'
 import HealthRating from './HealthRating'
 import AllergyNote from './AllergyNote'
+import Alternatives from './Alternatives'
 
 const SOURCE_NOTE: Record<Food['source'], string> = {
   builtin: 'From Plate’s food list',
@@ -69,6 +70,8 @@ export default function FoodDetail({
   const [unit, setUnit] = useState(init.unit)
   const [qty, setQty] = useState(init.qty)
   const [meal, setMeal] = useState<Meal>(initialMeal)
+  // A better-rated product opened from this one, shown on top.
+  const [better, setBetter] = useState<Food | null>(null)
 
   const q = num(qty)
   const totalGrams = unit === GRAMS ? q : q * (food.servings[unit]?.grams ?? 0)
@@ -197,11 +200,26 @@ export default function FoodDetail({
           </div>
         )}
 
+        {!entry && <Alternatives health={food.health} exclude={food.barcode} onOpen={setBetter} />}
+
         {!isQuick && <p className="text-sm text-muted">
           Per 100 g: {kcal(food.per100.kcal)} kcal · {macro(food.per100.protein)} g protein · {macro(food.per100.carbs)} g carbs · {macro(food.per100.fat)} g fat
           {food.per100.fiber ? ` · ${macro(food.per100.fiber)} g fiber` : ''}
         </p>}
       </div>
+      {better && (
+        <FoodDetail
+          food={better}
+          date={date}
+          initialMeal={meal}
+          onPick={onPick}
+          onClose={() => setBetter(null)}
+          onDone={() => {
+            onDone?.()
+            onClose()
+          }}
+        />
+      )}
     </Sheet>
   )
 }

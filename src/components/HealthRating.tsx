@@ -9,13 +9,8 @@ const VERDICT: Record<Verdict, { label: string; color: string }> = {
 }
 
 // The colours printed on Nutri-Score labels, so the scale looks like the one on the pack.
-const GRADES = [
-  ['a', '#038141'],
-  ['b', '#85bb2f'],
-  ['c', '#fecb02'],
-  ['d', '#ee8100'],
-  ['e', '#e63e11'],
-] as const
+export const NUTRI_COLORS = { a: '#038141', b: '#85bb2f', c: '#fecb02', d: '#ee8100', e: '#e63e11' } as const
+const GRADES = Object.entries(NUTRI_COLORS) as [keyof typeof NUTRI_COLORS, string][]
 
 const NOVA: Record<1 | 2 | 3 | 4, { label: string; dot: string }> = {
   1: { label: 'Unprocessed or minimally processed', dot: 'bg-accent' },

@@ -768,4 +768,13 @@ export const KA: Record<string, string> = {
   "Plate doesn’t know this product’s ingredients. Check the pack for allergens.": "Plate-მა ამ პროდუქტის შემადგენლობა არ იცის. ალერგენები შეფუთვაზე შეამოწმე.",
   "Nothing from your allergy and diet list.": "შენი ალერგიისა და რეჟიმის სიიდან არაფერია.",
   "Allergens: {list}.": "ალერგენები: {list}.",
+
+  // Better alternatives
+  "Better choices": "უკეთესი არჩევანი",
+  "Looking for better-rated products…": "უკეთესი შეფასების პროდუქტებს ვეძებ…",
+  "Couldn’t load better choices.": "უკეთესი ვარიანტები ვერ ჩაიტვირთა.",
+  "Try again": "თავიდან ცდა",
+  "Loading": "იტვირთება",
+  "That product has no nutrition data yet.": "ამ პროდუქტს კვებითი მონაცემები ჯერ არ აქვს.",
+  "Similar products rated A or B. They may not be sold near you.": "მსგავსი პროდუქტები A ან B შეფასებით. შეიძლება შენთან ახლოს არ იყიდებოდეს.",
 }

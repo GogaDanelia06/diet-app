@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HEALTH_VERSION, healthFromOff, rateFood } from './rating'
+import { HEALTH_VERSION, healthFromOff, rateFood, shouldSuggestAlternatives } from './rating'
 
 describe('Open Food Facts health fields', () => {
   it('reads Nutri-Score, NOVA group, nutrient levels and additives', () => {
@@ -77,5 +77,21 @@ describe('rating a product', () => {
     expect(rateFood(undefined)).toBeNull()
     expect(rateFood({})).toBeNull()
     expect(rateFood({ nova: 1, additives: 0 })).toBeNull()
+  })
+})
+
+describe('when to suggest better products', () => {
+  const categories = ['en:spreads']
+  it('suggests them for C or worse, or a poor rating without a Nutri-Score', () => {
+    expect(shouldSuggestAlternatives({ nutriScore: 'c', categories })).toBe(true)
+    expect(shouldSuggestAlternatives({ nutriScore: 'e', categories })).toBe(true)
+    expect(shouldSuggestAlternatives({ nutriScore: 'b', categories })).toBe(false)
+    expect(shouldSuggestAlternatives({ levels: { sugars: 'high', fat: 'high' }, categories })).toBe(true)
+    expect(shouldSuggestAlternatives({ levels: { sugars: 'low', fat: 'low' }, categories })).toBe(false)
+  })
+
+  it('needs a category to search in', () => {
+    expect(shouldSuggestAlternatives({ nutriScore: 'e' })).toBe(false)
+    expect(shouldSuggestAlternatives(undefined)).toBe(false)
   })
 })

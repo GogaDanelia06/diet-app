@@ -73,3 +73,9 @@ export function rateFood(h: FoodHealth | undefined): Verdict | null {
   if (verdict === 'good' && h.nova === 4) verdict = 'okay'
   return verdict
 }
+
+/** Whether to look for better products: rated C or worse, or "limit" without a Nutri-Score, and with a category to search. */
+export function shouldSuggestAlternatives(h: FoodHealth | undefined): boolean {
+  if (!h?.categories?.length) return false
+  return h.nutriScore ? ['c', 'd', 'e'].includes(h.nutriScore) : rateFood(h) === 'limit'
+}

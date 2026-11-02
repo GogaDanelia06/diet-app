@@ -1,5 +1,5 @@
 import { t } from './i18n'
-import type { Food, Nutrients, Serving } from './types'
+import type { Food, FoodHealth, Nutrients, Serving } from './types'
 import { OFF_HEALTH_FIELDS, healthFromOff } from './rating'
 
 const round1 = (n: number) => Math.round(n * 10) / 10
@@ -40,6 +40,66 @@ export async function lookupBarcode(code: string): Promise<Food | null> {
     barcode: code,
     health: healthFromOff(p),
   }
+}
+
+export interface Alternative {
+  code: string
+  name: string
+  brand?: string
+  nutriScore: 'a' | 'b'
+  image?: string
+}
+
+/** Products from an Open Food Facts search answer that are rated `grade`, leaving out the scanned one. */
+export function parseAlternatives(data: unknown, grade: 'a' | 'b', exclude?: string): Alternative[] {
+  const products = (data as { products?: Record<string, unknown>[] } | null)?.products
+  if (!Array.isArray(products)) return []
+  const out: Alternative[] = []
+  for (const p of products) {
+    const code = String(p.code ?? '')
+    const name = String(p.product_name || p.product_name_en || '').trim()
+    if (!code || code === exclude || !name || p.nutriscore_grade !== grade) continue
+    const brand = typeof p.brands === 'string' ? p.brands.split(',')[0].trim() : ''
+    const image = typeof p.image_front_small_url === 'string' && p.image_front_small_url.startsWith('https://') ? p.image_front_small_url : undefined
+    out.push({ code, name, brand: brand || undefined, nutriScore: grade, image })
+  }
+  return out
+}
+
+const alternativesCache = new Map<string, Alternative[]>()
+
+/**
+ * Better-rated products in the same category: Nutri-Score A first, then B, most popular first.
+ * Tries the product's most specific category, then the one above it. Searches are slow and
+ * sometimes fail on Open Food Facts' side, so results are kept for the session.
+ */
+export async function findAlternatives(health: FoodHealth, exclude?: string, want = 5): Promise<Alternative[]> {
+  const categories = (health.categories ?? []).slice(-2).reverse()
+  const key = `${categories[0]}|${exclude}`
+  const cached = alternativesCache.get(key)
+  if (cached) return cached
+  const found: Alternative[] = []
+  for (const category of categories) {
+    for (const grade of ['a', 'b'] as const) {
+      const params = new URLSearchParams({
+        categories_tags: category,
+        nutrition_grades_tags: grade,
+        fields: 'code,product_name,product_name_en,brands,nutriscore_grade,image_front_small_url',
+        sort_by: 'popularity_key',
+        page_size: String(want * 2),
+      })
+      const res = await fetch(`https://world.openfoodfacts.org/api/v2/search?${params}`)
+      if (!res.ok) throw new Error(t('Open Food Facts answered {s}. Try again in a minute.', { s: res.status }))
+      for (const alt of parseAlternatives(await res.json(), grade, exclude)) {
+        if (!found.some((f) => f.code === alt.code)) found.push(alt)
+      }
+      if (found.length >= want) break
+    }
+    if (found.length >= 3) break
+  }
+  const result = found.slice(0, want)
+  alternativesCache.set(key, result)
+  return result
 }
 
 interface UsdaNutrient {
