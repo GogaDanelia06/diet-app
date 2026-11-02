@@ -6,7 +6,9 @@ import { useDay, useStore, useTargets } from '../lib/store'
 import { toPer100 } from '../lib/calc'
 import { mealTotals } from '../lib/plan'
 import { logStreak } from '../lib/insights'
-import { MEAL_ICON, MEALS, type DiaryEntry, type Meal, type Nutrients } from '../lib/types'
+import { MEAL_ICON, MEALS, type DiaryEntry, type Food, type Meal, type Nutrients } from '../lib/types'
+import { dayQuality, foodVerdict } from '../lib/rating'
+import { VERDICT } from './HealthRating'
 import { Card, Field, Icon, Sheet } from './ui'
 import type { AddFoodMode } from './AddFood'
 import FoodDetail from './FoodDetail'
@@ -109,6 +111,7 @@ export default function Today({ date, setDate, onAdd, onOpenCoach }: {
       <div className="dashboard-columns">
         <div className="diary-column">
           <div className="section-heading"><div><span className="eyebrow">{t('ONE MEAL AT A TIME')}</span><h2>{t('Food diary')}</h2></div><button onClick={() => onAdd(meal)} className="text-action"><Icon name="plus" className="h-4 w-4" />{t('Add food')}</button></div>
+          <FoodQuality entries={day.entries} />
           <div className="diary-meals">{MEALS.map((m) => <MealCard key={m.id} date={date} meal={m.id} label={t(m.label)} entries={day.entries.filter((e) => e.meal === m.id)} onAdd={() => onAdd(m.id)} onOpen={setEditing} />)}</div>
           <div className="section-heading habit-heading"><div><span className="eyebrow">{t('BEYOND THE PLATE')}</span><h2>{t('Your daily rhythm')}</h2></div><span className="subtle-label">{t('A little care goes a long way')}</span></div>
           <WaterCard key={date} date={date} />
@@ -226,11 +229,14 @@ function MealCard({
             <li key={e.id}>
               <button
                 onClick={() => onOpen(e)}
-                aria-label={`${tName(e.name)}, ${e.amountLabel}, ${kcal(e.nutrients.kcal)} kcal`}
+                aria-label={[tName(e.name), e.amountLabel, `${kcal(e.nutrients.kcal)} kcal`, verdictLabel(e.food)].filter(Boolean).join(', ')}
                 className="flex w-full items-center gap-3 py-2.5 text-left"
               >
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{tName(e.name)}</div>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-medium">{tName(e.name)}</span>
+                    <VerdictDot food={e.food} />
+                  </div>
                   <div className="truncate text-sm text-muted">
                     {e.brand ? `${e.brand}, ` : ''}
                     {e.amountLabel}
@@ -276,6 +282,47 @@ function MealCard({
     </>
   )
 }
+
+const verdictLabel = (food?: Food) => {
+  const verdict = foodVerdict(food)
+  return verdict ? t(VERDICT[verdict].label) : ''
+}
+
+/** A small dot in the diary showing whether a food is a good pick; nothing for quick-add calories. */
+function VerdictDot({ food }: { food?: Food }) {
+  const verdict = foodVerdict(food)
+  if (!verdict) return null
+  return <span className={`h-2 w-2 shrink-0 rounded-full ${VERDICT[verdict].dot}`} aria-hidden="true" />
+}
+
+/** How much of the day's food was a good pick, by calories. */
+function FoodQuality({ entries }: { entries: DiaryEntry[] }) {
+  const q = dayQuality(entries)
+  if (!q.total) return null
+  const pct = (n: number) => (n / q.total) * 100
+  const parts = (['good', 'okay', 'limit'] as const).filter((v) => q[v] > 0)
+  return (
+    <Card className="mb-3 space-y-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <h3 className="font-display text-lg font-semibold">{t('Food quality')}</h3>
+        <span className="text-sm text-muted">{t('{n}% from good choices', { n: Math.round(pct(q.good)) })}</span>
+      </div>
+      <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full" role="img" aria-label={parts.map((v) => `${t(QUALITY_LABEL[v])} ${Math.round(pct(q[v]))}%`).join(', ')}>
+        {parts.map((v) => <span key={v} className={VERDICT[v].dot} style={{ width: `${pct(q[v])}%` }} />)}
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        {parts.map((v) => (
+          <span key={v} className="flex items-center gap-1.5">
+            <i className={`h-2 w-2 rounded-full ${VERDICT[v].dot}`} />
+            {t(QUALITY_LABEL[v])} <span className="num text-muted">{kcal(q[v])} {t('kcal')}</span>
+          </span>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
+const QUALITY_LABEL = { good: 'Good', okay: 'Moderate', limit: 'Limit' } as const
 
 function SaveMealSheet({ entries, defaultName, onClose }: { entries: DiaryEntry[]; defaultName: string; onClose: () => void }) {
   const saveMeal = useStore((s) => s.saveMeal)

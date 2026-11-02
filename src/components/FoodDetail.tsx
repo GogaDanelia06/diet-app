@@ -145,7 +145,7 @@ export default function FoodDetail({
         </div>
 
         <AllergyNote health={food.health} />
-        <HealthRating health={food.health} />
+        <HealthRating food={food} />
 
         <div className="rounded-[20px] bg-surface p-5">
           <div className="flex items-baseline gap-2">
