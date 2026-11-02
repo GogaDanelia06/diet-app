@@ -1027,4 +1027,11 @@ export const KA: Record<string, string> = {
   "Curl your heels toward your glutes, then lower slowly.": "ქუსლები დუნდულებისკენ მოხარე, შემდეგ ნელა დაუშვი.",
   "Straighten your knees fully, then lower slowly.": "მუხლები ბოლომდე გაშალე, შემდეგ ნელა დაუშვი.",
   "Rise high onto your toes, pause, then lower all the way.": "ფეხის თითებზე მაღლა აიწიე, შეჩერდი, შემდეგ ბოლომდე ჩამოდი.",
+
+  // Automatic Apple Health
+  "For each day’s final numbers without a tap: in Shortcuts open Automation, tap +, choose Time of Day, pick a time you usually have your phone, like 22:00, set it to Daily and Run Immediately, and choose the Plate shortcut.":
+    "დღის საბოლოო ციფრებისთვის შეხების გარეშე: Shortcuts-ში გახსენი Automation, დააჭირე +, აირჩიე Time of Day, დრო, როცა ტელეფონი ჩვეულებრივ ხელთ გაქვს, მაგალითად 22:00, დააყენე Daily და Run Immediately და აირჩიე Plate-ის shortcut.",
+  "Fully automatic, with no Shortcut": "სრულად ავტომატურად, Shortcut-ის გარეშე",
+  "Plate’s iPhone app reads Apple Health by itself whenever you open it, and catches up on the days you didn’t. It’s free to put on your own iPhone from a Mac with Xcode; the steps are in the project’s README, under Install the iPhone app.":
+    "Plate-ის iPhone აპი Apple Health-ს თავად კითხულობს ყოველ გახსნაზე და ავსებს იმ დღეებსაც, როცა არ გაგიხსნია. საკუთარ iPhone-ზე მისი დაყენება უფასოა Mac-იდან Xcode-ით; ნაბიჯები პროექტის README-შია, განყოფილებაში Install the iPhone app.",
 }

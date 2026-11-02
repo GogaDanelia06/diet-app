@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from '@capacitor/core'
 import { HEALTH_WORKOUT, useStore } from './store'
+import { addDays, dateKey } from './date'
 import type { DeviceDay, ExerciseLog } from './types'
 
 export interface HealthWorkout {
@@ -66,5 +67,29 @@ export async function syncAppleHealth(dates: string[]): Promise<HealthDay | null
     if (u.weightKg) st.logWeight(date, u.weightKg)
     last = day
   }
+  return last
+}
+
+/** How far back the first read goes, and the most a later read catches up. */
+const FIRST_DAYS = 7
+const MAX_DAYS = 14
+
+/**
+ * The days to read: from the last day read (again, since its totals were still growing) to today,
+ * at most two weeks; the first time, the past week.
+ */
+export function healthDaysToSync(last: string | undefined, today: string): string[] {
+  const oldest = addDays(today, -(MAX_DAYS - 1))
+  const from = !last ? addDays(today, -(FIRST_DAYS - 1)) : last < oldest ? oldest : last > today ? today : last
+  const days: string[] = []
+  for (let d = from; d <= today; d = addDays(d, 1)) days.push(d)
+  return days
+}
+
+/** Reads every day since the last read, so days the app wasn't opened fill in by themselves. */
+export async function autoSyncAppleHealth(): Promise<HealthDay | null> {
+  const today = dateKey()
+  const last = await syncAppleHealth(healthDaysToSync(useStore.getState().settings.healthSyncedThrough, today))
+  if (last) useStore.getState().updateSettings({ healthSyncedThrough: today })
   return last
 }

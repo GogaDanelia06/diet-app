@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { healthDayUpdates } from './nativeHealth'
+import { healthDayUpdates, healthDaysToSync } from './nativeHealth'
 import { useStore } from './store'
 
 vi.mock('idb-keyval', () => ({
@@ -33,5 +33,23 @@ describe('Apple Health in the iPhone app', () => {
     removeExercise('hk-A1')
     importHealthWorkouts('2026-10-30', workouts)
     expect(useStore.getState().exercises.map((e) => e.name)).toEqual(['Padel'])
+  })
+})
+
+describe('catching up on Apple Health', () => {
+  it('reads the past week the first time', () => {
+    expect(healthDaysToSync(undefined, '2026-11-02')).toEqual(['2026-10-27', '2026-10-28', '2026-10-29', '2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02'])
+  })
+
+  it('reads again from the last day read, so its final totals land', () => {
+    expect(healthDaysToSync('2026-11-02', '2026-11-02')).toEqual(['2026-11-02'])
+    expect(healthDaysToSync('2026-10-30', '2026-11-02')).toEqual(['2026-10-30', '2026-10-31', '2026-11-01', '2026-11-02'])
+  })
+
+  it('catches up at most two weeks', () => {
+    const days = healthDaysToSync('2026-08-01', '2026-11-02')
+    expect(days).toHaveLength(14)
+    expect(days[0]).toBe('2026-10-20')
+    expect(healthDaysToSync('2026-12-01', '2026-11-02')).toEqual(['2026-11-02'])
   })
 })

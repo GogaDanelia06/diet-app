@@ -29,6 +29,7 @@ const AUTO_STEPS = [
   'From now on, open Plate with that icon. Each time, today’s steps and calories come in by themselves, with nothing to tap or paste.',
   'Moving from the old Plate icon? In it, open Me → Backup → Save backup. Then open Plate with the new icon, go to Me → Backup → Restore and pick that file. After that you can remove the old icon.',
   'Each opening adds a Safari tab. In Settings → Apps → Safari → Close Tabs, choose After One Day so old tabs tidy themselves away.',
+  'For each day’s final numbers without a tap: in Shortcuts open Automation, tap +, choose Time of Day, pick a time you usually have your phone, like 22:00, set it to Daily and Run Immediately, and choose the Plate shortcut.',
 ]
 
 /** "8,412 steps · 512 active kcal · 1 workout" for a day read from Apple Health. */
@@ -161,6 +162,12 @@ export function WatchGuide() {
         <a href={logo} target="_blank" rel="noreferrer" className="btn btn-quiet w-full">{t('Open the Plate logo to save it')}</a>
         <p className="text-sm text-muted">{t('Workouts count through your Apple Watch’s active calories, so a harder workout raises your budget by itself.')}</p>
         <p className="text-sm text-muted">{t('Safari can clear a website’s data if you don’t open it for a week, so open Plate every few days and save a backup in Me now and then.')}</p>
+      </div>
+      <div className="rounded-2xl border border-line p-3">
+        <h4 className="mb-1 font-semibold">{t('Fully automatic, with no Shortcut')}</h4>
+        <p className="text-sm text-muted">
+          {t('Plate’s iPhone app reads Apple Health by itself whenever you open it, and catches up on the days you didn’t. It’s free to put on your own iPhone from a Mac with Xcode; the steps are in the project’s README, under Install the iPhone app.')}
+        </p>
       </div>
       <div className="rounded-2xl border border-line p-3">
         <h4 className="mb-1 font-semibold">WHOOP</h4>

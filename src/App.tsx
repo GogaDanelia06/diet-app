@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useStore } from './lib/store'
 import { App as NativeApp } from '@capacitor/app'
-import { addDays, dateKey, dayLabel } from './lib/date'
+import { dateKey, dayLabel } from './lib/date'
 import { applyHealthText, healthTextFromHash } from './lib/healthImport'
-import { isNativeApp, syncAppleHealth } from './lib/nativeHealth'
+import { autoSyncAppleHealth, isNativeApp } from './lib/nativeHealth'
 import { syncReminders } from './lib/reminders'
 import { setLang, t } from './lib/i18n'
 import type { Meal } from './lib/types'
@@ -63,11 +63,11 @@ export default function App() {
   }, [])
 
   // In the iPhone app, read Apple Health on opening, on coming back, and every few minutes while open.
-  // Yesterday too, so its final totals land even if the app wasn't opened late in the evening.
+  // Each read starts from the last day read, so the final totals of days the app wasn't opened land too.
   const ready = hydrated && !!profile
   useEffect(() => {
     if (!ready || !isNativeApp()) return
-    const sync = () => syncAppleHealth([addDays(dateKey(), -1), dateKey()]).catch(() => {})
+    const sync = () => autoSyncAppleHealth().catch(() => {})
     sync()
     const timer = window.setInterval(sync, 5 * 60_000)
     const resume = NativeApp.addListener('resume', sync)

@@ -127,6 +127,8 @@ export interface Settings {
   language: 'en' | 'ka'
   /** Apple Health workouts the user deleted, so the next sync doesn't bring them back. */
   hiddenHealthWorkouts: string[]
+  /** The last day the iPhone app read from Apple Health, so the next read catches up from there. */
+  healthSyncedThrough?: string
   /** Allergens Plate warns about on scanned products. */
   allergies: Allergen[]
   /** Notifications the iPhone app schedules on the phone. */

@@ -36,6 +36,19 @@ A web app can't read Apple Health directly, which is why the Shortcut is needed;
 2. Tap the **Share** button, then **Add to Home Screen**.
 3. Open Plate from the home screen. It runs full-screen and keeps working offline (except AI, barcode lookup and online search).
 
+## Install the iPhone app (Apple Health comes in by itself)
+
+iPhone doesn't let websites read Apple Health, so the website needs a Shortcut. Plate's iPhone app reads it by itself instead: steps, active calories, workouts and weight, whenever you open it, and it catches up on the days you didn't. It's free to put on your own iPhone:
+
+1. You need a Mac with Xcode (free in the Mac App Store) and a cable for your iPhone.
+2. In the project folder run `pnpm install`, then `npm run ios` (or `pnpm ios`). It builds Plate, copies it into the iPhone project and opens Xcode.
+3. In Xcode, click **App** in the left sidebar, open **Signing & Capabilities** and, under **Team**, choose **Add an Account…** and sign in with your Apple ID. Pick your **(Personal Team)**. If Xcode says the bundle identifier is taken, change it to something only you use, like `com.yourname.plate`.
+4. On the iPhone, turn on **Settings → Privacy & Security → Developer Mode** (the phone restarts). Plug it in, pick it at the top of the Xcode window and press **Run** (▶).
+5. The first time, open **Settings → General → VPN & Device Management**, tap your Apple ID and **Trust**. Then open Plate and allow Apple Health.
+6. Move your data across: on the website open **Me → Backup → Save backup**, then in the app **Me → Backup → Restore** and pick the file.
+
+With a free Apple ID the app stops opening after 7 days: plug the iPhone in and press **Run** again, and your data stays. A paid Apple Developer account ($99 a year) makes it last a year. Apple doesn't say for certain that free accounts can use Apple Health; if Xcode shows a HealthKit signing error with a free account, that's why.
+
 ## Turn on the free AI
 
 1. Go to <https://aistudio.google.com/apikey> and sign in with a Google account.
