@@ -272,6 +272,7 @@ button:disabled { cursor: default; }
 .free-badge { display: flex; align-items: center; gap: 7px; font-size: 10px; color: #b0baa0; }
 .free-badge > span { height: 5px; width: 5px; border-radius: 50%; background: var(--accent); }
 .profile-button { height: 32px; width: 32px; border-radius: 50%; background: #283020; border: 1px solid #404934; display: grid; place-items: center; color: #d6ddc9; }
+.profile-button[aria-current="page"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .mobile-brand { display: none; }
 .app-main { margin: 0 auto; padding: 34px 38px 65px; }
 .dashboard-main { max-width: 1380px; }

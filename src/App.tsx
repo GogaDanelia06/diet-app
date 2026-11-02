@@ -11,12 +11,13 @@ import Onboarding from './components/Onboarding'
 import Today from './components/Today'
 import Progress from './components/Progress'
 import Coach from './components/Coach'
+import Workouts from './components/Workouts'
 import Me from './components/Me'
 import AddFood, { type AddFoodMode } from './components/AddFood'
 import Celebration, { useAchievementWatcher } from './components/Achievements'
 import { Icon, Logo, Toast } from './components/ui'
 
-type Tab = 'today' | 'progress' | 'coach' | 'me'
+type Tab = 'today' | 'workouts' | 'progress' | 'coach' | 'me'
 
 function defaultMeal(): Meal {
   const h = new Date().getHours()
@@ -120,10 +121,14 @@ export default function App() {
 
   const tabs: { id: Tab; label: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
     { id: 'today', label: t('Today'), icon: 'today' },
+    { id: 'workouts', label: t('Workouts'), icon: 'run' },
     { id: 'progress', label: t('Progress'), icon: 'chart' },
     { id: 'coach', label: t('Coach'), icon: 'chat' },
     { id: 'me', label: t('Me'), icon: 'user' },
   ]
+
+  // The phone's bottom bar has room for four tabs around the add button; Me is the profile button at the top.
+  const mobileTabs = tabs.filter((x) => x.id !== 'me')
 
   const openDay = (d: string) => {
     setDate(d)
@@ -160,10 +165,11 @@ export default function App() {
         <div className="workspace-topbar">
           <div className="mobile-brand"><Logo className="h-7 w-7" /><span>plate.</span></div>
           <span className="workspace-breadcrumb">{t('My workspace')}<span>/</span>{tabs.find((x) => x.id === tab)?.label}</span>
-          <div className="topbar-right"><span className="free-badge"><span />{t('Always yours')}</span><button className="profile-button" onClick={() => setTab('me')} aria-label={t('Me')}><Icon name="user" className="h-4 w-4" /></button></div>
+          <div className="topbar-right"><span className="free-badge"><span />{t('Always yours')}</span><button className="profile-button" onClick={() => setTab('me')} aria-label={t('Me')} aria-current={tab === 'me' ? 'page' : undefined}><Icon name="user" className="h-4 w-4" /></button></div>
         </div>
       <main id="main-content" key={tab} className={`page-in app-main ${tab === 'today' ? 'dashboard-main' : 'detail-main'}`}>
-        {tab === 'today' && <Today date={date} setDate={setDate} onAdd={openFood} onOpenCoach={() => setTab('coach')} />}
+        {tab === 'today' && <Today date={date} setDate={setDate} onAdd={openFood} onOpenCoach={() => setTab('coach')} onOpenWorkouts={() => setTab('workouts')} />}
+        {tab === 'workouts' && <Workouts />}
         {tab === 'progress' && <Progress onOpenDay={openDay} />}
         {tab === 'coach' && <Coach date={date} />}
         {tab === 'me' && <Me />}
@@ -172,7 +178,7 @@ export default function App() {
 
       <nav className="mobile-nav safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-30 px-4" aria-label={t('Main navigation')}>
         <div className="glass pointer-events-auto mx-auto grid max-w-md grid-cols-5 items-center rounded-[28px] px-2 py-1.5">
-          {tabs.slice(0, 2).map((x) => (
+          {mobileTabs.slice(0, 2).map((x) => (
             <TabButton key={x.id} {...x} active={tab === x.id} onClick={() => setTab(x.id)} />
           ))}
           <div className="flex justify-center">
@@ -184,7 +190,7 @@ export default function App() {
               <Icon name="plus" className="h-7 w-7" />
             </button>
           </div>
-          {tabs.slice(2).map((x) => (
+          {mobileTabs.slice(2).map((x) => (
             <TabButton key={x.id} {...x} active={tab === x.id} onClick={() => setTab(x.id)} />
           ))}
         </div>

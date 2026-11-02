@@ -5,6 +5,7 @@ import { dateKey, uid } from './date'
 import { caloriePlan, macroTargets, scaleNutrients, sumNutrients, toPer100 } from './calc'
 import { aiItemToFood } from './ai'
 import { DEFAULT_PLAN_PREFS } from './plan'
+import type { WorkoutPrefs } from './workouts'
 import { stepsKcal } from './exercises'
 import { baselineActiveKcal } from './health'
 import { defaultDashboard, discardLegacyDashboardStorage, normalizeDashboard } from './dashboard'
@@ -79,11 +80,13 @@ export interface AppData {
   deviceActivity: Record<string, DeviceDay>
   /** Dashboard layout and optional daily check-ins, included in backups and reset. */
   dashboard: DashboardState
+  /** Choices for the weekly workout plan; null until the person makes one. */
+  workoutPrefs: WorkoutPrefs | null
 }
 
 const DATA_KEYS = [
   'profile', 'settings', 'entries', 'customFoods', 'recipes', 'favorites', 'weights', 'water', 'exercises',
-  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports', 'deviceActivity', 'dashboard',
+  'planPrefs', 'mealPlan', 'steps', 'fasting', 'measurements', 'photos', 'savedMeals', 'achievements', 'reports', 'deviceActivity', 'dashboard', 'workoutPrefs',
 ] as const satisfies readonly (keyof AppData)[]
 
 function pickData(st: AppData): AppData {
@@ -112,6 +115,7 @@ interface Actions {
   /** Replaces a day's workouts from Apple Health with the ones just read, minus any the user deleted. */
   importHealthWorkouts: (date: string, workouts: ExerciseLog[]) => void
   setPlanPrefs: (p: Partial<PlanPrefs>) => void
+  setWorkoutPrefs: (p: WorkoutPrefs | null) => void
   setMealPlan: (plan: MealPlan | null) => void
   replacePlanMeal: (date: string, mealId: string, meal: PlanMeal) => void
   logPlanMeal: (date: string, mealId: string) => void
@@ -148,6 +152,7 @@ const EMPTY: AppData = {
   water: {},
   exercises: [],
   planPrefs: DEFAULT_PLAN_PREFS,
+  workoutPrefs: null,
   mealPlan: null,
   steps: {},
   fasting: { active: null, history: [] },
@@ -241,6 +246,7 @@ export const useStore = create<AppData & Actions>()(
           ],
         })),
       setPlanPrefs: (p) => setState((st) => ({ planPrefs: { ...st.planPrefs, ...p } })),
+      setWorkoutPrefs: (workoutPrefs) => setState({ workoutPrefs }),
       setMealPlan: (mealPlan) => setState({ mealPlan }),
       replacePlanMeal: (date, mealId, meal) =>
         setState((st) => (st.mealPlan ? { mealPlan: mapPlanMeal(st.mealPlan, date, mealId, () => meal) } : {})),

@@ -15,6 +15,7 @@ A free calorie and diet tracker that installs on an iPhone from Safari. No App S
 - AI meal plans: a 1-, 3- or 7-day menu that fits your calorie target and preferences, with one-tap logging, meal swaps and a shopping list. Planned meals also show on the Today screen.
 - Your own foods, recipes (Plate works out the calories per portion) and saved meals you can re-log in one tap.
 - Workouts: about 60 activities, calories from time or distance (speed sets the effort), daily steps with a goal, AI that turns a described workout into calories, and a choice to eat back none, half or all of them. Calories are counted above resting, so nothing is double-counted.
+- Workouts page: a weekly plan that fits your goal (lose, keep or gain weight) and where, how often, how long and how hard you train, with each move's sets, reps and how-to. It shows what each session burns, how much it adds to your budget, how much protein to eat and what to eat before and after (matched to your diet and allergies). Mark as done logs it to Today's exercise.
 - Intermittent fasting timer (12:12 to 24 h) with history.
 - Weight chart with a 7-day trend line and your real weekly rate, body measurements, private progress photos with before/after compare, a weekly nutrition report, an activity summary and a logging streak.
 - Water tracking and backup/restore.
