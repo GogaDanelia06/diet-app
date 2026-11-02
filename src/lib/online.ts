@@ -1,6 +1,7 @@
 import { t } from './i18n'
 import type { Food, FoodHealth, Nutrients, Serving } from './types'
 import { OFF_HEALTH_FIELDS, healthFromOff } from './rating'
+import { FAST_FOOD } from './foods'
 
 const round1 = (n: number) => Math.round(n * 10) / 10
 
@@ -135,11 +136,50 @@ export async function checkUsdaKey(key: string): Promise<string | null> {
   }
 }
 
+// Chains whose menu items USDA has measured in its lab: how USDA writes them, how Plate shows them,
+// and how people type them (lowercase, without apostrophes), in Latin letters and Georgian.
+const CHAINS: { usda: string; brand: string; typed: string[] }[] = [
+  { usda: "McDONALD'S", brand: "McDonald's", typed: ['mcdonalds', 'mcdonald', 'mc donalds', 'macdonalds', 'mac donalds', 'მაკდონალდსი', 'მაკდონალდს', 'მაკდონალდი'] },
+  { usda: 'BURGER KING', brand: 'Burger King', typed: ['burger king', 'burgerking', 'ბურგერ კინგი', 'ბურგერკინგი'] },
+  { usda: 'KFC', brand: 'KFC', typed: ['kfc', 'kentucky fried', 'კეიეფსი', 'კფს'] },
+  { usda: "WENDY'S", brand: "Wendy's", typed: ['wendys', 'wendy', 'ვენდისი', 'ვენდის'] },
+  { usda: "DOMINO'S", brand: "Domino's", typed: ['dominos', 'domino', 'დომინოსი', 'დომინოს'] },
+  { usda: "PAPA JOHN'S", brand: "Papa John's", typed: ['papa johns', 'papa john', 'პაპა ჯონსი', 'პაპა ჯონს'] },
+  { usda: 'PIZZA HUT', brand: 'Pizza Hut', typed: ['pizza hut', 'pizzahut', 'პიცა ჰატი'] },
+  { usda: 'POPEYES', brand: 'Popeyes', typed: ['popeyes', 'popeye', 'პოპაისი', 'პოპაის'] },
+  { usda: 'SUBWAY', brand: 'Subway', typed: ['subway', 'საბვეი'] },
+  { usda: 'TACO BELL', brand: 'Taco Bell', typed: ['taco bell', 'ტაკო ბელი'] },
+  { usda: 'LITTLE CAESARS', brand: 'Little Caesars', typed: ['little caesars', 'little caesar'] },
+]
+
+export const CHAIN_BRANDS = CHAINS.map((c) => c.brand)
+
+export const USDA_CHAIN_NOTE = 'USDA lab analysis of this chain’s US recipe. Georgian restaurants can use different recipes and portions.'
+
+/** The query with a typed chain name swapped for USDA's spelling, and which chain it was; null if none. */
+export function chainQuery(query: string): { query: string; brand: string } | null {
+  const q = query.toLowerCase().replace(/['’`]/g, '').replace(/\s+/g, ' ').trim()
+  for (const chain of CHAINS) {
+    const typed = [...chain.typed].sort((a, b) => b.length - a.length).find((t) => q.includes(t))
+    if (typed) return { query: q.replace(typed, chain.usda).trim(), brand: chain.brand }
+  }
+  return null
+}
+
+/** Splits USDA's "McDONALD'S, BIG MAC" into the chain and the item; null when it isn't a chain's item. */
+export function splitChain(description: string): { brand: string; name: string } | null {
+  for (const chain of CHAINS) {
+    const m = description.match(new RegExp(`^${chain.usda.replace(/'/g, "['’]")}[,\\s]+(.+)$`, 'i'))
+    if (m) return { brand: chain.brand, name: titleCase(m[1].trim()) }
+  }
+  return null
+}
+
 /** Searches USDA FoodData Central. Values in search results are per 100 g. */
 export async function searchUsda(query: string, apiKey: string): Promise<Food[]> {
   let res: Response | undefined
   for (const key of usdaKeys(apiKey)) {
-    res = await fetch(usdaSearchUrl({ query, pageSize: '25', dataType: 'Foundation,SR Legacy,Branded', api_key: key }))
+    res = await fetch(usdaSearchUrl({ query: chainQuery(query)?.query ?? query, pageSize: '25', dataType: 'Foundation,SR Legacy,Branded', api_key: key }))
     // A rejected or rate-limited key falls through to the next one.
     if (res.status !== 403 && res.status !== 429) break
   }
@@ -148,35 +188,59 @@ export async function searchUsda(query: string, apiKey: string): Promise<Food[]>
     throw new Error(t('The free shared USDA key hit its hourly limit. Add your own free key in Me → Online food search.'))
   if (!res.ok) throw new Error(t('USDA search answered {s}.', { s: res.status }))
   const data = await res.json()
-  const foods: Food[] = []
-  for (const f of data.foods ?? []) {
-    const byId = new Map<number, number>((f.foodNutrients as UsdaNutrient[]).map((n) => [n.nutrientId, n.value]))
-    const protein = byId.get(1003) ?? 0
-    const fat = byId.get(1004) ?? 0
-    const carbs = byId.get(1005) ?? 0
-    const kcal = byId.get(1008) ?? byId.get(2047) ?? byId.get(2048) ?? protein * 4 + carbs * 4 + fat * 9
-    const servings: Serving[] = []
-    if (f.servingSize && /^(g|grm|ml|mlt)$/i.test(f.servingSizeUnit ?? '')) {
-      const label = f.householdServingFullText ? `1 serving (${f.householdServingFullText.toLowerCase()})` : '1 serving'
-      servings.push({ label, grams: round1(f.servingSize) })
-    }
-    foods.push({
-      id: `usda-${f.fdcId}`,
-      name: titleCase(f.description),
-      brand: f.brandName ? titleCase(f.brandName) : f.brandOwner ? titleCase(f.brandOwner) : undefined,
-      per100: {
-        kcal: Math.round(kcal),
-        protein: round1(protein),
-        carbs: round1(carbs),
-        fat: round1(fat),
-        fiber: byId.has(1079) ? round1(byId.get(1079)!) : undefined,
-        sugar: byId.has(2000) ? round1(byId.get(2000)!) : undefined,
-      },
-      servings,
-      source: 'usda',
-    })
+  return ((data.foods ?? []) as UsdaFood[]).map(fromUsda)
+}
+
+interface UsdaFood {
+  fdcId: number
+  description: string
+  brandName?: string
+  brandOwner?: string
+  servingSize?: number
+  servingSizeUnit?: string
+  householdServingFullText?: string
+  foodNutrients: UsdaNutrient[]
+  /** Standard portions, like "1 item" with its weight; sent for USDA's own (non-branded) foods. */
+  foodMeasures?: { disseminationText?: string; gramWeight?: number; rank?: number }[]
+}
+
+/** A USDA search result as a Plate food. Values are per 100 g. */
+export function fromUsda(f: UsdaFood): Food {
+  const byId = new Map<number, number>(f.foodNutrients.map((n) => [n.nutrientId, n.value]))
+  const protein = byId.get(1003) ?? 0
+  const fat = byId.get(1004) ?? 0
+  const carbs = byId.get(1005) ?? 0
+  const kcal = byId.get(1008) ?? byId.get(2047) ?? byId.get(2048) ?? protein * 4 + carbs * 4 + fat * 9
+  const servings: Serving[] = []
+  if (f.servingSize && /^(g|grm|ml|mlt)$/i.test(f.servingSizeUnit ?? '')) {
+    const label = f.householdServingFullText ? `1 serving (${f.householdServingFullText.toLowerCase()})` : '1 serving'
+    servings.push({ label, grams: round1(f.servingSize) })
   }
-  return foods
+  // Portions like "1 item" make a Big Mac one tap instead of a guess in grams.
+  const measures = (f.foodMeasures ?? [])
+    .filter((m) => (m.gramWeight ?? 0) > 0 && m.disseminationText && !/quantity not specified/i.test(m.disseminationText))
+    .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
+  for (const m of measures.slice(0, 4)) {
+    const label = m.disseminationText!.trim().toLowerCase()
+    if (!servings.some((s) => s.label === label)) servings.push({ label, grams: round1(m.gramWeight!) })
+  }
+  const chain = splitChain(f.description)
+  return {
+    id: `usda-${f.fdcId}`,
+    name: chain?.name ?? titleCase(f.description),
+    brand: chain?.brand ?? (f.brandName ? titleCase(f.brandName) : f.brandOwner ? titleCase(f.brandOwner) : undefined),
+    ...(chain ? { category: FAST_FOOD, dataNote: { kind: 'official' as const, text: USDA_CHAIN_NOTE } } : {}),
+    per100: {
+      kcal: Math.round(kcal),
+      protein: round1(protein),
+      carbs: round1(carbs),
+      fat: round1(fat),
+      fiber: byId.has(1079) ? round1(byId.get(1079)!) : undefined,
+      sugar: byId.has(2000) ? round1(byId.get(2000)!) : undefined,
+    },
+    servings,
+    source: 'usda',
+  }
 }
 
 function titleCase(s: string) {

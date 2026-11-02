@@ -20,6 +20,7 @@ describe('Georgian', () => {
     expect(tName('Khinkali, meat')).toBe('ხინკალი, ხორცის')
     expect(tName('My own soup')).toBe('My own soup')
     expect(tServing('1 slice (1/6)')).toBe('1 ნაჭერი (1/6)')
+    expect(tServing('1 big')).toBe('1 დიდი')
   })
 
   it('finds foods by their Georgian name in either language', () => {

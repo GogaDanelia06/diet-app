@@ -1,5 +1,6 @@
 import type { DiaryEntry, Food, FoodHealth, NutrientLevel } from './types'
 import { allergensFromTags, dietStatus } from './allergens'
+import { FAST_FOOD } from './foods'
 
 export type Verdict = 'good' | 'okay' | 'limit'
 
@@ -146,6 +147,11 @@ export function estimateRating(food: Pick<Food, 'name' | 'per100' | 'category' |
   let verdict: Verdict = score >= 2 ? 'good' : score <= -2 ? 'limit' : 'okay'
   // Sauces are eaten in small amounts and their salt isn't known, so they're never called good.
   if (cat === 'Oils & sauces' && verdict === 'good') verdict = 'okay'
+  // Restaurant food is usually salty, and its salt isn't known either.
+  if (cat === FAST_FOOD) {
+    reasons.push({ label: 'Fast food: usually salty', tone: 'okay' })
+    if (verdict === 'good') verdict = 'okay'
+  }
   return { verdict, reasons }
 }
 

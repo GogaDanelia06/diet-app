@@ -8,6 +8,7 @@ A free calorie and diet tracker that installs on an iPhone from Safari. No App S
 - Food diary for breakfast, lunch, dinner and snacks, with calories, protein, carbs and fat.
 - About 270 built-in foods and dishes, including 36 Georgian dishes (khachapuri, khinkali, mtsvadi, lobio, pkhali…), with real portion sizes.
 - Barcode scanner for packaged food (Open Food Facts) and online search (USDA FoodData Central).
+- Restaurant food: Mac Shaurma's shaurma (chicken and pork, standard, medium and big) as clearly marked estimates, since Mac Shaurma publishes no nutrition facts. Typing a chain's name (McDonald's, KFC, Burger King, Wendy's, Domino's, Subway… in English or Georgian) searches USDA's lab data for that chain automatically, marked as official US-recipe data. Search also understands shaurma/shawarma/შაურმა and other common spellings.
 - Is it a good choice? Scanned products show their Nutri-Score, how processed they are and their sugar, fat and salt, with a plain verdict (Good choice, Fine in moderation, Best to limit) and up to five better-rated alternatives. Every other food gets Plate's own estimate, and Today shows how much of the day's food was a good pick. Free, no AI needed.
 - Allergy and diet warnings: pick your allergens and what you eat, and scanned products that contain them, may contain traces, or aren't vegan or vegetarian get a red warning.
 - Free AI through Google Gemini: photograph a meal, describe it in words, read a nutrition label, or chat with a diet coach.

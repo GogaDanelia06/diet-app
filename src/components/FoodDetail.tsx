@@ -142,6 +142,14 @@ export default function FoodDetail({
             {food.brand ? `${food.brand} · ` : ''}
             {t(SOURCE_NOTE[food.source])}
           </p>
+          {food.dataNote && (
+            <p className="mt-2 text-sm text-muted">
+              <span className={`mr-1.5 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${food.dataNote.kind === 'official' ? 'bg-accent-soft text-accent' : 'bg-carbs/15 text-carbs'}`}>
+                {t(food.dataNote.kind === 'official' ? 'Official data' : 'Estimate')}
+              </span>
+              {t(food.dataNote.text)}
+            </p>
+          )}
         </div>
 
         <AllergyNote health={food.health} />

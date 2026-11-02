@@ -315,15 +315,47 @@ function slug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
-export const BUILTIN_FOODS: Food[] = Object.entries(DB).flatMap(([category, rows]) =>
-  rows.map(([name, kcal, protein, carbs, fat, fiber, servings]) => ({
-    id: `b-${slug(name)}`,
+export const FAST_FOOD = 'Fast food & chains'
+
+const MAC_SHAURMA_NOTE =
+  'Mac Shaurma doesn’t publish nutrition facts, so this is Plate’s estimate from a typical recipe (lavash, grilled meat, fries, garlic sauce and vegetables). Sizes are estimated weights; change the grams if yours is bigger or smaller.'
+
+// Restaurant food: only what a chain or a lab publishes counts as official. Mac Shaurma publishes
+// nothing, so its shaurma is worked out from a typical 350 g standard wrap: 80 g lavash, 120 g meat,
+// 40 g fries, 40 g garlic-mayonnaise sauce and 70 g tomato, cucumber and cabbage.
+// Big chains (McDonald's, KFC, Burger King…) come from USDA's lab data in the online search instead.
+// Row: [brand, name, kcal, protein, carbs, fat, fiber, servings, note]
+const RESTAURANTS: [string, string, number, number, number, number, number, string, string][] = [
+  ['Mac Shaurma', 'Chicken shaurma', 211, 11.4, 19.3, 9.7, 1.3, '1 standard:350|1 medium:450|1 big:550', MAC_SHAURMA_NOTE],
+  ['Mac Shaurma', 'Pork shaurma', 243, 11.1, 19.3, 13.4, 1.3, '1 standard:350|1 medium:450|1 big:550', MAC_SHAURMA_NOTE],
+]
+
+const BRAND_ALIASES: Record<string, string> = {
+  'Mac Shaurma': 'macshaurma mak shaurma მაკ შაურმა მაკშაურმა',
+}
+
+export const BUILTIN_FOODS: Food[] = [
+  ...Object.entries(DB).flatMap(([category, rows]) =>
+    rows.map(([name, kcal, protein, carbs, fat, fiber, servings]) => ({
+      id: `b-${slug(name)}`,
+      name,
+      category,
+      per100: { kcal, protein, carbs, fat, fiber },
+      servings: parseServings(servings),
+      source: 'builtin' as const,
+    })),
+  ),
+  ...RESTAURANTS.map(([brand, name, kcal, protein, carbs, fat, fiber, servings, note]) => ({
+    id: `b-${slug(brand)}-${slug(name)}`,
     name,
-    category,
+    brand,
+    category: FAST_FOOD,
     per100: { kcal, protein, carbs, fat, fiber },
     servings: parseServings(servings),
     source: 'builtin' as const,
+    dataNote: { kind: 'estimate' as const, text: note },
+    aliases: BRAND_ALIASES[brand],
   })),
-)
+]
 
-export const CATEGORIES = Object.keys(DB)
+export const CATEGORIES = [...Object.keys(DB), FAST_FOOD]

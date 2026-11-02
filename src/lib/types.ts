@@ -40,6 +40,10 @@ export interface Food {
   barcode?: string
   /** Health ratings Open Food Facts has for a packaged product; empty when it has none. */
   health?: FoodHealth
+  /** Where restaurant numbers come from: the chain or a lab ("official"), or Plate's estimate. English text. */
+  dataNote?: { kind: 'official' | 'estimate'; text: string }
+  /** Extra words search should match, like a Georgian brand name. */
+  aliases?: string
 }
 
 export type NutrientLevel = 'low' | 'moderate' | 'high'

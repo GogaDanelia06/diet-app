@@ -60,7 +60,8 @@ const SERVING_WORDS: Record<string, string> = {
   radish: 'ბოლოკი', beet: 'ჭარხალი', avocado: 'ავოკადო', pita: 'პიტა', tortilla: 'ტორტილია', bagel: 'ბეიგელი', croissant: 'კრუასანი',
   donut: 'დონატი', muffin: 'მაფინი', cake: 'ნამცხვარი', crackers: 'კრეკერი', white: 'ცილა',
   drained: 'გაწურული', raw: 'უმი', chopped: 'დაჭრილი', sliced: 'დაჭრილი', diced: 'კუბიკებად', shredded: 'დაჭრილი', grated: 'გახეხილი',
-  cherry: 'ალუბლისებრი', tomato: 'პომიდორი', standard: 'სტანდარტული', pcs: 'ცალი', box: 'კოლოფი', wedge: 'ნაჭერი', half: 'ნახევარი',
+  cherry: 'ალუბლისებრი', tomato: 'პომიდორი', standard: 'სტანდარტული', big: 'დიდი', pcs: 'ცალი', box: 'კოლოფი', wedge: 'ნაჭერი', half: 'ნახევარი',
+  item: 'ცალი', items: 'ცალი', order: 'პორცია', regular: 'ჩვეულებრივი',
   of: '', and: 'და',
 }
 

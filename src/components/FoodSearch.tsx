@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { t, tName, tServing } from '../lib/i18n'
 import { BUILTIN_FOODS, CATEGORIES } from '../lib/foods'
 import { kcal } from '../lib/format'
-import { searchUsda } from '../lib/online'
+import { chainQuery, searchUsda } from '../lib/online'
 import { searchFoods } from '../lib/search'
 import { recentFoods, recipeToFood, useStore } from '../lib/store'
 import type { Food } from '../lib/types'
@@ -33,17 +33,26 @@ export default function FoodSearch({
   const recent = useMemo(() => recentFoods(entries), [entries])
   const q = query.trim()
 
-  async function searchOnline() {
+  async function searchOnline(text = q) {
     setLoading(true)
     setError('')
     try {
-      setOnline({ query: q, foods: await searchUsda(q, usdaKey) })
+      // Results are shown only while their query is still the one typed.
+      setOnline({ query: text, foods: await searchUsda(text, usdaKey) })
     } catch (e) {
       setError(e instanceof Error ? e.message : t('Online search failed. Check your internet connection.'))
     } finally {
       setLoading(false)
     }
   }
+
+  // Chain menus (McDonald's, KFC…) come from USDA's lab data, so typing a chain's name searches online by itself.
+  const chain = useMemo(() => chainQuery(q), [q])
+  useEffect(() => {
+    if (!chain) return
+    const timer = window.setTimeout(() => searchOnline(q), 600)
+    return () => window.clearTimeout(timer)
+  }, [chain, q])
 
   return (
     <div className="space-y-4">
@@ -109,7 +118,7 @@ export default function FoodSearch({
               </button>
             )}
             {online?.query !== q && (
-              <button onClick={searchOnline} disabled={loading} className="btn btn-quiet justify-start">
+              <button onClick={() => searchOnline()} disabled={loading} className="btn btn-quiet justify-start">
                 <Icon name="search" className="h-5 w-5 text-accent" /> {t('Search the USDA database online')}
               </button>
             )}
@@ -118,7 +127,7 @@ export default function FoodSearch({
           {error && <ErrorNote>{error}</ErrorNote>}
           {online?.query === q &&
             (online.foods.length ? (
-              <FoodList title={t('Online results')} foods={online.foods} onPick={onPick} />
+              <FoodList title={chain ? t('{brand} · USDA lab data', { brand: chain.brand }) : t('Online results')} foods={online.foods} onPick={onPick} />
             ) : (
               <p className="text-muted">{t('No online results. Try a simpler word in English, like “yogurt”.')}</p>
             ))}

@@ -13,6 +13,7 @@ export const KA_NAMES: Record<string, string> = {
   "Sweets & snacks": "ტკბილეული და სნეკები",
   "Georgian dishes": "ქართული კერძები",
   "World dishes": "მსოფლიოს კერძები",
+  "Fast food & chains": "ფასტფუდი და ქსელები",
   "My recipes": "ჩემი რეცეპტები",
 
   // Fruit
@@ -386,4 +387,6 @@ export const KA_NAMES: Record<string, string> = {
   "Cardio workout": "კარდიო ვარჯიში",
   "Core training": "მუცლისა და ზურგის ვარჯიში",
   "Workout": "ვარჯიში",
+  "Chicken shaurma": "ქათმის შაურმა",
+  "Pork shaurma": "ღორის შაურმა",
 }

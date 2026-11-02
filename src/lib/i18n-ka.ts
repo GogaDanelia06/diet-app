@@ -825,4 +825,14 @@ export const KA: Record<string, string> = {
   "A glass now keeps you on track for today’s goal.": "ერთი ჭიქა ახლა დღევანდელ მიზანთან ახლოს მიგიყვანს.",
   "Your fast is done": "მარხვა დასრულდა",
   "You reached your {h}-hour goal. Nice work!": "{h}-საათიან მიზანს მიაღწიე. ყოჩაღ!",
+
+  // Restaurant food
+  "Official data": "ოფიციალური მონაცემები",
+  "Estimate": "მიახლოებითი",
+  "Mac Shaurma doesn’t publish nutrition facts, so this is Plate’s estimate from a typical recipe (lavash, grilled meat, fries, garlic sauce and vegetables). Sizes are estimated weights; change the grams if yours is bigger or smaller.":
+    "Mac Shaurma კვებით ღირებულებას არ აქვეყნებს, ამიტომ ეს Plate-ის შეფასებაა ტიპური რეცეპტით (ლავაში, შემწვარი ხორცი, ფრი, ნივრის სოუსი და ბოსტნეული). ზომები მიახლოებითი წონაა; თუ შენი უფრო დიდი ან პატარაა, გრამები შეცვალე.",
+  "USDA lab analysis of this chain’s US recipe. Georgian restaurants can use different recipes and portions.":
+    "USDA-ს ლაბორატორიული ანალიზი ამ ქსელის აშშ-ის რეცეპტზე. საქართველოში რეცეპტი და პორცია შეიძლება განსხვავდებოდეს.",
+  "{brand} · USDA lab data": "{brand} · USDA-ს ლაბორატორიული მონაცემები",
+  "Fast food: usually salty": "ფასტფუდი: ჩვეულებრივ მლაშეა",
 }

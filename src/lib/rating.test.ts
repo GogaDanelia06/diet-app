@@ -126,6 +126,13 @@ describe('Plate’s estimate for foods without Open Food Facts data', () => {
     expect(estimateRating({ name: 'Breakfast cereal', per100, source: 'usda' })?.reasons.map((r) => r.label)).toEqual(['Energy-dense', 'High sugar', 'Source of fiber'])
   })
 
+  it('never calls fast food a good choice, since its salt isn’t known', () => {
+    const shaurma = BUILTIN_FOODS.find((f) => f.brand === 'Mac Shaurma' && f.name === 'Chicken shaurma')!
+    const rating = estimateRating(shaurma)!
+    expect(rating.verdict).toBe('okay')
+    expect(rating.reasons.at(-1)).toEqual({ label: 'Fast food: usually salty', tone: 'okay' })
+  })
+
   it('has no rating for quick-add calories', () => {
     expect(estimateRating({ name: 'Snack', per100: { kcal: 200, protein: 0, carbs: 0, fat: 0 }, source: 'quick' })).toBeNull()
   })
