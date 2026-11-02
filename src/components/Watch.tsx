@@ -17,12 +17,21 @@ const GUIDE_STEPS = [
   'Add Find Health Samples again with Type Steps, Start Date is Today and Source your Apple Watch, then another Calculate Statistics with Sum.',
   'For sleep: add Find Health Samples with Type Sleep Analysis and the filters End Date is Today, Value is not In Bed, Value is not Awake and Source is your Apple Watch. Set Unit to hr, then add Calculate Statistics with Sum.',
   'For distance: add Find Health Samples with Type Walking + Running Distance, Start Date is Today and Source your Apple Watch. Set Unit to km, then add Calculate Statistics with Sum.',
-  'Optional, for a smart scale: add Find Health Samples with Type Weight, Start Date is Today and Limit 1.',
-  'Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then, each after a space, type active= and the Active Energy Statistics, steps= and the Steps Statistics, sleep= and the sleep Statistics, and distance= and the distance Statistics. If you added weight, type a space, weight= and the Health Samples result.',
+  'Optional, for a smart scale: add Find Health Samples with Type Weight, Start Date is Today and Limit 1, then Calculate Statistics with Average.',
+  'Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then, each after a space, type active= and the Active Energy Statistics, steps= and the Steps Statistics, sleep= and the sleep Statistics, and distance= and the distance Statistics. If you added weight, type a space, weight= and the weight Statistics. Only ever put Statistics in the Text: Health Samples there make iPhone stop the shortcut with “trying to share Health items”.',
   'Add Copy to Clipboard.',
   'Add URL Encode. It encodes the same Text.',
   'Add another Text: paste the link below, then insert URL Encoded Text right after it.',
   'Add Open URLs and tap Done.',
+]
+
+// WHOOP writes sleep, its workouts' calories and resting heart rate to Apple Health; steps come from the phone or watch.
+const WHOOP_STEPS = [
+  'In the WHOOP app’s settings, open Integrations → Apple Health, turn sharing on and allow everything.',
+  'Workout calories: add Find Health Samples with Type Active Energy, Start Date is Today and Source WHOOP, then Calculate Statistics with Sum. In the Text, add a space, workout= and that Statistics.',
+  'Sleep: in the sleep step, choose WHOOP as the Source. WHOOP adds last night’s sleep once you open the WHOOP app in the morning.',
+  'Resting heart rate: add Find Health Samples with Type Resting Heart Rate, Start Date is Today and Source WHOOP, then Calculate Statistics with Average. In the Text, add a space, rhr= and that Statistics.',
+  'Steps still come from your iPhone or Apple Watch, because WHOOP doesn’t share them. Without an Apple Watch, leave active= out of the Text: Plate counts your steps and adds WHOOP workouts on top. With a watch, keep active= as well; WHOOP workouts are then part of the watch’s calories and aren’t counted twice.',
 ]
 
 // The step where the link below goes in: the Text before Open URLs.
@@ -177,11 +186,11 @@ export function WatchGuide() {
           {t('Plate’s iPhone app reads Apple Health by itself whenever you open it, and catches up on the days you didn’t. It’s free to put on your own iPhone from a Mac with Xcode; the steps are in the project’s README, under Install the iPhone app.')}
         </p>
       </div>
-      <div className="rounded-2xl border border-line p-3">
-        <h4 className="mb-1 font-semibold">WHOOP</h4>
-        <p className="text-sm text-muted">
-          {t('In the WHOOP app’s settings, open Integrations → Apple Health and turn sharing on. WHOOP shares the calories of workouts it detects, not your steps or all-day calories. If you also wear the Apple Watch, keep the Source filters on Apple Watch so nothing is counted twice. If you only wear WHOOP, leave out Active Energy, choose your iPhone as the Source for Steps, and add WHOOP workouts with Add exercise.')}
-        </p>
+      <div className="space-y-3 rounded-2xl border border-line p-3">
+        <h4 className="font-semibold">WHOOP</h4>
+        <p className="text-sm text-muted">{t('WHOOP shares sleep, the calories of its workouts and your resting heart rate with Apple Health, but not recovery, strain or HRV.')}</p>
+        <Steps steps={WHOOP_STEPS} />
+        <p className="font-mono text-sm">plate date=2026-11-02 steps=9123 workout=420 sleep=7.4 rhr=52</p>
       </div>
     </div>
   )

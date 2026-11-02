@@ -404,4 +404,5 @@ export const KA_NAMES: Record<string, string> = {
   "HIIT circuit": "HIIT წრე",
   "Stretch and mobility": "გაჭიმვა და მოქნილობა",
   "Custom workout": "საკუთარი ვარჯიში",
+  "WHOOP workouts": "WHOOP-ის ვარჯიშები",
 }

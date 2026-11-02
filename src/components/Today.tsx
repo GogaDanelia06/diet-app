@@ -561,7 +561,7 @@ function NextWorkout({ onOpen }: { onOpen: () => void }) {
 /** Last night's sleep and the day's walking distance, when Apple Health sent them. */
 function HealthExtrasRow({ date }: { date: string }) {
   const extras = useStore((s) => s.healthDays[date])
-  if (!extras || (extras.sleepMinutes == null && extras.distanceKm == null)) return null
+  if (!extras || (extras.sleepMinutes == null && extras.distanceKm == null && extras.restingHr == null)) return null
   const short = extras.sleepMinutes != null && extras.sleepMinutes < 7 * 60
   return (
     <div className="mt-3 rounded-2xl bg-surface-2 px-3 py-2.5 text-sm">
@@ -570,6 +570,12 @@ function HealthExtrasRow({ date }: { date: string }) {
           <span className="flex items-center gap-1.5">
             <Icon name="moon" className="h-4 w-4 text-violet" />
             {t('Slept {time}', { time: sleepText(extras.sleepMinutes) })}
+          </span>
+        )}
+        {extras.restingHr != null && (
+          <span className="flex items-center gap-1.5">
+            <Icon name="heart" className="h-4 w-4 text-over" />
+            {t('Resting heart rate {n}', { n: extras.restingHr })}
           </span>
         )}
         {extras.distanceKm != null && (
@@ -612,7 +618,8 @@ function ExerciseList({ date, covered }: { date: string; covered: boolean }) {
           <div className="min-w-0 flex-1">
             <div className="truncate font-medium">{tName(e.name)}</div>
             <div className="text-sm text-muted">
-              {t('{n} min', { n: e.minutes })}
+              {/* A tracker's day of workouts comes without a length. */}
+              {e.minutes > 0 ? t('{n} min', { n: e.minutes }) : t('From Apple Health')}
               {e.distanceKm ? ` · ${e.distanceKm} km` : ''}
             </div>
           </div>

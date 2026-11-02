@@ -618,11 +618,7 @@ export const KA: Record<string, string> = {
   "Add Find Health Samples again with Type Steps, Start Date is Today and Source your Apple Watch, then another Calculate Statistics with Sum.":
     "კიდევ დაამატე „Find Health Samples“: Type „Steps“, „Start Date is Today“ და Source — შენი Apple Watch, შემდეგ კიდევ ერთი „Calculate Statistics“ → „Sum“.",
   "Watch: {n} active kcal": "საათი: {n} აქტიური კკალ",
-  "Optional, for a smart scale: add Find Health Samples with Type Weight, Start Date is Today and Limit 1.":
-    "სურვილისამებრ, ჭკვიანი სასწორისთვის: დაამატე „Find Health Samples“ — Type „Weight“, „Start Date is Today“ და „Limit 1“.",
   "Make it automatic": "გახადე ავტომატური",
-  "In the WHOOP app’s settings, open Integrations → Apple Health and turn sharing on. WHOOP shares the calories of workouts it detects, not your steps or all-day calories. If you also wear the Apple Watch, keep the Source filters on Apple Watch so nothing is counted twice. If you only wear WHOOP, leave out Active Energy, choose your iPhone as the Source for Steps, and add WHOOP workouts with Add exercise.":
-    "WHOOP-ის აპის პარამეტრებში გახსენი Integrations → Apple Health და ჩართე გაზიარება. WHOOP აზიარებს მხოლოდ მის მიერ აღმოჩენილი ვარჯიშების კალორიებს და არა ნაბიჯებს ან მთელი დღის კალორიებს. თუ Apple Watch-საც ატარებ, Source-ის ფილტრებში დატოვე Apple Watch, რომ არაფერი ორჯერ არ დაითვალოს. თუ მხოლოდ WHOOP-ს ატარებ, Active Energy გამოტოვე, ნაბიჯების Source-ად აირჩიე შენი iPhone, ხოლო WHOOP-ის ვარჯიშები „ვარჯიშის დამატებით“ ჩაწერე.",
   "Sync Health": "Health-ის სინქრონიზაცია",
   "Synced {time}": "სინქრონიზებულია {time}-ზე",
   "Synced {day}: {what}": "სინქრონიზებულია ({day}): {what}",
@@ -1037,8 +1033,6 @@ export const KA: Record<string, string> = {
     "ძილისთვის: დაამატე „Find Health Samples“ — Type „Sleep Analysis“ და ფილტრები „End Date is Today“, „Value is not In Bed“, „Value is not Awake“ და „Source is“ შენი Apple Watch. „Unit“ დააყენე hr-ზე, შემდეგ დაამატე „Calculate Statistics“ — Sum.",
   "For distance: add Find Health Samples with Type Walking + Running Distance, Start Date is Today and Source your Apple Watch. Set Unit to km, then add Calculate Statistics with Sum.":
     "მანძილისთვის: დაამატე „Find Health Samples“ — Type „Walking + Running Distance“, „Start Date is Today“ და Source შენი Apple Watch. „Unit“ დააყენე km-ზე, შემდეგ დაამატე „Calculate Statistics“ — Sum.",
-  "Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then, each after a space, type active= and the Active Energy Statistics, steps= and the Steps Statistics, sleep= and the sleep Statistics, and distance= and the distance Statistics. If you added weight, type a space, weight= and the Health Samples result.":
-    "დაამატე „Text“ და ჩაწერე plate date= , შემდეგ ჩასვი „Current Date“ (შეეხე მას, აირჩიე Custom ფორმატი და ჩაწერე yyyy-MM-dd). მერე, თითოეული ჰარის შემდეგ, ჩაწერე active= და Active Energy-ს Statistics, steps= და Steps-ის Statistics, sleep= და ძილის Statistics, distance= და მანძილის Statistics. თუ წონა დაამატე, ჩაწერე ჰარი, weight= და Health Samples-ის შედეგი.",
   "The link for step {n}:": "ბმული {n}-ე ნაბიჯისთვის:",
   "No Apple Watch? Choose your iPhone as the Source everywhere; the iPhone estimates active calories from your movement, and if they come through as 0, Plate counts your steps instead. For sleep, leave out the two Value filters: without a watch, iPhone only knows your time in bed from your Sleep schedule.":
     "Apple Watch არ გაქვს? ყველგან Source-ად აირჩიე შენი iPhone; iPhone აქტიურ კალორიებს მოძრაობით აფასებს, ხოლო თუ 0 მოვა, Plate ნაბიჯებს დაითვლის. ძილისთვის გამოტოვე ორივე Value ფილტრი: საათის გარეშე iPhone მხოლოდ საწოლში გატარებულ დროს იცის ძილის განრიგიდან.",
@@ -1047,4 +1041,25 @@ export const KA: Record<string, string> = {
   "Slept {time}": "ეძინე {time}",
   "{n} km walked": "{n} კმ გავლილი",
   "Less than 7 hours of sleep often makes you hungrier the next day. An earlier night helps your diet too.": "7 საათზე ნაკლები ძილი ხშირად მეორე დღეს მადას ზრდის. ადრე დაძინება შენს დიეტასაც ეხმარება.",
+
+  // WHOOP through Apple Health
+  "Optional, for a smart scale: add Find Health Samples with Type Weight, Start Date is Today and Limit 1, then Calculate Statistics with Average.":
+    "სურვილისამებრ, ჭკვიანი სასწორისთვის: დაამატე „Find Health Samples“ — Type „Weight“, „Start Date is Today“ და „Limit 1“, შემდეგ „Calculate Statistics“ — Average.",
+  "Add Text and type plate date= then insert Current Date (tap it, choose Custom format and type yyyy-MM-dd). Then, each after a space, type active= and the Active Energy Statistics, steps= and the Steps Statistics, sleep= and the sleep Statistics, and distance= and the distance Statistics. If you added weight, type a space, weight= and the weight Statistics. Only ever put Statistics in the Text: Health Samples there make iPhone stop the shortcut with “trying to share Health items”.":
+    "დაამატე „Text“ და ჩაწერე plate date= , შემდეგ ჩასვი „Current Date“ (შეეხე მას, აირჩიე Custom ფორმატი და ჩაწერე yyyy-MM-dd). მერე, თითოეული ჰარის შემდეგ, ჩაწერე active= და Active Energy-ს Statistics, steps= და Steps-ის Statistics, sleep= და ძილის Statistics, distance= და მანძილის Statistics. თუ წონა დაამატე, ჩაწერე ჰარი, weight= და წონის Statistics. Text-ში მხოლოდ Statistics ჩასვი: იქ Health Samples-ის ჩასმისას iPhone shortcut-ს აჩერებს შეტყობინებით „trying to share Health items“.",
+  "WHOOP shares sleep, the calories of its workouts and your resting heart rate with Apple Health, but not recovery, strain or HRV.":
+    "WHOOP Apple Health-ს უზიარებს ძილს, თავისი ვარჯიშების კალორიებს და მოსვენებულ პულსს, მაგრამ არა recovery-ს, strain-ს ან HRV-ს.",
+  "In the WHOOP app’s settings, open Integrations → Apple Health, turn sharing on and allow everything.":
+    "WHOOP აპის პარამეტრებში გახსენი Integrations → Apple Health, ჩართე გაზიარება და ყველაფერს მიეცი ნებართვა.",
+  "Workout calories: add Find Health Samples with Type Active Energy, Start Date is Today and Source WHOOP, then Calculate Statistics with Sum. In the Text, add a space, workout= and that Statistics.":
+    "ვარჯიშის კალორიები: დაამატე „Find Health Samples“ — Type „Active Energy“, „Start Date is Today“ და Source WHOOP, შემდეგ „Calculate Statistics“ — Sum. Text-ში დაამატე ჰარი, workout= და ეს Statistics.",
+  "Sleep: in the sleep step, choose WHOOP as the Source. WHOOP adds last night’s sleep once you open the WHOOP app in the morning.":
+    "ძილი: ძილის ნაბიჯში Source-ად აირჩიე WHOOP. WHOOP წინა ღამის ძილს მაშინ ამატებს, როცა დილით WHOOP აპს გახსნი.",
+  "Resting heart rate: add Find Health Samples with Type Resting Heart Rate, Start Date is Today and Source WHOOP, then Calculate Statistics with Average. In the Text, add a space, rhr= and that Statistics.":
+    "მოსვენებული პულსი: დაამატე „Find Health Samples“ — Type „Resting Heart Rate“, „Start Date is Today“ და Source WHOOP, შემდეგ „Calculate Statistics“ — Average. Text-ში დაამატე ჰარი, rhr= და ეს Statistics.",
+  "Steps still come from your iPhone or Apple Watch, because WHOOP doesn’t share them. Without an Apple Watch, leave active= out of the Text: Plate counts your steps and adds WHOOP workouts on top. With a watch, keep active= as well; WHOOP workouts are then part of the watch’s calories and aren’t counted twice.":
+    "ნაბიჯები ისევ iPhone-იდან ან Apple Watch-იდან მოდის, რადგან WHOOP მათ არ აზიარებს. Apple Watch-ის გარეშე Text-ში active= არ ჩაწერო: Plate ნაბიჯებს დაითვლის და WHOOP-ის ვარჯიშებს ზემოდან დაუმატებს. საათით active= დატოვე; მაშინ WHOOP-ის ვარჯიშები საათის კალორიებშია და ორჯერ არ ითვლება.",
+  "{n} kcal from WHOOP workouts": "{n} კკალ WHOOP-ის ვარჯიშებიდან",
+  "resting heart rate {n}": "მოსვენებული პულსი {n}",
+  "Resting heart rate {n}": "მოსვენებული პულსი {n}",
 }

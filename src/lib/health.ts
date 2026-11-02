@@ -41,6 +41,10 @@ export interface HealthImport {
   sleepMinutes?: number
   /** Walking and running distance. */
   distanceKm?: number
+  /** Calories of the day's workouts from a tracker that records only workouts, like WHOOP. */
+  workoutKcal?: number
+  /** Resting heart rate, beats per minute. */
+  restingHr?: number
 }
 
 /**
@@ -71,7 +75,8 @@ const MI_TO_KM = 1.609344
 const LB_TO_KG = 0.45359237
 
 /**
- * Parses what the Plate shortcut copies, e.g. "plate date=2026-10-29 active=640.5 steps=9,123 sleep=7.4 distance=6.2 weight=89.4 kg".
+ * Parses what the Plate shortcut copies, e.g. "plate date=2026-10-29 active=640.5 steps=9,123 sleep=7.4 distance=6.2 weight=89.4 kg",
+ * plus workout= (a tracker's workout calories, like WHOOP's) and rhr= (resting heart rate).
  * Also accepts ":" instead of "=". Weight may be in kg or lb, as a smart scale wrote it to Apple Health.
  */
 export function parseHealthText(text: string): HealthImport | null {
@@ -103,6 +108,16 @@ export function parseHealthText(text: string): HealthImport | null {
     const v = parseInRange(distance[1].trim(), 0, 300)
     if (v != null) out.distanceKm = Math.round(v * (distance[2]?.toLowerCase() === 'mi' ? MI_TO_KM : 1) * 100) / 100
   }
-  const found = [out.activeKcal, out.steps, out.weightKg, out.sleepMinutes, out.distanceKm].some((v) => v != null)
+  const workout = grab('workout')
+  if (workout != null) {
+    const v = parseInRange(workout.trim(), 0, 5000)
+    if (v != null) out.workoutKcal = Math.round(v)
+  }
+  const rhr = grab('rhr')
+  if (rhr != null) {
+    const v = parseInRange(rhr.trim(), 25, 150)
+    if (v != null) out.restingHr = Math.round(v)
+  }
+  const found = [out.activeKcal, out.steps, out.weightKg, out.sleepMinutes, out.distanceKm, out.workoutKcal, out.restingHr].some((v) => v != null)
   return found ? out : null
 }

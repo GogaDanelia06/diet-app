@@ -94,6 +94,7 @@ export interface AppData {
 export interface HealthExtras {
   sleepMinutes?: number
   distanceKm?: number
+  restingHr?: number
 }
 
 const DATA_KEYS = [
@@ -130,6 +131,8 @@ interface Actions {
   setWorkoutPrefs: (p: WorkoutPrefs | null) => void
   setActiveWorkout: (w: ActiveWorkout | null) => void
   setHealthDay: (date: string, extras: HealthExtras) => void
+  /** The day's workout calories from a tracker like WHOOP, as one exercise replaced on every sync. */
+  setTrackerWorkouts: (date: string, kcal: number) => void
   updateActiveWorkout: (change: (w: ActiveWorkout) => ActiveWorkout) => void
   /** Logs a finished workout as the day's exercise and keeps its sets in the history. */
   saveWorkout: (done: ReturnType<typeof finishWorkout>) => void
@@ -190,6 +193,9 @@ discardLegacyDashboardStorage()
 /** Progress photos are kept as separate records so the main data stays small. */
 /** Ids of workouts read from Apple Health start with this. */
 export const HEALTH_WORKOUT = 'hk-'
+/** Name and id of the day's tracker workouts; the id starts like other Apple Health workouts so deleting it sticks. */
+export const TRACKER_WORKOUTS = 'WHOOP workouts'
+export const trackerWorkoutId = (date: string) => `${HEALTH_WORKOUT}tracker-${date}`
 
 export const photoKey = (id: string) => `plate-photo-${id}`
 export const loadPhoto = (id: string) => get<string>(photoKey(id))
@@ -270,6 +276,14 @@ export const useStore = create<AppData & Actions>()(
       setPlanPrefs: (p) => setState((st) => ({ planPrefs: { ...st.planPrefs, ...p } })),
       setWorkoutPrefs: (workoutPrefs) => setState({ workoutPrefs }),
       setActiveWorkout: (activeWorkout) => setState({ activeWorkout }),
+      setTrackerWorkouts: (date, kcal) =>
+        setState((st) => {
+          const id = trackerWorkoutId(date)
+          const others = st.exercises.filter((x) => x.id !== id)
+          // Deleted once, it stays deleted, like other workouts from Apple Health.
+          const keep = kcal > 0 && !st.settings.hiddenHealthWorkouts.includes(id)
+          return { exercises: keep ? [...others, { id, date, name: TRACKER_WORKOUTS, minutes: 0, kcal }] : others }
+        }),
       setHealthDay: (date, extras) => setState((st) => ({ healthDays: { ...st.healthDays, [date]: { ...st.healthDays[date], ...extras } } })),
       updateActiveWorkout: (change) => setState((st) => (st.activeWorkout ? { activeWorkout: change(st.activeWorkout) } : {})),
       saveWorkout: (done) =>

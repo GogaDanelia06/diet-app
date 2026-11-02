@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { applyHealthText, healthTextFromHash } from './healthImport'
-import { useStore } from './store'
+import { dayBurn, useStore } from './store'
 
 vi.mock('idb-keyval', () => ({
   get: vi.fn().mockResolvedValue(undefined),
@@ -40,6 +40,20 @@ describe('Health numbers from the Plate shortcut', () => {
     expect(r?.summary).toBe('8,000 steps · 6 h 30 min sleep · 5.4 km')
     applyHealthText('plate date=2026-10-30 steps=9000', '2026-10-30')
     expect(useStore.getState().healthDays['2026-10-30']).toEqual({ sleepMinutes: 390, distanceKm: 5.4 })
+  })
+
+  it('adds WHOOP workouts once per day, in full, and keeps a deleted one deleted', () => {
+    useStore.setState({ exercises: [], healthDays: {}, settings: { ...useStore.getState().settings, hiddenHealthWorkouts: [] } })
+    applyHealthText('plate date=2026-10-30 steps=8000 workout=300 rhr=54', '2026-10-30')
+    applyHealthText('plate date=2026-10-30 steps=9000 workout=420 rhr=52', '2026-10-30')
+    const st = useStore.getState()
+    expect(st.exercises).toEqual([{ id: 'hk-tracker-2026-10-30', date: '2026-10-30', name: 'WHOOP workouts', minutes: 0, kcal: 420 }])
+    expect(st.healthDays['2026-10-30'].restingHr).toBe(52)
+    // Without watch calories, the workouts count in full on top of the steps.
+    expect(dayBurn(useStore.getState(), '2026-10-30').burned).toBe(420 + dayBurn({ ...useStore.getState(), exercises: [] }, '2026-10-30').burned)
+    st.removeExercise('hk-tracker-2026-10-30')
+    applyHealthText('plate date=2026-10-30 workout=500', '2026-10-30')
+    expect(useStore.getState().exercises).toEqual([])
   })
 
   it('counts steps when there’s no Apple Watch and active calories come through as 0', () => {

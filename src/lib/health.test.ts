@@ -85,3 +85,13 @@ describe('sleep and distance from the Plate shortcut', () => {
   })
 })
 
+describe('WHOOP numbers from the Plate shortcut', () => {
+  it('reads workout calories and resting heart rate', () => {
+    expect(parseHealthText('plate date=2026-11-02 steps=9123 workout=420.75 sleep=7.4 rhr=52')).toEqual({
+      date: '2026-11-02', steps: 9123, workoutKcal: 421, sleepMinutes: 444, restingHr: 52,
+    })
+    expect(parseHealthText('plate workout=0')?.workoutKcal).toBe(0)
+    expect(parseHealthText('plate rhr=5 steps=1')?.restingHr).toBeUndefined()
+  })
+})
+
