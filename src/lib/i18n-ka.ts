@@ -1081,4 +1081,20 @@ export const KA: Record<string, string> = {
   "Your {h}-hour fast ends at {time}.": "{h}-საათიანი მარხვა დასრულდება {time}-ზე.",
   "Your {h}-hour fast ends tomorrow at {time}.": "{h}-საათიანი მარხვა დასრულდება ხვალ, {time}-ზე.",
   "A time later than now counts as yesterday.": "ახლანდელზე გვიანი დრო გუშინდელად ითვლება.",
+
+  // Custom fasting length
+  "{n} h": "{n} სთ",
+  "h": "სთ",
+  "Custom": "საკუთარი",
+  "Change goal": "მიზნის შეცვლა",
+  "Change your fasting goal": "მარხვის მიზნის შეცვლა",
+  "Custom fast": "საკუთარი მარხვა",
+  "Fast for {h} hours": "მარხვა {h} საათით",
+  "{f} h fasting · {e} h to eat": "{f} სთ მარხვა · {e} სთ ჭამისთვის",
+  "{f} h fasting": "{f} სთ მარხვა",
+  "Fasting hours": "მარხვის საათები",
+  "Started {start}, ends {end}.": "დაიწყო {start}-ზე, დასრულდება {end}-ზე.",
+  "Started now, it would end {end}.": "ახლა თუ დაიწყებ, დასრულდება {end}-ზე.",
+  "Fasts longer than a day aren’t for everyone. Drink water, and ask a doctor first if you take medicine or have a health condition.":
+    "დღეზე გრძელი მარხვა ყველასთვის არ არის. დალიე წყალი და, თუ წამალს იღებ ან ჯანმრთელობის პრობლემა გაქვს, ჯერ ექიმს ჰკითხე.",
 }

@@ -17,6 +17,12 @@ export const FAST_PLANS = [
   { hours: 24, label: '24 h' },
 ]
 
+/** The longest custom fast: three days. */
+const MAX_FAST_HOURS = 72
+
+/** "15:9" for fasting and eating hours within a day, "36 h" for longer fasts. */
+export const planLabel = (hours: number) => (hours < 24 ? `${hours}:${24 - hours}` : t('{n} h', { n: hours }))
+
 function useNow(intervalMs: number) {
   const [now, setNow] = useState(Date.now())
   useEffect(() => {
@@ -33,6 +39,12 @@ function useNow(intervalMs: number) {
 
 const clock = (ms: number) => new Date(ms).toLocaleTimeString(locale(), { hour: 'numeric', minute: '2-digit' })
 
+/** The end time, with the day when it isn't today. */
+const endText = (ms: number) => {
+  const day = dateKey(new Date(ms))
+  return day === dateKey() ? clock(ms) : `${shortDate(day)}, ${clock(ms)}`
+}
+
 export default function FastingCard() {
   const fasting = useStore((s) => s.fasting)
   const goal = useStore((s) => s.settings.fastingHours)
@@ -41,7 +53,10 @@ export default function FastingCard() {
   const endFast = useStore((s) => s.endFast)
   const now = useNow(30_000)
   const [history, setHistory] = useState(false)
+  // Which goal the length picker changes: the next fast's, or the one running now.
+  const [picking, setPicking] = useState<'next' | 'active' | null>(null)
   const active = fasting.active
+  const custom = !FAST_PLANS.some((p) => p.hours === goal)
 
   const elapsed = active ? hoursBetween(active.start, now) : 0
   const pct = active ? Math.min(1, elapsed / active.hours) : 0
@@ -65,11 +80,16 @@ export default function FastingCard() {
             <div className="mt-1 text-sm text-muted">
               {done
                 ? t('You reached your {h}-hour goal', { h: active.hours })
-                : t('{left} to go · ends {time}', { left: formatDuration(active.hours - elapsed), time: clock(active.start + active.hours * 3_600_000) })}
+                : t('{left} to go · ends {time}', { left: formatDuration(active.hours - elapsed), time: endText(active.start + active.hours * 3_600_000) })}
             </div>
-            <button className="btn btn-quiet mt-3 px-3 py-2 text-sm" onClick={endFast}>
-              {t('End fast')}
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button className="btn btn-quiet px-3 py-2 text-sm" onClick={endFast}>
+                {t('End fast')}
+              </button>
+              <button className="btn btn-quiet px-3 py-2 text-sm" onClick={() => setPicking('active')}>
+                {t('Change goal')}
+              </button>
+            </div>
           </div>
         </div>
       ) : (
@@ -80,6 +100,9 @@ export default function FastingCard() {
                 {t(p.label)}
               </Chip>
             ))}
+            <Chip active={custom} onClick={() => setPicking('next')}>
+              {custom ? `${planLabel(goal)} ✎` : t('Custom')}
+            </Chip>
           </div>
           <div className="flex gap-2">
             <button className="btn btn-primary flex-1 py-2.5" onClick={() => startFast(goal)}>
@@ -90,6 +113,18 @@ export default function FastingCard() {
         </div>
       )}
       {history && <FastHistory onClose={() => setHistory(false)} />}
+      {picking && (
+        <FastLengthSheet
+          hours={picking === 'active' && active ? active.hours : goal}
+          start={picking === 'active' && active ? active.start : undefined}
+          onClose={() => setPicking(null)}
+          onSave={(hours) => {
+            if (picking === 'active' && active) startFast(hours, active.start)
+            else updateSettings({ fastingHours: hours })
+            setPicking(null)
+          }}
+        />
+      )}
     </Card>
   )
 }
@@ -120,6 +155,51 @@ function StartEarlier({ goal, onStart }: { goal: number; onStart: (start: number
   )
 }
 
+/** Picks how many hours a fast lasts, from 1 to 72, and shows when it would end. */
+function FastLengthSheet({ hours, start, onClose, onSave }: { hours: number; start?: number; onClose: () => void; onSave: (hours: number) => void }) {
+  const [value, setValue] = useState(Math.min(MAX_FAST_HOURS, Math.max(1, Math.round(hours))))
+  const from = start ?? Date.now()
+  const end = from + value * 3_600_000
+  return (
+    <Sheet
+      title={t(start ? 'Change your fasting goal' : 'Custom fast')}
+      onClose={onClose}
+      footer={
+        <button className="btn btn-primary mb-2 w-full" onClick={() => onSave(value)}>
+          {t('Fast for {h} hours', { h: value })}
+        </button>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-center font-display text-xl font-semibold" role="status">
+          {value < 24 ? t('{f} h fasting · {e} h to eat', { f: value, e: 24 - value }) : t('{f} h fasting', { f: value })}
+        </p>
+        <div className="wheel-picker">
+          <span className="wheel-band" aria-hidden="true" />
+          <Wheel
+            values={LENGTHS}
+            value={value}
+            onChange={setValue}
+            label={t('Fasting hours')}
+            valueText={t('{n} h', { n: value })}
+            render={(h) => (
+              <>
+                <span className="num">{h}</span>
+                <small>{t('h')}</small>
+              </>
+            )}
+          />
+        </div>
+        <p className="text-center text-sm text-muted">
+          {t(start ? 'Started {start}, ends {end}.' : 'Started now, it would end {end}.', { start: clock(from), end: endText(end) })}
+        </p>
+        {value > 24 && <p className="text-center text-xs text-muted">{t('Fasts longer than a day aren’t for everyone. Drink water, and ask a doctor first if you take medicine or have a health condition.')}</p>}
+      </div>
+    </Sheet>
+  )
+}
+
+const LENGTHS = Array.from({ length: MAX_FAST_HOURS }, (_, i) => i + 1)
 const HOURS = Array.from({ length: 24 }, (_, h) => h)
 const MINUTES = Array.from({ length: 60 }, (_, m) => m)
 
