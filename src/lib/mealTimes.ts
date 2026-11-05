@@ -31,3 +31,21 @@ export function fastEnd(last: string, hours: number) {
   const end = toMinutes(last) + hours * 60
   return { time: fromMinutes(end), nextDay: end >= DAY_MINUTES }
 }
+
+/**
+ * When a fast began, from a clock time picked after the fact: today if that time has passed,
+ * otherwise yesterday (a fast started after last night's dinner).
+ */
+export function fastStartAt(minutes: number, now: Date): number {
+  const d = new Date(now)
+  d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0)
+  if (d.getTime() > now.getTime()) d.setDate(d.getDate() - 1)
+  return d.getTime()
+}
+
+/** The latest meal time logged today, or null. */
+export function lastMealTime(entries: { date: string; time?: string }[], today: string): string | null {
+  const times = entries.filter((e) => e.date === today && e.time).map((e) => e.time!)
+  return times.length ? times.reduce((a, b) => (toMinutes(b) > toMinutes(a) ? b : a)) : null
+}
+

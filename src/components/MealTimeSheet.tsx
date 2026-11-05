@@ -16,7 +16,7 @@ const nowMinutes = () => {
 }
 
 /** "2 h 15 min" for a span of minutes. */
-function span(minutes: number) {
+export function span(minutes: number) {
   const h = Math.floor(minutes / 60)
   const m = minutes % 60
   return h && m ? t('{h} h {m} min', { h, m }) : h ? t('{h} h', { h }) : t('{m} min', { m })
@@ -26,7 +26,7 @@ function span(minutes: number) {
  * A scroll wheel like the phone's own time picker: the row in the middle band is the value.
  * Scroll it, tap a row, or use the arrow keys.
  */
-function Wheel({ values, value, onChange, render, label, valueText }: {
+export function Wheel({ values, value, onChange, render, label, valueText }: {
   values: number[]
   value: number
   onChange: (v: number) => void

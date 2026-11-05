@@ -264,7 +264,6 @@ export const KA: Record<string, string> = {
   "End fast": "დასრულება",
   "Start {h}-hour fast now": "{h}-საათიანი შიმშილის დაწყება",
   "Earlier…": "უფრო ადრე…",
-  "Start time of your fast": "შიმშილის დაწყების დრო",
   "Fasting history": "შიმშილის ისტორია",
   "Fasts": "შიმშილები",
   "Reached goal": "მიზანი შესრულდა",
@@ -1074,4 +1073,12 @@ export const KA: Record<string, string> = {
   "Not in Plate’s list yet.": "Plate-ის სიაში ჯერ არ არის.",
   "{p} g protein · {c} g carbs · {f} g fat": "{p} გ ცილა · {c} გ ნახშირწყალი · {f} გ ცხიმი",
   "Estimate with AI": "AI-ით შეფასება",
+
+  // Starting a fast earlier
+  "When did your fast start?": "როდის დაიწყე მარხვა?",
+  "Start {h}-hour fast from {time}": "{h}-საათიანი მარხვის დაწყება {time}-დან",
+  "After your last meal at {time}": "ბოლო კვების შემდეგ, {time}",
+  "Your {h}-hour fast ends at {time}.": "{h}-საათიანი მარხვა დასრულდება {time}-ზე.",
+  "Your {h}-hour fast ends tomorrow at {time}.": "{h}-საათიანი მარხვა დასრულდება ხვალ, {time}-ზე.",
+  "A time later than now counts as yesterday.": "ახლანდელზე გვიანი დრო გუშინდელად ითვლება.",
 }

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { locale, t } from '../lib/i18n'
 import { fastStreak, formatDuration, hoursBetween } from '../lib/insights'
-import { shortDate, dateKey } from '../lib/date'
+import { clockTime, shortDate, dateKey } from '../lib/date'
+import { DAY_MINUTES, fastStartAt, lastMealTime, toMinutes } from '../lib/mealTimes'
+import { Wheel, span } from './MealTimeSheet'
 import { useStore } from '../lib/store'
 import { Card, Icon, Sheet } from './ui'
 import { Chip } from './FoodDetail'
@@ -83,7 +85,7 @@ export default function FastingCard() {
             <button className="btn btn-primary flex-1 py-2.5" onClick={() => startFast(goal)}>
               {t('Start {h}-hour fast now', { h: goal })}
             </button>
-            <StartEarlier onStart={(start) => startFast(goal, start)} />
+            <StartEarlier goal={goal} onStart={(start) => startFast(goal, start)} />
           </div>
         </div>
       )}
@@ -92,26 +94,103 @@ export default function FastingCard() {
   )
 }
 
-/** For when the fast actually began after last night's dinner. */
-function StartEarlier({ onStart }: { onStart: (start: number) => void }) {
+/**
+ * For a fast that began earlier, like after lunch or last night's dinner. The time is picked on
+ * wheels and only used when Start is tapped: the phone's own time box sets a value the moment it
+ * opens, which used to start the fast at the current time.
+ */
+function StartEarlier({ goal, onStart }: { goal: number; onStart: (start: number) => void }) {
+  const [open, setOpen] = useState(false)
   return (
-    <label className="btn btn-quiet relative cursor-pointer py-2.5">
-      {t('Earlier…')}
-      <input
-        type="time"
-        className="absolute inset-0 opacity-0"
-        aria-label={t('Start time of your fast')}
-        onChange={(e) => {
-          const [h, m] = e.target.value.split(':').map(Number)
-          if (Number.isNaN(h)) return
-          const d = new Date()
-          d.setHours(h, m, 0, 0)
-          // A time later than now means yesterday evening.
-          if (d.getTime() > Date.now()) d.setDate(d.getDate() - 1)
-          onStart(d.getTime())
-        }}
-      />
-    </label>
+    <>
+      <button className="btn btn-quiet py-2.5" onClick={() => setOpen(true)}>
+        {t('Earlier…')}
+      </button>
+      {open && (
+        <FastStartSheet
+          goal={goal}
+          onClose={() => setOpen(false)}
+          onStart={(start) => {
+            setOpen(false)
+            onStart(start)
+          }}
+        />
+      )}
+    </>
+  )
+}
+
+const HOURS = Array.from({ length: 24 }, (_, h) => h)
+const MINUTES = Array.from({ length: 60 }, (_, m) => m)
+
+function FastStartSheet({ goal, onClose, onStart }: { goal: number; onClose: () => void; onStart: (start: number) => void }) {
+  const entries = useStore((s) => s.entries)
+  const now = new Date()
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  const lastMeal = lastMealTime(entries, dateKey())
+  // Most fasts start right after the last meal; without one, two hours ago is a likely guess.
+  const [picked, setPicked] = useState(() => (lastMeal ? toMinutes(lastMeal) : (nowMinutes - 120 + DAY_MINUTES) % DAY_MINUTES))
+  const hour = Math.floor(picked / 60)
+  const minute = picked % 60
+  const start = fastStartAt(picked, now)
+  const ago = Math.round((now.getTime() - start) / 60_000)
+  const end = start + goal * 3_600_000
+  const yesterday = dateKey(new Date(start)) !== dateKey(now)
+  const endsTomorrow = dateKey(new Date(end)) !== dateKey(now)
+  const hour12 = new Intl.DateTimeFormat(locale(), { hour: 'numeric' }).resolvedOptions().hour12
+
+  return (
+    <Sheet
+      title={t('When did your fast start?')}
+      onClose={onClose}
+      footer={
+        <button className="btn btn-primary mb-2 w-full" onClick={() => onStart(start)}>
+          {t('Start {h}-hour fast from {time}', { h: goal, time: clock(start) })}
+        </button>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-center font-display text-xl font-semibold" role="status">
+          {yesterday ? `${t('Yesterday')}, ${clock(start)}` : ago < 1 ? t('Just now') : t('{span} ago', { span: span(ago) })}
+        </p>
+        {lastMeal && toMinutes(lastMeal) !== picked && (
+          <div className="flex justify-center">
+            <button className="rounded-full border border-line px-3 py-1.5 text-sm" onClick={() => setPicked(toMinutes(lastMeal))}>
+              {t('After your last meal at {time}', { time: clockTime(lastMeal) })}
+            </button>
+          </div>
+        )}
+        <div className="wheel-picker">
+          <span className="wheel-band" aria-hidden="true" />
+          <Wheel
+            values={HOURS}
+            value={hour}
+            onChange={(h) => setPicked(h * 60 + minute)}
+            label={t('Hour')}
+            valueText={clock(start)}
+            render={(h) => (
+              <>
+                <span className="num">{hour12 ? h % 12 || 12 : String(h).padStart(2, '0')}</span>
+                {hour12 && <small>{h < 12 ? 'AM' : 'PM'}</small>}
+              </>
+            )}
+          />
+          <span className="wheel-colon" aria-hidden="true">:</span>
+          <Wheel
+            values={MINUTES}
+            value={minute}
+            onChange={(m) => setPicked(hour * 60 + m)}
+            label={t('Minutes')}
+            valueText={clock(start)}
+            render={(m) => <span className="num">{String(m).padStart(2, '0')}</span>}
+          />
+        </div>
+        <p className="text-center text-sm text-muted">
+          {t(endsTomorrow ? 'Your {h}-hour fast ends tomorrow at {time}.' : 'Your {h}-hour fast ends at {time}.', { h: goal, time: clock(end) })}
+        </p>
+        <p className="text-center text-xs text-muted">{t('A time later than now counts as yesterday.')}</p>
+      </div>
+    </Sheet>
   )
 }
 
