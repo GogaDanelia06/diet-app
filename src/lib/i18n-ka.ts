@@ -1062,4 +1062,16 @@ export const KA: Record<string, string> = {
   "{n} kcal from WHOOP workouts": "{n} კკალ WHOOP-ის ვარჯიშებიდან",
   "resting heart rate {n}": "მოსვენებული პულსი {n}",
   "Resting heart rate {n}": "მოსვენებული პულსი {n}",
+
+  // Adding what the photo missed
+  "Add something the photo missed": "დაამატე ის, რაც ფოტოზე გამორჩა",
+  "Add something else": "სხვა რამის დამატება",
+  "The AI is estimating it…": "AI აფასებს…",
+  "What was missed, e.g. sulguni": "რა გამორჩა, მაგ. სულგუნი",
+  "Food name": "საკვების სახელი",
+  "Grams eaten": "შეჭმული გრამები",
+  "{n} kcal per 100 g": "{n} კკალ 100 გ-ზე",
+  "Not in Plate’s list yet.": "Plate-ის სიაში ჯერ არ არის.",
+  "{p} g protein · {c} g carbs · {f} g fat": "{p} გ ცილა · {c} გ ნახშირწყალი · {f} გ ცხიმი",
+  "Estimate with AI": "AI-ით შეფასება",
 }

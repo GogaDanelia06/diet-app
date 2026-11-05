@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
-import { t } from '../lib/i18n'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { t, tName } from '../lib/i18n'
 import { aiItemToFood, analyzeMealPhoto, analyzeMealText, type AiItem, type AiMeal } from '../lib/ai'
 import { photoToJpegBase64 } from '../lib/image'
-import { kcal, num } from '../lib/format'
-import { useStore } from '../lib/store'
-import type { Meal } from '../lib/types'
+import { kcal, macro, num } from '../lib/format'
+import { recipeToFood, useStore } from '../lib/store'
+import { scaleNutrients } from '../lib/calc'
+import { BUILTIN_FOODS } from '../lib/foods'
+import { searchFoods } from '../lib/search'
+import type { Food, Meal } from '../lib/types'
 import { ErrorNote, Icon, Spinner } from './ui'
 import AiKeySetup from './AiKeySetup'
 
@@ -12,7 +15,13 @@ interface Row extends AiItem {
   include: boolean
   baseGrams: number
   gramsText: string
+  /** Added by hand: its grams are what was eaten, so "How much did you eat?" leaves it alone. */
+  manual?: boolean
+  /** The food from Plate's list it was picked from, kept so the diary knows it. */
+  food?: Food
 }
+
+const toRow = (item: AiItem, extra: Partial<Row> = {}): Row => ({ ...item, include: true, baseGrams: item.grams, gramsText: String(Math.round(item.grams)), ...extra })
 
 /** How much of the photographed food was eaten; scales every item at once. */
 const PORTIONS = [
@@ -49,6 +58,7 @@ export default function AiLog({
   const [error, setError] = useState('')
   const [result, setResult] = useState<{ title: string; notes?: string; rows: Row[] } | null>(null)
   const [portion, setPortion] = useState(1)
+  const [missedLoading, setMissedLoading] = useState(false)
   const cfg = { key: settings.geminiKey, model: settings.geminiModel }
   const started = useRef(false)
 
@@ -73,7 +83,7 @@ export default function AiLog({
     setResult({
       title: m.title,
       notes: m.notes,
-      rows: m.items.map((i) => ({ ...i, include: true, baseGrams: i.grams, gramsText: String(Math.round(i.grams)) })),
+      rows: m.items.map((i) => toRow(i)),
     })
   }
 
@@ -100,9 +110,24 @@ export default function AiLog({
     }
   }
 
+  const addRows = (rows: Row[]) => setResult((cur) => (cur ? { ...cur, rows: [...cur.rows, ...rows] } : cur))
+
+  // Something the photo missed that Plate doesn't know: the AI estimates just that.
+  async function estimateMissed(description: string) {
+    setMissedLoading(true)
+    setError('')
+    try {
+      addRows((await analyzeMealText(cfg, description)).items.map((i) => toRow(i, { manual: true })))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('Something went wrong. Try again.'))
+    } finally {
+      setMissedLoading(false)
+    }
+  }
+
   // Scale an item's nutrition when the user corrects its weight.
-  function scaled(r: Row): AiItem {
-    const g = num(r.gramsText) * portion
+  function scaled(r: Row): Row {
+    const g = num(r.gramsText) * (r.manual ? 1 : portion)
     const f = r.baseGrams > 0 ? g / r.baseGrams : 1
     return { ...r, grams: g, kcal: r.kcal * f, protein: r.protein * f, carbs: r.carbs * f, fat: r.fat * f }
   }
@@ -114,13 +139,14 @@ export default function AiLog({
     // "½ × 1 boat" when only part of what the photo shows was eaten.
     const share = portion === 1 ? '' : `${PORTIONS.find((p) => p.value === portion)!.label} × `
     for (const item of chosen) {
-      const food = aiItemToFood(item)
+      const food = item.food ?? aiItemToFood(item)
+      const part = item.manual ? '' : share
       addEntry({
         date,
         meal,
         name: item.name,
         grams: item.grams,
-        amountLabel: item.portion ? `${share}${item.portion} (${Math.round(item.grams)} g)` : `${Math.round(item.grams)} g`,
+        amountLabel: item.portion ? `${part}${item.portion} (${Math.round(item.grams)} g)` : `${Math.round(item.grams)} g`,
         nutrients: { kcal: item.kcal, protein: item.protein, carbs: item.carbs, fat: item.fat },
         food,
       })
@@ -196,7 +222,7 @@ export default function AiLog({
                     aria-label={t('Include {name}', { name: r.name })}
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{r.name}</div>
+                    <div className="truncate font-medium">{tName(r.name)}</div>
                     <div className="truncate text-sm text-muted">{r.portion}</div>
                   </div>
                   <label className="flex items-center gap-1 text-sm text-muted">
@@ -214,6 +240,13 @@ export default function AiLog({
               )
             })}
           </ul>
+          <AddMissed
+            label={t(kind === 'photo' ? 'Add something the photo missed' : 'Add something else')}
+            busy={missedLoading}
+            onAdd={(row) => addRows([row])}
+            onEstimate={estimateMissed}
+          />
+          {missedLoading && <Spinner label={t('The AI is estimating it…')} />}
           {result.rows.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm text-muted">{t('How much did you eat?')}</p>
@@ -242,3 +275,119 @@ export default function AiLog({
     </div>
   )
 }
+
+/**
+ * Adds a food the photo missed: type its name, pick it from Plate's list and enter the grams,
+ * and the calories are worked out from the list. Foods Plate doesn't know go to the AI instead.
+ */
+function AddMissed({ label, busy, onAdd, onEstimate }: { label: string; busy: boolean; onAdd: (row: Row) => void; onEstimate: (description: string) => void }) {
+  const customFoods = useStore((s) => s.customFoods)
+  const recipes = useStore((s) => s.recipes)
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState('')
+  const [picked, setPicked] = useState<Food | null>(null)
+  const [grams, setGrams] = useState('')
+  const all = useMemo(() => [...customFoods, ...recipes.map(recipeToFood), ...BUILTIN_FOODS], [customFoods, recipes])
+  const matches = useMemo(() => (picked || !name.trim() ? [] : searchFoods(all, name, 5)), [all, name, picked])
+  const g = num(grams)
+  const n = picked && g > 0 ? scaleNutrients(picked.per100, g) : null
+
+  function reset() {
+    setOpen(false)
+    setName('')
+    setPicked(null)
+    setGrams('')
+  }
+
+  function pick(f: Food) {
+    setPicked(f)
+    if (!(num(grams) > 0)) setGrams(String(f.servings.find((s) => !s.label.startsWith('whole'))?.grams ?? 100))
+  }
+
+  if (!open) {
+    return (
+      <button className="flex items-center gap-1.5 text-sm font-medium text-accent" onClick={() => setOpen(true)}>
+        <Icon name="plus" className="h-4 w-4" /> {label}
+      </button>
+    )
+  }
+
+  return (
+    <div className="space-y-3 rounded-[18px] bg-surface p-3">
+      <div className="flex gap-2">
+        <input
+          className="field min-w-0 flex-1"
+          placeholder={t('What was missed, e.g. sulguni')}
+          value={picked ? tName(picked.name) : name}
+          onChange={(e) => {
+            setName(e.target.value)
+            setPicked(null)
+          }}
+          autoFocus
+          autoCorrect="off"
+          aria-label={t('Food name')}
+        />
+        <label className="flex shrink-0 items-center gap-1 text-sm text-muted">
+          <input className="field num w-20 px-2 text-right" inputMode="decimal" placeholder="100" value={grams} onChange={(e) => setGrams(e.target.value)} aria-label={t('Grams eaten')} />
+          {t('g')}
+        </label>
+      </div>
+
+      {matches.length > 0 && (
+        <ul className="divide-y divide-line rounded-2xl bg-surface-2 px-3">
+          {matches.map((f) => (
+            <li key={f.id}>
+              <button className="flex w-full items-center gap-3 py-2.5 text-left" onClick={() => pick(f)}>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-medium">{tName(f.name)}</span>
+                  {f.brand && <span className="block truncate text-xs text-muted">{f.brand}</span>}
+                </span>
+                <span className="num shrink-0 text-xs text-muted">{t('{n} kcal per 100 g', { n: kcal(f.per100.kcal) })}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!picked && name.trim().length >= 2 && !matches.length && <p className="text-sm text-muted">{t('Not in Plate’s list yet.')}</p>}
+
+      {picked && n && (
+        <p className="text-sm">
+          <span className="num font-semibold">{kcal(n.kcal)} {t('kcal')}</span>
+          <span className="text-muted"> · {t('{p} g protein · {c} g carbs · {f} g fat', { p: macro(n.protein), c: macro(n.carbs), f: macro(n.fat) })}</span>
+        </p>
+      )}
+
+      <div className="flex gap-2">
+        <button className="btn btn-quiet flex-1" onClick={reset}>
+          {t('Cancel')}
+        </button>
+        {picked ? (
+          <button
+            className="btn btn-primary flex-1"
+            disabled={!n}
+            onClick={() => {
+              onAdd(toRow({ name: picked.name, portion: '', grams: g, kcal: n!.kcal, protein: n!.protein, carbs: n!.carbs, fat: n!.fat }, { manual: true, food: picked }))
+              reset()
+            }}
+          >
+            {t('Add')}
+          </button>
+        ) : (
+          name.trim() && (
+            <button
+              className="btn btn-quiet flex-1"
+              disabled={busy}
+              onClick={() => {
+                onEstimate(g > 0 ? `${g} g ${name.trim()}` : name.trim())
+                reset()
+              }}
+            >
+              <Icon name="sparkle" className="h-5 w-5 text-accent" /> {t('Estimate with AI')}
+            </button>
+          )
+        )}
+      </div>
+    </div>
+  )
+}
+
