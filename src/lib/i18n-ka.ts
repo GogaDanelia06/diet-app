@@ -1097,4 +1097,17 @@ export const KA: Record<string, string> = {
   "Started now, it would end {end}.": "ახლა თუ დაიწყებ, დასრულდება {end}-ზე.",
   "Fasts longer than a day aren’t for everyone. Drink water, and ask a doctor first if you take medicine or have a health condition.":
     "დღეზე გრძელი მარხვა ყველასთვის არ არის. დალიე წყალი და, თუ წამალს იღებ ან ჯანმრთელობის პრობლემა გაქვს, ჯერ ექიმს ჰკითხე.",
+
+  // Copying past meals
+  "Past meals": "წინა კვება",
+  "Copy a meal you logged before into {meal}.": "დააკოპირე ადრე ჩაწერილი კვება: {meal}.",
+  "Search past meals, e.g. khinkali": "ძებნა წინა კვებაში, მაგ. ხინკალი",
+  "No meal in the last two weeks has that food.": "ბოლო ორ კვირაში ეს საკვები არცერთ კვებაში არ არის.",
+  "Meals you log show up here for two weeks.": "ჩაწერილი კვება აქ ორი კვირის განმავლობაში ჩანს.",
+  "Copy {what}": "დააკოპირე: {what}",
+  "Copy": "კოპირება",
+  "Copy {n}": "კოპირება ({n})",
+  "Added": "დაემატა",
+  "Another day…": "სხვა დღიდან…",
+  "Copy a past meal": "წინა კვების კოპირება",
 }

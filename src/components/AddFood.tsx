@@ -10,14 +10,16 @@ import FoodSearch, { FoodList } from './FoodSearch'
 import FoodDetail from './FoodDetail'
 import Scanner from './Scanner'
 import AiLog from './AiLog'
+import PastMeals from './PastMeals'
 import FoodEditor from './FoodEditor'
 import RecipeEditor from './RecipeEditor'
 
-export type AddFoodMode = 'search' | 'barcode' | 'photo' | 'describe' | 'quick' | 'mine'
+export type AddFoodMode = 'search' | 'past' | 'barcode' | 'photo' | 'describe' | 'quick' | 'mine'
 type Mode = AddFoodMode
 
 const MODES: { id: Mode; label: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
   { id: 'search', label: 'Search', icon: 'search' },
+  { id: 'past', label: 'Past meals', icon: 'copy' },
   { id: 'photo', label: 'Photo', icon: 'camera' },
   { id: 'barcode', label: 'Barcode', icon: 'barcode' },
   { id: 'describe', label: 'Describe', icon: 'sparkle' },
@@ -84,6 +86,7 @@ export default function AddFood({ date, meal: initialMeal, initialMode = 'search
             }}
           />
         )}
+        {mode === 'past' && <PastMeals date={date} meal={meal} mealLabel={mealLabel} onAdded={added} />}
         {mode === 'barcode' && <Scanner onFound={setPicked} />}
         {(mode === 'photo' || mode === 'describe') && (
           <AiLog key={mode + seed} kind={mode} seed={seed} photo={mode === 'photo' ? photo : undefined} date={date} meal={meal} mealLabel={mealLabel} onAdded={added} />

@@ -117,7 +117,7 @@ export default function Today({ date, setDate, onAdd, onOpenCoach, onOpenWorkout
         <div className="diary-column">
           <div className="section-heading"><div><span className="eyebrow">{t('ONE MEAL AT A TIME')}</span><h2>{t('Food diary')}</h2></div><button onClick={() => onAdd(meal)} className="text-action"><Icon name="plus" className="h-4 w-4" />{t('Add food')}</button></div>
           <FoodQuality entries={day.entries} />
-          <div className="diary-meals">{MEALS.map((m) => <MealCard key={m.id} date={date} meal={m.id} label={t(m.label)} entries={day.entries.filter((e) => e.meal === m.id)} onAdd={() => onAdd(m.id)} onOpen={setEditing} />)}</div>
+          <div className="diary-meals">{MEALS.map((m) => <MealCard key={m.id} date={date} meal={m.id} label={t(m.label)} entries={day.entries.filter((e) => e.meal === m.id)} onAdd={() => onAdd(m.id)} onCopy={() => onAdd(m.id, 'past')} onOpen={setEditing} />)}</div>
           <div className="section-heading habit-heading"><div><span className="eyebrow">{t('BEYOND THE PLATE')}</span><h2>{t('Your daily rhythm')}</h2></div><span className="subtle-label">{t('A little care goes a long way')}</span></div>
           <WaterCard key={date} date={date} />
           <Card className="activity-card">
@@ -190,6 +190,7 @@ function MealCard({
   label,
   entries,
   onAdd,
+  onCopy,
   onOpen,
 }: {
   date: string
@@ -197,6 +198,8 @@ function MealCard({
   label: string
   entries: DiaryEntry[]
   onAdd: () => void
+  /** Opens Add food on Past meals for this meal. */
+  onCopy: () => void
   onOpen: (e: DiaryEntry) => void
 }) {
   const copyMeal = useStore((s) => s.copyMeal)
@@ -208,6 +211,8 @@ function MealCard({
   const [timeOpen, setTimeOpen] = useState(false)
   const yesterday = addDays(date, -1)
   const yesterdayCount = entries.length === 0 ? allEntries.filter((e) => e.date === yesterday && e.meal === meal).length : 0
+  // Anything from the last two weeks (or today's other meals) to copy into an empty meal.
+  const canCopy = entries.length === 0 && allEntries.some((e) => e.date <= date && e.date >= addDays(date, -14))
   const total = entries.reduce((n, e) => n + e.nutrients.kcal, 0)
 
   return (
@@ -268,11 +273,16 @@ function MealCard({
           </button>
         </div>
       ))}
-      {(yesterdayCount > 0 || entries.length >= 2) && (
-        <div className="mt-1 flex items-center gap-4">
+      {(canCopy || entries.length >= 2) && (
+        <div className="mt-1 flex flex-wrap items-center gap-x-4">
           {yesterdayCount > 0 && (
             <button onClick={() => copyMeal(yesterday, meal, date)} className="flex items-center gap-1.5 py-1.5 text-sm text-muted">
               <Icon name="copy" className="h-4 w-4" /> {t('Same as yesterday')}
+            </button>
+          )}
+          {canCopy && (
+            <button onClick={onCopy} className="flex items-center gap-1.5 py-1.5 text-sm text-muted">
+              <Icon name="calendar" className="h-4 w-4" /> {t(yesterdayCount > 0 ? 'Another day…' : 'Copy a past meal')}
             </button>
           )}
           {entries.length >= 2 && (

@@ -113,6 +113,8 @@ interface Actions {
   updateEntry: (id: string, e: Partial<DiaryEntry>) => void
   removeEntry: (id: string) => void
   copyMeal: (fromDate: string, meal: Meal, toDate: string) => void
+  /** Copies diary entries into a day and meal, taking that meal's time if it has one. */
+  copyEntries: (ids: string[], toDate: string, toMeal: Meal) => void
   /** Sets (or with '' clears) the time a meal was eaten on a day. */
   setMealTime: (date: string, meal: Meal, time: string) => void
   saveCustomFood: (f: Food) => void
@@ -231,6 +233,14 @@ export const useStore = create<AppData & Actions>()(
           const copies = st.entries
             .filter((x) => x.date === fromDate && x.meal === meal)
             .map((x) => ({ ...x, id: uid(), date: toDate, time: mealTime(st.entries, toDate, meal), createdAt: Date.now() }))
+          return { entries: [...st.entries, ...copies] }
+        }),
+      copyEntries: (ids, toDate, toMeal) =>
+        setState((st) => {
+          const time = mealTime(st.entries, toDate, toMeal)
+          const copies = st.entries
+            .filter((x) => ids.includes(x.id))
+            .map((x) => ({ ...x, id: uid(), date: toDate, meal: toMeal, time, createdAt: Date.now() }))
           return { entries: [...st.entries, ...copies] }
         }),
       setMealTime: (date, meal, time) =>
